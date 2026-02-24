@@ -1,0 +1,311 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 11,
+  "summary": "Production-ready Android app 'XpertLab' built with Flutter (latest stable) and Firebase. Medical diagnostic lab platform split into two separate apps: (1) Patient App and (2) Staff App (Phlebotomist, Lab Admin, Super Admin). Features include Phone OTP auth, role-based access, test booking, slot selection, home collection, PDF report upload/view, society camp QR system, BP/RBS entry, phlebotomist workflow, push notifications, incident logs, and audit logs. Modern gradient medical UI (#0D47A1 → #26C6DA), rounded cards, bottom navigation.",
+  "architectural_notes": [
+    "Flutter (latest stable) targeting Android, Firebase backend (Auth, Firestore, Storage, Messaging)",
+    "Folder structure: lib/core/, lib/features/, lib/models/, lib/services/, lib/widgets/",
+    "UI: gradient #0D47A1 → #26C6DA, rounded 18-20px cards, soft shadows, bottom navigation",
+    "App split into two deployments: Patient App (patient-facing) and Staff App (Phlebotomist, Lab Admin, Super Admin) to reduce bundle size and improve load time"
+  ],
+  "known_issues": [
+    "App loading too slowly / not opening due to large bundle size with all 13 modules"
+  ],
+  "isFixRequest": true,
+  "existing_features": [
+    {
+      "id": "feature-implement-phone-otp-authentication-using-firebase-auth-users-enter-their-phone-number-receive-an-otp-via-sms-verify-it-and-are-signed-in-on-successful-sign-in-redirect-to-the-role-appropriate-home-screen",
+      "title": "Implement Phone OTP authentication using Firebase Auth. Users enter their phone number, receive an OTP via SMS, verify it, and are signed in. On successful sign-in, redirect to the role-appropriate home screen.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-role-based-access-control-supported-roles-include-patient-phlebotomist-lab-admin-and-super-admin-each-role-sees-only-the-modules-and-navigation-items-relevant-to-their-permissions-role-is-stored-in-firestore-under-the-user-s-profile-document",
+      "title": "Implement role-based access control. Supported roles include: Patient, Phlebotomist, Lab Admin, and Super Admin. Each role sees only the modules and navigation items relevant to their permissions. Role is stored in Firestore under the user's profile document.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-test-booking-module-patients-can-browse-available-diagnostic-tests-select-one-or-more-choose-a-slot-and-confirm-a-booking-booking-documents-are-stored-in-firestore-with-status-tracking",
+      "title": "Build a Test Booking module. Patients can browse available diagnostic tests, select one or more, choose a slot, and confirm a booking. Booking documents are stored in Firestore with status tracking.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-home-collection-module-patients-can-request-a-phlebotomist-to-collect-samples-at-their-address-the-request-is-stored-in-firestore-and-assigned-to-an-available-phlebotomist-phlebotomists-see-assigned-home-collection-jobs-in-their-workflow-queue",
+      "title": "Implement a Home Collection module. Patients can request a phlebotomist to collect samples at their address. The request is stored in Firestore and assigned to an available phlebotomist. Phlebotomists see assigned home collection jobs in their workflow queue.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-pdf-report-module-lab-admins-can-upload-pdf-reports-via-firebase-storage-linked-to-a-specific-booking-patients-can-view-and-download-their-own-reports-from-the-app-report-metadata-filename-upload-timestamp-booking-id-is-stored-in-firestore",
+      "title": "Build a PDF Report module. Lab Admins can upload PDF reports (via Firebase Storage) linked to a specific booking. Patients can view and download their own reports from the app. Report metadata (filename, upload timestamp, booking ID) is stored in Firestore.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-society-camp-qr-system-admins-can-create-a-camp-event-which-generates-a-unique-qr-code-phlebotomists-scan-the-qr-code-on-arrival-to-check-in-participants-each-scan-is-logged-in-firestore-with-timestamp-and-participant-details",
+      "title": "Implement a Society Camp QR system. Admins can create a camp event which generates a unique QR code. Phlebotomists scan the QR code on arrival to check in participants. Each scan is logged in Firestore with timestamp and participant details.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-bp-rbs-entry-module-phlebotomists-or-lab-staff-can-record-blood-pressure-systolic-diastolic-pulse-and-random-blood-sugar-rbs-readings-for-a-patient-linked-to-a-booking-or-camp-readings-are-stored-in-firestore-and-viewable-by-the-patient-and-admin",
+      "title": "Build a BP/RBS Entry module. Phlebotomists or lab staff can record Blood Pressure (systolic/diastolic/pulse) and Random Blood Sugar (RBS) readings for a patient linked to a booking or camp. Readings are stored in Firestore and viewable by the patient and admin.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-phlebotomist-workflow-module-phlebotomists-see-a-consolidated-task-queue-including-assigned-bookings-home-collection-jobs-and-camp-check-ins-they-can-update-task-status-e-g-en-route-sample-collected-and-add-notes-status-changes-sync-to-firestore-in-real-time",
+      "title": "Build a Phlebotomist Workflow module. Phlebotomists see a consolidated task queue including assigned bookings, home collection jobs, and camp check-ins. They can update task status (e.g., En Route, Sample Collected) and add notes. Status changes sync to Firestore in real-time.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-integrate-firebase-cloud-messaging-for-push-notifications-notify-patients-when-their-booking-is-confirmed-sample-is-collected-or-report-is-ready-notify-phlebotomists-when-a-new-task-is-assigned-admins-receive-alerts-for-new-bookings-and-incidents",
+      "title": "Integrate Firebase Cloud Messaging for push notifications. Notify patients when their booking is confirmed, sample is collected, or report is ready. Notify phlebotomists when a new task is assigned. Admins receive alerts for new bookings and incidents.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-incident-log-module-staff-can-report-incidents-e-g-sample-mislabeling-patient-complaint-equipment-failure-with-a-description-severity-level-and-optional-photo-incidents-are-stored-in-firestore-and-reviewable-by-lab-admins-and-super-admins",
+      "title": "Implement an Incident Log module. Staff can report incidents (e.g., sample mislabeling, patient complaint, equipment failure) with a description, severity level, and optional photo. Incidents are stored in Firestore and reviewable by Lab Admins and Super Admins.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-audit-log-module-all-significant-actions-login-booking-creation-update-report-upload-role-change-incident-submission-are-automatically-written-to-a-firestore-audit-logs-collection-with-actor-id-action-type-target-document-and-timestamp-super-admins-can-search-and-filter-audit-logs",
+      "title": "Implement an Audit Log module. All significant actions (login, booking creation/update, report upload, role change, incident submission) are automatically written to a Firestore audit_logs collection with actor ID, action type, target document, and timestamp. Super Admins can search and filter audit logs.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-modern-gradient-medical-ui-throughout-the-app-use-primary-gradient-0d47a1-26c6da-for-app-bars-buttons-and-key-ui-elements-cards-must-have-18-20px-border-radius-and-soft-drop-shadows-implement-a-role-aware-bottom-navigation-bar-typography-must-be-clean-and-professional-e-g-inter-or-poppins-the-overall-aesthetic-should-feel-like-a-premium-health-tech-startup-app",
+      "title": "Apply a modern gradient medical UI throughout the app. Use primary gradient #0D47A1 → #26C6DA for app bars, buttons, and key UI elements. Cards must have 18–20px border radius and soft drop shadows. Implement a role-aware bottom navigation bar. Typography must be clean and professional (e.g., Inter or Poppins). The overall aesthetic should feel like a premium health-tech startup app.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-organize-the-codebase-using-the-prescribed-folder-structure-lib-core-for-shared-utilities-and-constants-lib-features-for-feature-modules-each-with-its-own-screens-controllers-and-widgets-lib-models-for-data-models-lib-services-for-firebase-service-classes-and-lib-widgets-for-shared-reusable-widgets",
+      "title": "Organize the codebase using the prescribed folder structure: lib/core/ for shared utilities and constants, lib/features/ for feature modules (each with its own screens, controllers, and widgets), lib/models/ for data models, lib/services/ for Firebase service classes, and lib/widgets/ for shared reusable widgets.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-home-collection-request-page-homecollectionpage-tsx-add-a-use-my-location-button-next-to-the-collection-address-field-when-tapped-use-the-browser-geolocation-api-to-retrieve-the-user-s-current-latitude-and-longitude-coordinates-and-automatically-populate-a-read-only-gps-coordinates-field-displayed-as-lat-x-xxxxxx-lng-y-yyyyyy-beneath-the-address-input-store-the-latitude-and-longitude-values-alongside-the-home-collection-request",
+      "title": "On the Home Collection request page (HomeCollectionPage.tsx), add a 'Use My Location' button next to the collection address field. When tapped, use the browser Geolocation API to retrieve the user's current latitude and longitude coordinates and automatically populate a read-only GPS coordinates field (displayed as 'Lat: X.XXXXXX, Lng: Y.YYYYYY') beneath the address input. Store the latitude and longitude values alongside the home collection request.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-app-logo-across-all-screens-app-bar-login-screen-loading-screen-with-the-uploaded-logo-image-logo-png-the-logo-features-a-pink-coral-circle-with-xpertlab-bold-text-save-it-as-frontend-public-assets-generated-logo-png-and-reference-it-wherever-the-app-name-or-logo-is-displayed",
+      "title": "Replace the current app logo across all screens (app bar, login screen, loading screen) with the uploaded logo image (logo.png). The logo features a pink/coral circle with 'Xpertlab' bold text. Save it as frontend/public/assets/generated/logo.png and reference it wherever the app name or logo is displayed.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-on-the-home-collection-request-page-homecollectionpage-tsx-when-the-user-clicks-use-my-location-use-the-browser-geolocation-api-to-obtain-the-device-coordinates-then-perform-a-reverse-geocoding-lookup-using-the-free-openstreetmap-nominatim-api-https-nominatim-openstreetmap-org-reverse-format-json-lat-lat-lon-lon-to-retrieve-a-full-human-readable-address-including-house-number-road-suburb-city-state-and-postal-code-auto-populate-the-collection-address-text-input-field-with-this-full-formatted-address-string-not-just-coordinates-continue-to-also-store-the-raw-latitude-and-longitude-values-alongside-the-request-display-the-coordinates-read-only-beneath-the-address-field-as-lat-x-xxxxxx-lng-y-yyyyyy",
+      "title": "On the Home Collection request page (HomeCollectionPage.tsx), when the user clicks 'Use My Location', use the browser Geolocation API to obtain the device coordinates, then perform a reverse geocoding lookup (using the free OpenStreetMap Nominatim API: https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}) to retrieve a full human-readable address including house number, road, suburb, city, state, and postal code. Auto-populate the collection address text input field with this full formatted address string (not just coordinates). Continue to also store the raw latitude and longitude values alongside the request. Display the coordinates read-only beneath the address field as 'Lat: X.XXXXXX, Lng: Y.YYYYYY'.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-dedicated-role-based-access-control-demo-page-frontend-src-pages-demo-rbacdemopage-tsx-that-visually-showcases-all-four-roles-patient-phlebotomist-lab-admin-and-super-admin-side-by-side-or-in-a-tabbed-layout-each-role-panel-must-display-the-role-s-display-name-and-icon-the-navigation-items-available-to-that-role-sourced-from-rolenavconfig-and-a-sample-of-the-home-screen-or-key-screens-accessible-by-that-role-include-a-role-switcher-so-users-can-toggle-between-role-views-and-see-how-the-ui-changes",
+      "title": "Create a dedicated Role-Based Access Control demo page (frontend/src/pages/demo/RBACDemoPage.tsx) that visually showcases all four roles — Patient, Phlebotomist, Lab Admin, and Super Admin — side by side or in a tabbed layout. Each role panel must display: the role's display name and icon, the navigation items available to that role (sourced from roleNavConfig), and a sample of the home screen or key screens accessible by that role. Include a role switcher so users can toggle between role views and see how the UI changes.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-rolepermissionstable-component-within-the-demo-page-that-renders-a-matrix-showing-which-modules-features-each-role-has-access-to-rows-represent-features-modules-test-booking-home-collection-pdf-reports-bp-rbs-entry-task-queue-camp-qr-incident-log-audit-log-user-management-and-columns-represent-roles-patient-phlebotomist-lab-admin-super-admin-each-cell-shows-a-checkmark-access-granted-or-a-dash-lock-icon-no-access",
+      "title": "Add a RolePermissionsTable component within the demo page that renders a matrix showing which modules/features each role has access to. Rows represent features/modules (Test Booking, Home Collection, PDF Reports, BP/RBS Entry, Task Queue, Camp QR, Incident Log, Audit Log, User Management) and columns represent roles (Patient, Phlebotomist, Lab Admin, Super Admin). Each cell shows a checkmark (access granted) or a dash/lock icon (no access).",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-interactive-role-simulation-panel-on-the-rbac-demo-page-that-renders-a-mock-bottom-navigation-bar-reflecting-the-selected-role-s-nav-items-using-rolenavconfig-when-the-user-selects-a-different-role-from-the-switcher-the-mock-bottom-nav-instantly-updates-to-show-only-that-role-s-tabs-and-icons-demonstrating-the-role-aware-navigation-behaviour-without-navigating-away-from-the-demo-page",
+      "title": "Add an interactive role simulation panel on the RBAC demo page that renders a mock bottom navigation bar reflecting the selected role's nav items (using roleNavConfig). When the user selects a different role from the switcher, the mock bottom nav instantly updates to show only that role's tabs and icons, demonstrating the role-aware navigation behaviour without navigating away from the demo page.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-register-the-rbac-demo-route-demo-rbac-in-frontend-src-app-tsx-and-add-a-link-or-entry-point-to-it-from-a-visible-location-e-g-the-super-admin-home-screen-or-a-dedicated-demo-section-so-the-page-is-reachable-during-demonstration-the-route-should-be-accessible-without-enforcing-a-role-restriction-so-any-authenticated-user-can-view-the-demo",
+      "title": "Register the RBAC demo route (/demo/rbac) in frontend/src/App.tsx and add a link or entry point to it from a visible location (e.g., the Super Admin home screen or a dedicated demo section) so the page is reachable during demonstration. The route should be accessible without enforcing a role restriction so any authenticated user can view the demo.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restructure-the-frontend-into-two-distinct-app-entry-points-1-a-patient-app-that-only-loads-patient-facing-pages-login-patienthomepage-booktestpage-slotselectionpage-mybookingspage-homecollectionpage-myhomecollectionspage-reportspage-myvitalspage-profilepage-and-2-a-staff-app-that-only-loads-staff-facing-pages-login-phlebotomist-pages-admin-pages-submitincidentpage-auditlogspage-profilepage-each-app-must-have-its-own-route-configuration-in-app-tsx-or-separate-app-files-so-that-the-patient-app-bundle-contains-zero-staff-modules-and-the-staff-app-bundle-contains-zero-patient-only-modules",
+      "title": "Restructure the frontend into two distinct app entry points: (1) a Patient App that only loads patient-facing pages (Login, PatientHomePage, BookTestPage, SlotSelectionPage, MyBookingsPage, HomeCollectionPage, MyHomeCollectionsPage, ReportsPage, MyVitalsPage, ProfilePage), and (2) a Staff App that only loads staff-facing pages (Login, Phlebotomist pages, Admin pages, SubmitIncidentPage, AuditLogsPage, ProfilePage). Each app must have its own route configuration in App.tsx (or separate App files) so that the Patient App bundle contains zero staff modules and the Staff App bundle contains zero patient-only modules.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-patient-app-login-landing-screen-frontend-src-patientapp-tsx-or-equivalent-entry-that-presents-xpertlab-branding-and-an-internet-identity-sign-in-button-after-authentication-if-the-user-s-role-is-patient-redirect-to-patient-home-if-the-authenticated-user-has-a-non-patient-role-staff-show-an-error-message-this-app-is-for-patients-only-please-use-the-xpertlab-staff-app",
+      "title": "Create a Patient App login/landing screen (frontend/src/PatientApp.tsx or equivalent entry) that presents XpertLab branding and an Internet Identity sign-in button. After authentication, if the user's role is 'patient', redirect to /patient/home. If the authenticated user has a non-patient role (staff), show an error message: 'This app is for patients only. Please use the XpertLab Staff App.'",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-staff-app-login-landing-screen-frontend-src-staffapp-tsx-or-equivalent-entry-that-presents-xpertlab-staff-branding-and-an-internet-identity-sign-in-button-after-authentication-redirect-based-on-role-phlebotomist-phlebotomist-tasks-lab-admin-admin-bookings-super-admin-admin-audit-logs-if-the-authenticated-user-has-the-patient-role-show-an-error-this-app-is-for-staff-only-please-use-the-xpertlab-patient-app",
+      "title": "Create a Staff App login/landing screen (frontend/src/StaffApp.tsx or equivalent entry) that presents XpertLab Staff branding and an Internet Identity sign-in button. After authentication, redirect based on role: Phlebotomist → /phlebotomist/tasks, Lab Admin → /admin/bookings, Super Admin → /admin/audit-logs. If the authenticated user has the 'patient' role, show an error: 'This app is for staff only. Please use the XpertLab Patient App.'",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-landing-selector-page-at-the-root-url-that-presents-two-clearly-labelled-cards-patient-app-and-staff-app-each-card-includes-a-short-description-and-a-button-that-navigates-to-the-respective-app-s-login-flow-this-serves-as-the-app-switcher-entry-point-so-users-can-self-select-their-app-without-needing-two-separate-deployed-urls",
+      "title": "Add a landing/selector page at the root URL (/) that presents two clearly labelled cards: 'Patient App' and 'Staff App'. Each card includes a short description and a button that navigates to the respective app's login flow. This serves as the app switcher entry point so users can self-select their app without needing two separate deployed URLs.",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Phone OTP login via Firebase Auth",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Role-based access control",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Test booking module",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Slot selection for bookings",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Booking status tracking",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Home collection request/workflow",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "PDF report upload and view via Firebase Storage",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Society camp QR code system",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "BP/RBS entry module",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Phlebotomist workflow module",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Push notifications via Firebase Messaging",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Incident logs",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Audit logs",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Auto-fill full address (including apartment name and details) in Home Collection address field using GPS/reverse geocoding",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Update app logo and rename app from XprtLab to XpertLab",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Split app into two separate apps: Patient App and Staff App (Phlebotomist, Lab Admin, Super Admin) to improve load time and separation of concerns",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "XprtLab",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

@@ -1,0 +1,107 @@
+{
+  "kind": "build_request",
+  "title": "Split into two separate apps: Patient App and Staff App",
+  "projectName": "XpertLab Dual App",
+  "priority": "high",
+  "requirements": [
+    {
+      "id": "REQ-21",
+      "text": "Restructure the frontend into two distinct app entry points: (1) a Patient App that only loads patient-facing pages (Login, PatientHomePage, BookTestPage, SlotSelectionPage, MyBookingsPage, HomeCollectionPage, MyHomeCollectionsPage, ReportsPage, MyVitalsPage, ProfilePage), and (2) a Staff App that only loads staff-facing pages (Login, Phlebotomist pages, Admin pages, SubmitIncidentPage, AuditLogsPage, ProfilePage). Each app must have its own route configuration in App.tsx (or separate App files) so that the Patient App bundle contains zero staff modules and the Staff App bundle contains zero patient-only modules.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "make seprete app for patient another and in another app for Phlebotomist, Lab Admin, Super Admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The Patient App loads and renders only patient-facing routes (/, /patient/*, /profile).",
+        "The Staff App loads and renders only staff-facing routes (/, /phlebotomist/*, /admin/*, /profile).",
+        "Neither app bundle imports or references the other app's page components.",
+        "Both apps share the same backend canister (no backend changes required).",
+        "Both apps use the same shared components (AppLayout, BottomNavigation, GradientButton, etc.) and design system.",
+        "The Patient App bottom navigation shows only patient nav items; the Staff App shows phlebotomist/admin nav items based on logged-in role.",
+        "Both apps load significantly faster than the combined single-bundle app."
+      ]
+    },
+    {
+      "id": "REQ-22",
+      "text": "Create a Patient App login/landing screen (frontend/src/PatientApp.tsx or equivalent entry) that presents XpertLab branding and an Internet Identity sign-in button. After authentication, if the user's role is 'patient', redirect to /patient/home. If the authenticated user has a non-patient role (staff), show an error message: 'This app is for patients only. Please use the XpertLab Staff App.'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "make seprete app for patient"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Patient App login screen displays XpertLab logo and branding.",
+        "Successful patient login redirects to /patient/home.",
+        "A non-patient role attempting to log in via the Patient App sees a clear error message and is not granted access.",
+        "Unauthenticated users are redirected to the login screen when accessing any patient route."
+      ]
+    },
+    {
+      "id": "REQ-23",
+      "text": "Create a Staff App login/landing screen (frontend/src/StaffApp.tsx or equivalent entry) that presents XpertLab Staff branding and an Internet Identity sign-in button. After authentication, redirect based on role: Phlebotomist → /phlebotomist/tasks, Lab Admin → /admin/bookings, Super Admin → /admin/audit-logs. If the authenticated user has the 'patient' role, show an error: 'This app is for staff only. Please use the XpertLab Patient App.'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "another app for Phlebotomist, Lab Admin, Super Admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Staff App login screen displays XpertLab Staff branding.",
+        "Phlebotomist login redirects to /phlebotomist/tasks.",
+        "Lab Admin login redirects to /admin/bookings.",
+        "Super Admin login redirects to /admin/audit-logs.",
+        "A patient-role user attempting to log in via the Staff App sees a clear error message and cannot proceed.",
+        "Unauthenticated users are redirected to the staff login screen when accessing any staff route."
+      ]
+    },
+    {
+      "id": "REQ-24",
+      "text": "Add a landing/selector page at the root URL (/) that presents two clearly labelled cards: 'Patient App' and 'Staff App'. Each card includes a short description and a button that navigates to the respective app's login flow. This serves as the app switcher entry point so users can self-select their app without needing two separate deployed URLs.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ],
+        "quotes": [
+          "make seprete app for patient another and in another app for Phlebotomist, Lab Admin, Super Admin"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The root URL (/) displays a full-screen landing page with two app selection cards.",
+        "The 'Patient App' card navigates to the patient login flow.",
+        "The 'Staff App' card navigates to the staff login flow.",
+        "The landing page uses the XpertLab gradient branding (#0D47A1 → #26C6DA).",
+        "Already-authenticated users bypass the landing page and are redirected directly to their role's home screen."
+      ]
+    }
+  ],
+  "constraints": [
+    "Do not modify backend/main.mo — both apps share the same single backend canister.",
+    "Do not edit files in frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
+    "Shared components (AppLayout, BottomNavigation, GradientButton, MedicalCard, etc.) must remain shared and not be duplicated.",
+    "All existing page functionality must be preserved — only the routing/bundling separation changes."
+  ],
+  "nonGoals": [
+    "Creating two separate Motoko canisters or backend deployments.",
+    "Implementing a new authentication system — Internet Identity remains the auth provider.",
+    "Redesigning any existing page UI beyond what is needed for the split.",
+    "Adding new features or modules not already present in the codebase.",
+    "Creating two separate Vite build configurations or deploying to two separate URLs (a single-URL app switcher approach is used instead)."
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

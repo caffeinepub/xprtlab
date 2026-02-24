@@ -1,0 +1,97 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-restructure-the-frontend-into-two-distinct-app-entry-points-1-a-patient-app-that-only-loads-patient-facing-pages-login-patienthomepage-booktestpage-slotselectionpage-mybookingspage-homecollectionpage-myhomecollectionspage-reportspage-myvitalspage-profilepage-and-2-a-staff-app-that-only-loads-staff-facing-pages-login-phlebotomist-pages-admin-pages-submitincidentpage-auditlogspage-profilepage-each-app-must-have-its-own-route-configuration-in-app-tsx-or-separate-app-files-so-that-the-patient-app-bundle-contains-zero-staff-modules-and-the-staff-app-bundle-contains-zero-patient-only-modules",
+      "featureTitle": "Restructure the frontend into two distinct app entry points: (1) a Patient App that only loads patient-facing pages (Login, PatientHomePage, BookTestPage, SlotSelectionPage, MyBookingsPage, HomeCollectionPage, MyHomeCollectionsPage, ReportsPage, MyVitalsPage, ProfilePage), and (2) a Staff App that only loads staff-facing pages (Login, Phlebotomist pages, Admin pages, SubmitIncidentPage, AuditLogsPage, ProfilePage). Each app must have its own route configuration in App.tsx (or separate App files) so that the Patient App bundle contains zero staff modules and the Staff App bundle contains zero patient-only modules.",
+      "files": [
+        "frontend/src/PatientApp.tsx",
+        "frontend/src/StaffApp.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-21"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-patient-app-login-landing-screen-frontend-src-patientapp-tsx-or-equivalent-entry-that-presents-xpertlab-branding-and-an-internet-identity-sign-in-button-after-authentication-if-the-user-s-role-is-patient-redirect-to-patient-home-if-the-authenticated-user-has-a-non-patient-role-staff-show-an-error-message-this-app-is-for-patients-only-please-use-the-xpertlab-staff-app",
+      "featureTitle": "Create a Patient App login/landing screen (frontend/src/PatientApp.tsx or equivalent entry) that presents XpertLab branding and an Internet Identity sign-in button. After authentication, if the user's role is 'patient', redirect to /patient/home. If the authenticated user has a non-patient role (staff), show an error message: 'This app is for patients only. Please use the XpertLab Staff App.'",
+      "files": [
+        "frontend/src/PatientApp.tsx",
+        "frontend/src/components/auth/PatientLoginScreen.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-22"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-create-a-staff-app-login-landing-screen-frontend-src-staffapp-tsx-or-equivalent-entry-that-presents-xpertlab-staff-branding-and-an-internet-identity-sign-in-button-after-authentication-redirect-based-on-role-phlebotomist-phlebotomist-tasks-lab-admin-admin-bookings-super-admin-admin-audit-logs-if-the-authenticated-user-has-the-patient-role-show-an-error-this-app-is-for-staff-only-please-use-the-xpertlab-patient-app",
+      "featureTitle": "Create a Staff App login/landing screen (frontend/src/StaffApp.tsx or equivalent entry) that presents XpertLab Staff branding and an Internet Identity sign-in button. After authentication, redirect based on role: Phlebotomist → /phlebotomist/tasks, Lab Admin → /admin/bookings, Super Admin → /admin/audit-logs. If the authenticated user has the 'patient' role, show an error: 'This app is for staff only. Please use the XpertLab Patient App.'",
+      "files": [
+        "frontend/src/StaffApp.tsx",
+        "frontend/src/components/auth/StaffLoginScreen.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-23"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-landing-selector-page-at-the-root-url-that-presents-two-clearly-labelled-cards-patient-app-and-staff-app-each-card-includes-a-short-description-and-a-button-that-navigates-to-the-respective-app-s-login-flow-this-serves-as-the-app-switcher-entry-point-so-users-can-self-select-their-app-without-needing-two-separate-deployed-urls",
+      "featureTitle": "Add a landing/selector page at the root URL (/) that presents two clearly labelled cards: 'Patient App' and 'Staff App'. Each card includes a short description and a button that navigates to the respective app's login flow. This serves as the app switcher entry point so users can self-select their app without needing two separate deployed URLs.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/AppSelectorPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-24"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

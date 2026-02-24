@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+
+    /* XprtLab Medical Brand Colors */
+    --brand-blue: oklch(0.32 0.18 255);
+    --brand-cyan: oklch(0.72 0.14 200);
+
+    --background: oklch(0.98 0.005 240);
+    --foreground: oklch(0.15 0.02 255);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0.02 255);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0.02 255);
+    --primary: oklch(0.32 0.18 255);
+    --primary-foreground: oklch(0.99 0 0);
+    --secondary: oklch(0.94 0.03 240);
+    --secondary-foreground: oklch(0.32 0.18 255);
+    --muted: oklch(0.95 0.01 240);
+    --muted-foreground: oklch(0.52 0.04 255);
+    --accent: oklch(0.72 0.14 200);
+    --accent-foreground: oklch(0.99 0 0);
+    --destructive: oklch(0.58 0.22 27);
+    --destructive-foreground: oklch(0.99 0 0);
+    --border: oklch(0.90 0.02 240);
+    --input: oklch(0.90 0.02 240);
+    --ring: oklch(0.32 0.18 255);
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.145 0 0);
+    --sidebar-primary: oklch(0.205 0 0);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.97 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
+    --sidebar-border: oklch(0.922 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+
+    /* Card & Layout */
+    --card-radius: 18px;
+    --card-shadow: 0 4px 20px rgba(13, 71, 161, 0.08), 0 1px 4px rgba(0,0,0,0.04);
+    --card-shadow-hover: 0 8px 32px rgba(13, 71, 161, 0.14), 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .dark {
+    --background: oklch(0.12 0.02 255);
+    --foreground: oklch(0.95 0.01 240);
+    --card: oklch(0.18 0.03 255);
+    --card-foreground: oklch(0.95 0.01 240);
+    --popover: oklch(0.20 0.03 255);
+    --popover-foreground: oklch(0.95 0.01 240);
+    --primary: oklch(0.65 0.16 200);
+    --primary-foreground: oklch(0.10 0.02 255);
+    --secondary: oklch(0.22 0.04 255);
+    --secondary-foreground: oklch(0.95 0.01 240);
+    --muted: oklch(0.22 0.03 255);
+    --muted-foreground: oklch(0.65 0.04 255);
+    --accent: oklch(0.65 0.16 200);
+    --accent-foreground: oklch(0.10 0.02 255);
+    --destructive: oklch(0.65 0.22 27);
+    --destructive-foreground: oklch(0.99 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.65 0.16 200);
+    --sidebar: oklch(0.18 0.03 255);
+    --sidebar-foreground: oklch(0.95 0.01 240);
+    --sidebar-primary: oklch(0.65 0.16 200);
+    --sidebar-primary-foreground: oklch(0.10 0.02 255);
+    --sidebar-accent: oklch(0.22 0.04 255);
+    --sidebar-accent-foreground: oklch(0.95 0.01 240);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.65 0.16 200);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%);
+  }
+
+  .gradient-primary-text {
+    background: linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .card-medical {
+    border-radius: var(--card-radius);
+    box-shadow: var(--card-shadow);
+    background: oklch(var(--card));
+    border: 1px solid oklch(var(--border));
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card-medical:hover {
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .gradient-btn {
+    background: linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%);
+    color: white;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: opacity 0.2s ease, transform 0.1s ease;
+  }
+
+  .gradient-btn:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  .gradient-btn:active {
+    transform: translateY(0);
+  }
+
+  .gradient-btn:disabled {
+    opacity: 0.6;
+    transform: none;
+    cursor: not-allowed;
+  }
+
+  .status-pending {
+    background: oklch(0.95 0.06 80);
+    color: oklch(0.45 0.12 80);
+  }
+
+  .status-confirmed {
+    background: oklch(0.92 0.08 200);
+    color: oklch(0.35 0.14 200);
+  }
+
+  .status-completed {
+    background: oklch(0.92 0.08 145);
+    color: oklch(0.35 0.14 145);
+  }
+
+  .status-canceled {
+    background: oklch(0.94 0.04 20);
+    color: oklch(0.45 0.12 20);
+  }
+
+  .severity-low {
+    background: oklch(0.92 0.08 145);
+    color: oklch(0.35 0.14 145);
+  }
+
+  .severity-medium {
+    background: oklch(0.95 0.10 80);
+    color: oklch(0.45 0.14 80);
+  }
+
+  .severity-high {
+    background: oklch(0.94 0.12 27);
+    color: oklch(0.45 0.18 27);
+  }
+}
