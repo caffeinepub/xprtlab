@@ -26,6 +26,19 @@ export interface BPReading {
     diastolic: bigint;
     pulse: bigint;
 }
+export interface Attendance {
+    status: string;
+    totalWorkingMinutes?: bigint;
+    checkInSelfieUrl: string;
+    checkInLong: number;
+    checkInTime: bigint;
+    phlebotomistId: string;
+    hospitalId: string;
+    checkOutLong?: number;
+    checkOutTime?: bigint;
+    checkInLat: number;
+    checkOutLat?: number;
+}
 export interface Test {
     id: string;
     name: string;
@@ -59,6 +72,30 @@ export interface HomeCollectionRequest {
     address: string;
     timestamp: bigint;
     assignedPhlebotomist?: Principal;
+}
+export interface HospitalSample {
+    mrp: number;
+    status: string;
+    finalAmount: number;
+    createdAt: bigint;
+    phlebotomistId: string;
+    hospitalId: string;
+    patientName: string;
+    discount: number;
+    paymentMode: string;
+    phone: string;
+    pendingAmount: number;
+    amountReceived: number;
+    testId: string;
+}
+export interface SecurityLog {
+    latitude?: number;
+    userId: string;
+    longitude?: number;
+    deviceId: string;
+    timestamp: bigint;
+    eventType: string;
+    reason: string;
 }
 export interface RBSTest {
     glucoseLevel: bigint;
@@ -112,6 +149,12 @@ export interface backendInterface {
      */
     assignPhlebotomist(requestId: string, phlebotomist: Principal): Promise<void>;
     /**
+     * / Authenticated users only: bind a device on first login.
+     * / If a binding already exists for a different deviceId, returns an error.
+     * / The caller must be the user identified by userId (ownership check).
+     */
+    bindDevice(userId: string, deviceId: string, deviceModel: string, osVersion: string): Promise<void>;
+    /**
      * / Registered users (patients) can create bookings
      */
     createBooking(id: string, selectedTests: Array<Test>, slot: string): Promise<void>;
@@ -120,6 +163,22 @@ export interface backendInterface {
      */
     createHomeCollectionRequest(id: string, address: string, latitude: number | null, longitude: number | null, selectedTests: Array<Test>, slot: string): Promise<void>;
     /**
+     * / Phlebotomist-only (registered user): create a hospital sample with status SAMPLE_COLLECTED
+     */
+    createHospitalSample(patientName: string, phone: string, hospitalId: string, phlebotomistId: string, testId: string, mrp: number, discount: number, finalAmount: number, amountReceived: number, pendingAmount: number, paymentMode: string): Promise<void>;
+    /**
+     * / Authenticated users (phlebotomists) or system: write a security log entry.
+     * / No role restriction beyond being an authenticated user — guests are blocked.
+     */
+    createSecurityLog(userId: string, eventType: string, deviceId: string, latitude: number | null, longitude: number | null, reason: string): Promise<void>;
+    /**
+     * / Authenticated users only: create (or replace) a session token.
+     * / On login, a new ACTIVE session is written and any previous session for the
+     * / same userId is implicitly superseded (the map entry is overwritten).
+     * / The caller must be the user identified by userId (ownership check).
+     */
+    createSession(userId: string, sessionToken: string): Promise<void>;
+    /**
      * / Admin-only: create a diagnostic test entry
      */
     createTest(id: string, name: string, description: string, price: bigint): Promise<void>;
@@ -127,6 +186,20 @@ export interface backendInterface {
      * / Admin-only: remove a diagnostic test
      */
     deleteTest(id: string): Promise<void>;
+    /**
+     * / Phlebotomist-only (registered user): end their own active shift.
+     * / The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+     */
+    endShift(phlebotomistId: string, hospitalId: string, checkOutLat: number, checkOutLong: number): Promise<void>;
+    /**
+     * / Phlebotomist-only (registered user): get their own active shift.
+     * / The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+     */
+    getActiveShift(phlebotomistId: string): Promise<Attendance | null>;
+    /**
+     * / Admin-only: get all currently active shifts
+     */
+    getAllActiveShifts(): Promise<Array<Attendance>>;
     /**
      * / Admin-only: view all audit logs
      */
@@ -152,17 +225,42 @@ export interface backendInterface {
      */
     getAllTests(): Promise<Array<Test>>;
     /**
+     * / Admin-only: get all attendance records for a specific phlebotomist
+     */
+    getAttendanceByPhlebotomist(phlebotomistId: string): Promise<Array<Attendance>>;
+    /**
      * / Registered users can view BP readings for themselves; admins can view any
      */
     getBPReadings(patientId: Principal, bookingId: string): Promise<Array<BPReading>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     /**
-     * / Registered users can view their own bookings; admins can view all
+     * / Admin-only: get hospital samples filtered by hospitalId
+     */
+    getHospitalSamplesByHospital(hospitalId: string): Promise<Array<HospitalSample>>;
+    /**
+     * / Admin-only: get hospital samples filtered by phlebotomistId
+     */
+    getHospitalSamplesByPhlebotomist(phlebotomistId: string): Promise<Array<HospitalSample>>;
+    /**
+     * / Patient (registered user) or admin: get hospital samples filtered by phone number.
+     * / This supports the patient-linked view. Any authenticated user may query by phone
+     * / (patients look up their own records; admins may look up any).
+     */
+    getHospitalSamplesByPhone(phone: string): Promise<{
+        totalReceived: number;
+        count: bigint;
+        samples: Array<HospitalSample>;
+        totalAmount: number;
+        totalPending: number;
+        totalDiscount: number;
+    }>;
+    /**
+     * / Registered users can view their own bookings
      */
     getMyBookings(): Promise<Array<Booking>>;
     /**
-     * / Registered users can view their own home collection requests; admins see all
+     * / Registered users can view their own home collection requests
      */
     getMyHomeCollectionRequests(): Promise<Array<HomeCollectionRequest>>;
     /**
@@ -170,13 +268,18 @@ export interface backendInterface {
      */
     getMyIncidents(): Promise<Array<Incident>>;
     /**
-     * / Registered users can view their own reports; admins can view all
+     * / Registered users can view their own reports
      */
     getMyReports(): Promise<Array<Report>>;
     /**
      * / Registered users can view RBS readings for themselves; admins can view any
      */
     getRBSReadings(patientId: Principal, bookingId: string): Promise<Array<RBSTest>>;
+    /**
+     * / Admin/super-admin only: retrieve security logs, optionally filtered by userId and eventType.
+     * / Pass empty strings to skip a filter.
+     */
+    getSecurityLogs(userId: string, eventType: string): Promise<Array<SecurityLog>>;
     /**
      * / Public: any caller (including guests) can browse available tests
      */
@@ -191,7 +294,17 @@ export interface backendInterface {
      * / Registered users (phlebotomists/lab staff) can record RBS readings for a patient
      */
     recordRBSReading(patientId: Principal, bookingId: string, glucoseLevel: bigint): Promise<void>;
+    /**
+     * / Admin-only: remove the device binding for a given userId
+     */
+    resetDeviceBinding(userId: string): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    /**
+     * / Phlebotomist-only (registered user): start a shift.
+     * / The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+     * / Validates: no existing ACTIVE shift for this phlebotomist.
+     */
+    startShift(phlebotomistId: string, hospitalId: string, checkInLat: number, checkInLong: number, checkInSelfieUrl: string): Promise<void>;
     /**
      * / Registered users (any staff) can submit incidents
      */
@@ -205,7 +318,18 @@ export interface backendInterface {
      */
     updateHomeCollectionStatus(requestId: string, status: Variant_assigned_requested_canceled_completed): Promise<void>;
     /**
+     * / Admin-only: update billing fields of a hospital sample
+     */
+    updateHospitalSampleBilling(id: string, discount: number, finalAmount: number, amountReceived: number, pendingAmount: number, paymentMode: string): Promise<void>;
+    /**
      * / Admin-only: upload a PDF report linked to a booking
      */
     uploadReport(id: string, patient: Principal, bookingId: string, file: ExternalBlob): Promise<void>;
+    /**
+     * / Authenticated users only: validate that the presented session token matches
+     * / the current ACTIVE session for the given userId.
+     * / Returns true if valid, false if the session has been superseded.
+     * / The caller must be the user identified by userId (ownership check).
+     */
+    validateSession(userId: string, sessionToken: string): Promise<boolean>;
 }

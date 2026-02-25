@@ -1,94 +1,69 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T15:36:53.606Z",
-  "summary": "The diff implements a frontend split into Patient App and Staff App with a shared app selector landing page. Most requirements are addressed: PatientApp.tsx, StaffApp.tsx, PatientLoginScreen, StaffLoginScreen, AppSelectorPage, PatientAppLayout, StaffAppLayout, and updated App.tsx routing are all present. However, several specific acceptance criteria have gaps or issues worth noting.",
+  "generatedAt": "2026-02-25T02:43:55.423Z",
+  "summary": "The diff only modifies a single project state tracking file (project_state.json), which records the requirements as 'pending' action items. No actual implementation code was added or modified. None of the seven requirements have been implemented — they are merely catalogued as pending tasks in a project state file.",
   "missing_requirements": [
     {
-      "requirement": "REQ-22 AC: Successful patient login redirects to /patient/home (URL path).",
-      "reason": "PatientApp.tsx sets internal route state to 'home' but the browser URL remains /patient-app — it does not navigate to /patient/home as specified in the AC.",
+      "id": "REQ-1",
+      "requirement": "Add a global demo mode flag activated from StaffLoginScreen demo buttons, storing role and demoMode flag in context accessible throughout StaffApp.",
+      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
       "evidence": [
-        "frontend/src/PatientApp.tsx",
-        "frontend/src/App.tsx"
+        "project_state.json"
       ]
     },
     {
-      "requirement": "REQ-23 AC: Phlebotomist login redirects to /phlebotomist/tasks, Lab Admin to /admin/bookings, Super Admin to /admin/audit-logs (URL paths).",
-      "reason": "StaffApp.tsx uses internal state routing but does not change the browser URL to /phlebotomist/tasks, /admin/bookings, or /admin/audit-logs as specified in the acceptance criteria.",
+      "id": "REQ-2",
+      "requirement": "In demo mode, bypass all GPS geofencing, accuracy checks, mock-location detection, and speed-jump anomaly checks; inject fixed mock coordinates.",
+      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
       "evidence": [
-        "frontend/src/StaffApp.tsx"
+        "project_state.json"
       ]
     },
     {
-      "requirement": "REQ-21 AC: The Patient App loads and renders only patient-facing routes at URL paths (/, /patient/*, /profile); the Staff App at (/, /phlebotomist/*, /admin/*, /profile).",
-      "reason": "Neither PatientApp nor StaffApp uses URL-based routing for individual pages. All patient pages live under /patient-app and all staff pages under /staff-app with internal state, so /patient/* and /phlebotomist/* URL paths do not exist and are not routable.",
+      "id": "REQ-3",
+      "requirement": "In demo mode, bypass device fingerprinting, device-binding enforcement, and skip or auto-accept selfie capture with a placeholder image.",
+      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
       "evidence": [
-        "frontend/src/App.tsx",
-        "frontend/src/PatientApp.tsx",
-        "frontend/src/StaffApp.tsx"
+        "project_state.json"
       ]
     },
     {
-      "requirement": "REQ-23 AC: Unauthenticated users are redirected to the staff login screen when accessing any staff route (/phlebotomist/*, /admin/*).",
-      "reason": "No routes for /phlebotomist/* or /admin/* are defined in App.tsx, so unauthenticated access to those paths cannot trigger a redirect to the staff login screen.",
+      "id": "REQ-4",
+      "requirement": "In demo mode, bypass ShiftGuard for all phlebotomist routes and provide a simulated active shift.",
+      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
       "evidence": [
-        "frontend/src/App.tsx"
+        "project_state.json"
       ]
     },
     {
-      "id": "REQ-24",
-      "requirement": "Already-authenticated users bypass the landing page and are redirected directly to their role's home screen.",
-      "reason": "AppSelectorPage.tsx shows no authentication state check or automatic redirect logic for already-authenticated users in the visible diff content.",
+      "id": "REQ-5",
+      "requirement": "In demo mode, seed all data-dependent pages with realistic mock/stub data including bookings, home collection queue, hospital samples, reports, audit logs, incidents, security logs, attendance history, and notifications.",
+      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
       "evidence": [
-        "frontend/src/pages/AppSelectorPage.tsx"
+        "project_state.json"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "In demo mode, all mutating actions should optimistically succeed with a toast confirmation without real backend calls, or gracefully handle backend failures.",
+      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
+      "evidence": [
+        "project_state.json"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "requirement": "Add a patient demo mode entry point on PatientLoginScreen or AppSelectorPage with mock patient data and a demo banner in PatientAppLayout.",
+      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
+      "evidence": [
+        "project_state.json"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "ProfileSetupModal was modified to accept a 'defaultRole' prop and conditionally renders a role selector dropdown for staff users during profile setup.",
-      "reason": "The build request does not mention modifying ProfileSetupModal or adding role selection during profile setup. This is additional functionality not requested.",
-      "evidence": [
-        "frontend/src/components/auth/ProfileSetupModal.tsx"
-      ]
-    },
-    {
-      "description": "New PatientAppLayout and StaffAppLayout components were created as separate dedicated layout components with their own headers and bottom navigation bars.",
-      "reason": "The build request constraints explicitly state shared components like AppLayout and BottomNavigation must remain shared and not be duplicated. Creating entirely new parallel layout components per app potentially violates this constraint.",
-      "evidence": [
-        "frontend/src/components/layout/PatientAppLayout.tsx",
-        "frontend/src/components/layout/StaffAppLayout.tsx"
-      ]
-    }
-  ],
-  "confidence": 0.72,
+  "hallucinated_features": [],
+  "confidence": 0.99,
   "changed_files": [
-    "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
-    "frontend/src/PatientApp.tsx",
-    "frontend/src/StaffApp.tsx",
-    "frontend/src/components/auth/PatientLoginScreen.tsx",
-    "frontend/src/components/auth/ProfileSetupModal.tsx",
-    "frontend/src/components/auth/StaffLoginScreen.tsx",
-    "frontend/src/components/layout/PatientAppLayout.tsx",
-    "frontend/src/components/layout/StaffAppLayout.tsx",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AppSelectorPage.tsx",
-    "frontend/src/pages/admin/AdminBookingsPage.tsx",
-    "frontend/src/pages/admin/AdminReportsPage.tsx",
-    "frontend/src/pages/admin/UploadReportPage.tsx",
-    "frontend/src/pages/patient/BookTestPage.tsx",
-    "frontend/src/pages/patient/HomeCollectionPage.tsx",
-    "frontend/src/pages/patient/MyBookingsPage.tsx",
-    "frontend/src/pages/patient/MyHomeCollectionsPage.tsx",
-    "frontend/src/pages/patient/MyVitalsPage.tsx",
-    "frontend/src/pages/patient/PatientHomePage.tsx",
-    "frontend/src/pages/patient/ProfilePage.tsx",
-    "frontend/src/pages/patient/ReportsPage.tsx",
-    "frontend/src/pages/patient/SlotSelectionPage.tsx",
-    "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx",
-    "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
-    "frontend/src/pages/staff/SubmitIncidentPage.tsx",
     "project_state.json"
   ]
 }

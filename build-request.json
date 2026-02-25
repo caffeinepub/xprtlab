@@ -1,104 +1,163 @@
 {
   "kind": "build_request",
-  "title": "Split into two separate apps: Patient App and Staff App",
-  "projectName": "XpertLab Dual App",
+  "title": "Demo Mode – bypass GPS, device checks, and auth for full feature testing",
+  "projectName": "XpertLab",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-21",
-      "text": "Restructure the frontend into two distinct app entry points: (1) a Patient App that only loads patient-facing pages (Login, PatientHomePage, BookTestPage, SlotSelectionPage, MyBookingsPage, HomeCollectionPage, MyHomeCollectionsPage, ReportsPage, MyVitalsPage, ProfilePage), and (2) a Staff App that only loads staff-facing pages (Login, Phlebotomist pages, Admin pages, SubmitIncidentPage, AuditLogsPage, ProfilePage). Each app must have its own route configuration in App.tsx (or separate App files) so that the Patient App bundle contains zero staff modules and the Staff App bundle contains zero patient-only modules.",
+      "id": "REQ-1",
+      "text": "Add a global demo mode flag that can be activated from the StaffLoginScreen demo buttons (phlebotomist, lab admin, super admin). When demo mode is active, store the selected role and a `demoMode: true` flag in a context/state accessible throughout the entire StaffApp so all guarded features are unlocked.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-4",
+          "msg-5"
         ],
         "quotes": [
-          "make seprete app for patient another and in another app for Phlebotomist, Lab Admin, Super Admin"
+          "i want to test every feature make sure all function will open",
+          "in demo mode"
         ]
       },
       "acceptanceCriteria": [
-        "The Patient App loads and renders only patient-facing routes (/, /patient/*, /profile).",
-        "The Staff App loads and renders only staff-facing routes (/, /phlebotomist/*, /admin/*, /profile).",
-        "Neither app bundle imports or references the other app's page components.",
-        "Both apps share the same backend canister (no backend changes required).",
-        "Both apps use the same shared components (AppLayout, BottomNavigation, GradientButton, etc.) and design system.",
-        "The Patient App bottom navigation shows only patient nav items; the Staff App shows phlebotomist/admin nav items based on logged-in role.",
-        "Both apps load significantly faster than the combined single-bundle app."
+        "Clicking a demo role button on StaffLoginScreen enters demo mode with that role immediately (no Internet Identity required).",
+        "A persistent demo-mode banner is visible in StaffAppLayout while demo mode is active.",
+        "Demo mode flag and role are accessible via context to all child components and pages."
       ]
     },
     {
-      "id": "REQ-22",
-      "text": "Create a Patient App login/landing screen (frontend/src/PatientApp.tsx or equivalent entry) that presents XpertLab branding and an Internet Identity sign-in button. After authentication, if the user's role is 'patient', redirect to /patient/home. If the authenticated user has a non-patient role (staff), show an error message: 'This app is for patients only. Please use the XpertLab Staff App.'",
+      "id": "REQ-2",
+      "text": "In demo mode, bypass all GPS geofencing, GPS accuracy checks, mock-location detection, and speed-jump anomaly checks in PhlebotomistAttendancePage and AttendancePage. Instead of real GPS coordinates, inject a fixed mock coordinate (e.g. the configured lab location) so that geofence validation always passes.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-4",
+          "msg-5"
         ],
         "quotes": [
-          "make seprete app for patient"
+          "i want to test every feature make sure all function will open",
+          "in demo mode"
         ]
       },
       "acceptanceCriteria": [
-        "Patient App login screen displays XpertLab logo and branding.",
-        "Successful patient login redirects to /patient/home.",
-        "A non-patient role attempting to log in via the Patient App sees a clear error message and is not granted access.",
-        "Unauthenticated users are redirected to the login screen when accessing any patient route."
+        "When demo mode is active, the attendance page skips GPS permission requests and uses mock coordinates.",
+        "Geofence check always returns 'within range' in demo mode.",
+        "Mock-location detection is skipped; no security event is logged for mock location in demo mode.",
+        "The phlebotomist can start and end a shift from the attendance page without a real GPS fix."
       ]
     },
     {
-      "id": "REQ-23",
-      "text": "Create a Staff App login/landing screen (frontend/src/StaffApp.tsx or equivalent entry) that presents XpertLab Staff branding and an Internet Identity sign-in button. After authentication, redirect based on role: Phlebotomist → /phlebotomist/tasks, Lab Admin → /admin/bookings, Super Admin → /admin/audit-logs. If the authenticated user has the 'patient' role, show an error: 'This app is for staff only. Please use the XpertLab Patient App.'",
+      "id": "REQ-3",
+      "text": "In demo mode, bypass the device fingerprinting and device-binding enforcement on the attendance/shift pages. Skip the selfie capture step (or auto-accept it with a placeholder image) so the full shift start/end flow completes without a real camera.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-4",
+          "msg-5"
         ],
         "quotes": [
-          "another app for Phlebotomist, Lab Admin, Super Admin"
+          "i want to test every feature make sure all function will open",
+          "in demo mode"
         ]
       },
       "acceptanceCriteria": [
-        "Staff App login screen displays XpertLab Staff branding.",
-        "Phlebotomist login redirects to /phlebotomist/tasks.",
-        "Lab Admin login redirects to /admin/bookings.",
-        "Super Admin login redirects to /admin/audit-logs.",
-        "A patient-role user attempting to log in via the Staff App sees a clear error message and cannot proceed.",
-        "Unauthenticated users are redirected to the staff login screen when accessing any staff route."
+        "Device fingerprint check is skipped in demo mode; no device-mismatch security event is logged.",
+        "Selfie capture step is either hidden or auto-passes with a placeholder in demo mode.",
+        "Shift check-in and check-out complete successfully end-to-end in demo mode."
       ]
     },
     {
-      "id": "REQ-24",
-      "text": "Add a landing/selector page at the root URL (/) that presents two clearly labelled cards: 'Patient App' and 'Staff App'. Each card includes a short description and a button that navigates to the respective app's login flow. This serves as the app switcher entry point so users can self-select their app without needing two separate deployed URLs.",
+      "id": "REQ-4",
+      "text": "In demo mode, bypass the ShiftGuard so phlebotomist routes that normally require an active shift (task queue, home collection queue, vitals, hospital samples, QR scan, etc.) are all accessible without first starting a real shift. Provide a simulated active shift in demo mode.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-latest"
+          "msg-4",
+          "msg-5"
         ],
         "quotes": [
-          "make seprete app for patient another and in another app for Phlebotomist, Lab Admin, Super Admin"
+          "i want to test every feature make sure all function will open",
+          "in demo mode"
         ]
       },
       "acceptanceCriteria": [
-        "The root URL (/) displays a full-screen landing page with two app selection cards.",
-        "The 'Patient App' card navigates to the patient login flow.",
-        "The 'Staff App' card navigates to the staff login flow.",
-        "The landing page uses the XpertLab gradient branding (#0D47A1 → #26C6DA).",
-        "Already-authenticated users bypass the landing page and are redirected directly to their role's home screen."
+        "ShiftGuard allows navigation to all phlebotomist sub-pages when demo mode is active.",
+        "All phlebotomist pages (TaskQueuePage, HomeCollectionQueuePage, RecordVitalsPage, ScanCampQRPage, AddHospitalSamplePage, MyHospitalSamplesPage) render without redirection in demo mode.",
+        "No 'start shift first' gate screen is shown during demo mode."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "In demo mode, seed all data-dependent pages with realistic mock/stub data so every screen renders meaningfully rather than showing empty states. This includes: bookings list, home collection queue, hospital samples, reports list, audit logs, incidents, security logs, attendance history, and notifications.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4",
+          "msg-5"
+        ],
+        "quotes": [
+          "i want to test every feature make sure all function will open",
+          "in demo mode"
+        ]
+      },
+      "acceptanceCriteria": [
+        "When demo mode is active, all list pages show at least 2–3 plausible mock entries instead of empty states.",
+        "Mock data reflects the active demo role (e.g. phlebotomist demo shows phlebotomist-relevant bookings).",
+        "Admin demo role shows audit logs, incidents, and security log entries.",
+        "Notification bell shows at least one unread notification in demo mode."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "In demo mode, all mutating actions (status updates, report uploads, vitals submission, camp QR scan, incident submission, billing edits) should optimistically succeed with a toast confirmation without making real backend calls, or gracefully handle backend failures without crashing.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4",
+          "msg-5"
+        ],
+        "quotes": [
+          "i want to test every feature make sure all function will open",
+          "in demo mode"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Submitting any form or mutation in demo mode shows a success toast and updates local UI state.",
+        "No unhandled errors or blank screens appear when backend calls fail or are skipped in demo mode.",
+        "File upload flows (report upload, selfie, incident photo) accept any input and show a simulated progress/success state."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "Add a patient demo mode entry point on the PatientLoginScreen (or AppSelectorPage) so the Patient App can also be tested without Internet Identity. Patient demo mode should populate mock bookings, reports, home collection requests, vitals, and hospital samples.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4",
+          "msg-5"
+        ],
+        "quotes": [
+          "i want to test every feature make sure all function will open",
+          "in demo mode"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A 'Demo Patient' button is available on the patient login or app selector screen.",
+        "Clicking it enters patient demo mode with a mock patient profile.",
+        "All patient pages render with mock data: bookings, reports, home collections, vitals, hospital samples.",
+        "A demo banner is visible in PatientAppLayout while patient demo mode is active."
       ]
     }
   ],
   "constraints": [
-    "Do not modify backend/main.mo — both apps share the same single backend canister.",
-    "Do not edit files in frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "Shared components (AppLayout, BottomNavigation, GradientButton, MedicalCard, etc.) must remain shared and not be duplicated.",
-    "All existing page functionality must be preserved — only the routing/bundling separation changes."
+    "Demo mode must never disable security checks in production (non-demo) paths — it is purely a client-side testing layer.",
+    "Do not modify files listed in frontend.immutablePaths.",
+    "All demo mode logic must be additive and must not break existing authenticated flows."
   ],
   "nonGoals": [
-    "Creating two separate Motoko canisters or backend deployments.",
-    "Implementing a new authentication system — Internet Identity remains the auth provider.",
-    "Redesigning any existing page UI beyond what is needed for the split.",
-    "Adding new features or modules not already present in the codebase.",
-    "Creating two separate Vite build configurations or deploying to two separate URLs (a single-URL app switcher approach is used instead)."
+    "Persisting demo sessions to the backend.",
+    "Creating a separate backend canister or mock server for demo mode.",
+    "Changing the GPS accuracy threshold (already handled in a prior version).",
+    "Real Internet Identity integration changes."
   ],
   "imageRequirements": {
     "required": [],

@@ -30,6 +30,19 @@ export const Test = IDL.Record({
   'description' : IDL.Text,
   'price' : IDL.Nat,
 });
+export const Attendance = IDL.Record({
+  'status' : IDL.Text,
+  'totalWorkingMinutes' : IDL.Opt(IDL.Int),
+  'checkInSelfieUrl' : IDL.Text,
+  'checkInLong' : IDL.Float64,
+  'checkInTime' : IDL.Int,
+  'phlebotomistId' : IDL.Text,
+  'hospitalId' : IDL.Text,
+  'checkOutLong' : IDL.Opt(IDL.Float64),
+  'checkOutTime' : IDL.Opt(IDL.Int),
+  'checkInLat' : IDL.Float64,
+  'checkOutLat' : IDL.Opt(IDL.Float64),
+});
 export const AuditLog = IDL.Record({
   'actionType' : IDL.Text,
   'actorId' : IDL.Principal,
@@ -104,9 +117,33 @@ export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'phone' : IDL.Text,
 });
+export const HospitalSample = IDL.Record({
+  'mrp' : IDL.Float64,
+  'status' : IDL.Text,
+  'finalAmount' : IDL.Float64,
+  'createdAt' : IDL.Int,
+  'phlebotomistId' : IDL.Text,
+  'hospitalId' : IDL.Text,
+  'patientName' : IDL.Text,
+  'discount' : IDL.Float64,
+  'paymentMode' : IDL.Text,
+  'phone' : IDL.Text,
+  'pendingAmount' : IDL.Float64,
+  'amountReceived' : IDL.Float64,
+  'testId' : IDL.Text,
+});
 export const RBSTest = IDL.Record({
   'glucoseLevel' : IDL.Nat,
   'timestamp' : IDL.Int,
+});
+export const SecurityLog = IDL.Record({
+  'latitude' : IDL.Opt(IDL.Float64),
+  'userId' : IDL.Text,
+  'longitude' : IDL.Opt(IDL.Float64),
+  'deviceId' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'eventType' : IDL.Text,
+  'reason' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
@@ -139,6 +176,7 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'assignPhlebotomist' : IDL.Func([IDL.Text, IDL.Principal], [], []),
+  'bindDevice' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
   'createBooking' : IDL.Func([IDL.Text, IDL.Vec(Test), IDL.Text], [], []),
   'createHomeCollectionRequest' : IDL.Func(
       [
@@ -152,8 +190,41 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'createHospitalSample' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Float64,
+        IDL.Float64,
+        IDL.Float64,
+        IDL.Float64,
+        IDL.Float64,
+        IDL.Text,
+      ],
+      [],
+      [],
+    ),
+  'createSecurityLog' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Opt(IDL.Float64),
+        IDL.Opt(IDL.Float64),
+        IDL.Text,
+      ],
+      [],
+      [],
+    ),
+  'createSession' : IDL.Func([IDL.Text, IDL.Text], [], []),
   'createTest' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Nat], [], []),
   'deleteTest' : IDL.Func([IDL.Text], [], []),
+  'endShift' : IDL.Func([IDL.Text, IDL.Text, IDL.Float64, IDL.Float64], [], []),
+  'getActiveShift' : IDL.Func([IDL.Text], [IDL.Opt(Attendance)], ['query']),
+  'getAllActiveShifts' : IDL.Func([], [IDL.Vec(Attendance)], ['query']),
   'getAllAuditLogs' : IDL.Func([], [IDL.Vec(AuditLog)], ['query']),
   'getAllBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
   'getAllHomeCollectionRequests' : IDL.Func(
@@ -164,6 +235,11 @@ export const idlService = IDL.Service({
   'getAllIncidents' : IDL.Func([], [IDL.Vec(Incident)], ['query']),
   'getAllReports' : IDL.Func([], [IDL.Vec(Report)], ['query']),
   'getAllTests' : IDL.Func([], [IDL.Vec(Test)], ['query']),
+  'getAttendanceByPhlebotomist' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(Attendance)],
+      ['query'],
+    ),
   'getBPReadings' : IDL.Func(
       [IDL.Principal, IDL.Text],
       [IDL.Vec(BPReading)],
@@ -171,6 +247,30 @@ export const idlService = IDL.Service({
     ),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getHospitalSamplesByHospital' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(HospitalSample)],
+      ['query'],
+    ),
+  'getHospitalSamplesByPhlebotomist' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(HospitalSample)],
+      ['query'],
+    ),
+  'getHospitalSamplesByPhone' : IDL.Func(
+      [IDL.Text],
+      [
+        IDL.Record({
+          'totalReceived' : IDL.Float64,
+          'count' : IDL.Nat,
+          'samples' : IDL.Vec(HospitalSample),
+          'totalAmount' : IDL.Float64,
+          'totalPending' : IDL.Float64,
+          'totalDiscount' : IDL.Float64,
+        }),
+      ],
+      ['query'],
+    ),
   'getMyBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
   'getMyHomeCollectionRequests' : IDL.Func(
       [],
@@ -182,6 +282,11 @@ export const idlService = IDL.Service({
   'getRBSReadings' : IDL.Func(
       [IDL.Principal, IDL.Text],
       [IDL.Vec(RBSTest)],
+      ['query'],
+    ),
+  'getSecurityLogs' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Vec(SecurityLog)],
       ['query'],
     ),
   'getTest' : IDL.Func([IDL.Text], [Test], ['query']),
@@ -197,7 +302,13 @@ export const idlService = IDL.Service({
       [],
     ),
   'recordRBSReading' : IDL.Func([IDL.Principal, IDL.Text, IDL.Nat], [], []),
+  'resetDeviceBinding' : IDL.Func([IDL.Text], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'startShift' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Float64, IDL.Float64, IDL.Text],
+      [],
+      [],
+    ),
   'submitIncident' : IDL.Func(
       [
         IDL.Text,
@@ -238,11 +349,17 @@ export const idlService = IDL.Service({
       [],
       [],
     ),
+  'updateHospitalSampleBilling' : IDL.Func(
+      [IDL.Text, IDL.Float64, IDL.Float64, IDL.Float64, IDL.Float64, IDL.Text],
+      [],
+      [],
+    ),
   'uploadReport' : IDL.Func(
       [IDL.Text, IDL.Principal, IDL.Text, ExternalBlob],
       [],
       [],
     ),
+  'validateSession' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -269,6 +386,19 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'description' : IDL.Text,
     'price' : IDL.Nat,
+  });
+  const Attendance = IDL.Record({
+    'status' : IDL.Text,
+    'totalWorkingMinutes' : IDL.Opt(IDL.Int),
+    'checkInSelfieUrl' : IDL.Text,
+    'checkInLong' : IDL.Float64,
+    'checkInTime' : IDL.Int,
+    'phlebotomistId' : IDL.Text,
+    'hospitalId' : IDL.Text,
+    'checkOutLong' : IDL.Opt(IDL.Float64),
+    'checkOutTime' : IDL.Opt(IDL.Int),
+    'checkInLat' : IDL.Float64,
+    'checkOutLat' : IDL.Opt(IDL.Float64),
   });
   const AuditLog = IDL.Record({
     'actionType' : IDL.Text,
@@ -344,9 +474,33 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'phone' : IDL.Text,
   });
+  const HospitalSample = IDL.Record({
+    'mrp' : IDL.Float64,
+    'status' : IDL.Text,
+    'finalAmount' : IDL.Float64,
+    'createdAt' : IDL.Int,
+    'phlebotomistId' : IDL.Text,
+    'hospitalId' : IDL.Text,
+    'patientName' : IDL.Text,
+    'discount' : IDL.Float64,
+    'paymentMode' : IDL.Text,
+    'phone' : IDL.Text,
+    'pendingAmount' : IDL.Float64,
+    'amountReceived' : IDL.Float64,
+    'testId' : IDL.Text,
+  });
   const RBSTest = IDL.Record({
     'glucoseLevel' : IDL.Nat,
     'timestamp' : IDL.Int,
+  });
+  const SecurityLog = IDL.Record({
+    'latitude' : IDL.Opt(IDL.Float64),
+    'userId' : IDL.Text,
+    'longitude' : IDL.Opt(IDL.Float64),
+    'deviceId' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'eventType' : IDL.Text,
+    'reason' : IDL.Text,
   });
   
   return IDL.Service({
@@ -379,6 +533,7 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'assignPhlebotomist' : IDL.Func([IDL.Text, IDL.Principal], [], []),
+    'bindDevice' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
     'createBooking' : IDL.Func([IDL.Text, IDL.Vec(Test), IDL.Text], [], []),
     'createHomeCollectionRequest' : IDL.Func(
         [
@@ -392,8 +547,45 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'createHospitalSample' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Text,
+        ],
+        [],
+        [],
+      ),
+    'createSecurityLog' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Opt(IDL.Float64),
+          IDL.Opt(IDL.Float64),
+          IDL.Text,
+        ],
+        [],
+        [],
+      ),
+    'createSession' : IDL.Func([IDL.Text, IDL.Text], [], []),
     'createTest' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Nat], [], []),
     'deleteTest' : IDL.Func([IDL.Text], [], []),
+    'endShift' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Float64, IDL.Float64],
+        [],
+        [],
+      ),
+    'getActiveShift' : IDL.Func([IDL.Text], [IDL.Opt(Attendance)], ['query']),
+    'getAllActiveShifts' : IDL.Func([], [IDL.Vec(Attendance)], ['query']),
     'getAllAuditLogs' : IDL.Func([], [IDL.Vec(AuditLog)], ['query']),
     'getAllBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
     'getAllHomeCollectionRequests' : IDL.Func(
@@ -404,6 +596,11 @@ export const idlFactory = ({ IDL }) => {
     'getAllIncidents' : IDL.Func([], [IDL.Vec(Incident)], ['query']),
     'getAllReports' : IDL.Func([], [IDL.Vec(Report)], ['query']),
     'getAllTests' : IDL.Func([], [IDL.Vec(Test)], ['query']),
+    'getAttendanceByPhlebotomist' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(Attendance)],
+        ['query'],
+      ),
     'getBPReadings' : IDL.Func(
         [IDL.Principal, IDL.Text],
         [IDL.Vec(BPReading)],
@@ -411,6 +608,30 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getHospitalSamplesByHospital' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(HospitalSample)],
+        ['query'],
+      ),
+    'getHospitalSamplesByPhlebotomist' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(HospitalSample)],
+        ['query'],
+      ),
+    'getHospitalSamplesByPhone' : IDL.Func(
+        [IDL.Text],
+        [
+          IDL.Record({
+            'totalReceived' : IDL.Float64,
+            'count' : IDL.Nat,
+            'samples' : IDL.Vec(HospitalSample),
+            'totalAmount' : IDL.Float64,
+            'totalPending' : IDL.Float64,
+            'totalDiscount' : IDL.Float64,
+          }),
+        ],
+        ['query'],
+      ),
     'getMyBookings' : IDL.Func([], [IDL.Vec(Booking)], ['query']),
     'getMyHomeCollectionRequests' : IDL.Func(
         [],
@@ -422,6 +643,11 @@ export const idlFactory = ({ IDL }) => {
     'getRBSReadings' : IDL.Func(
         [IDL.Principal, IDL.Text],
         [IDL.Vec(RBSTest)],
+        ['query'],
+      ),
+    'getSecurityLogs' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Vec(SecurityLog)],
         ['query'],
       ),
     'getTest' : IDL.Func([IDL.Text], [Test], ['query']),
@@ -437,7 +663,13 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'recordRBSReading' : IDL.Func([IDL.Principal, IDL.Text, IDL.Nat], [], []),
+    'resetDeviceBinding' : IDL.Func([IDL.Text], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'startShift' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Float64, IDL.Float64, IDL.Text],
+        [],
+        [],
+      ),
     'submitIncident' : IDL.Func(
         [
           IDL.Text,
@@ -478,11 +710,24 @@ export const idlFactory = ({ IDL }) => {
         [],
         [],
       ),
+    'updateHospitalSampleBilling' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Text,
+        ],
+        [],
+        [],
+      ),
     'uploadReport' : IDL.Func(
         [IDL.Text, IDL.Principal, IDL.Text, ExternalBlob],
         [],
         [],
       ),
+    'validateSession' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], ['query']),
   });
 };
 

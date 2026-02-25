@@ -2,15 +2,20 @@ import Map "mo:core/Map";
 import Iter "mo:core/Iter";
 import Time "mo:core/Time";
 import Array "mo:core/Array";
+import Float "mo:core/Float";
+import List "mo:core/List";
+import Text "mo:core/Text";
+import Nat "mo:core/Nat";
+import Int "mo:core/Int";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
-
-// Apply migration for persistent state changes
+// Persistent actor with data migration enabled
 
 actor {
   // Application-level role stored in user profile (informational, for UI routing)
@@ -93,6 +98,61 @@ actor {
     timestamp : Int;
   };
 
+  type HospitalSample = {
+    patientName : Text;
+    phone : Text;
+    hospitalId : Text;
+    phlebotomistId : Text;
+    testId : Text;
+    mrp : Float;
+    discount : Float;
+    finalAmount : Float;
+    amountReceived : Float;
+    pendingAmount : Float;
+    paymentMode : Text;
+    status : Text;
+    createdAt : Int;
+  };
+
+  type Attendance = {
+    phlebotomistId : Text;
+    hospitalId : Text;
+    checkInTime : Int;
+    checkOutTime : ?Int;
+    checkInLat : Float;
+    checkInLong : Float;
+    checkOutLat : ?Float;
+    checkOutLong : ?Float;
+    checkInSelfieUrl : Text;
+    totalWorkingMinutes : ?Int;
+    status : Text;
+  };
+
+  type DeviceBinding = {
+    userId : Text;
+    deviceId : Text;
+    deviceModel : Text;
+    osVersion : Text;
+    boundAt : Int;
+  };
+
+  type Session = {
+    userId : Text;
+    sessionToken : Text;
+    createdAt : Int;
+    status : Text;
+  };
+
+  type SecurityLog = {
+    userId : Text;
+    eventType : Text;
+    deviceId : Text;
+    latitude : ?Float;
+    longitude : ?Float;
+    timestamp : Int;
+    reason : Text;
+  };
+
   include MixinStorage();
 
   // Initialize the access control state
@@ -108,6 +168,16 @@ actor {
   let rbsReadings = Map.empty<Text, [RBSTest]>();
   let incidents = Map.empty<Text, Incident>();
   let auditLogs = Map.empty<Int, AuditLog>();
+
+  let hospitalSamples = Map.empty<Text, HospitalSample>();
+  let attendances = Map.empty<Text, Attendance>();
+  let deviceBindings = Map.empty<Text, DeviceBinding>();
+  let sessions = Map.empty<Text, Session>();
+  let securityLogs = Map.empty<Text, SecurityLog>();
+
+  // Constants
+  let allowedDiscountPercentage = 20.0;
+  let maxDistance = 100.0;
 
   // ── User Profile ──────────────────────────────────────────────────────────
 
@@ -207,7 +277,7 @@ actor {
     };
   };
 
-  /// Registered users can view their own bookings; admins can view all
+  /// Registered users can view their own bookings
   public query ({ caller }) func getMyBookings() : async [Booking] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only registered users can view bookings");
@@ -273,7 +343,7 @@ actor {
     };
   };
 
-  /// Registered users can view their own home collection requests; admins see all
+  /// Registered users can view their own home collection requests
   public query ({ caller }) func getMyHomeCollectionRequests() : async [HomeCollectionRequest] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only registered users can view home collection requests");
@@ -334,7 +404,7 @@ actor {
     addAuditLog(caller, "UploadReport", id);
   };
 
-  /// Registered users can view their own reports; admins can view all
+  /// Registered users can view their own reports
   public query ({ caller }) func getMyReports() : async [Report] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only registered users can view reports");
@@ -397,7 +467,6 @@ actor {
       if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
         Runtime.trap("Unauthorized: Only registered users can view BP readings");
       };
-      // Non-admin registered users can only view their own readings
       Runtime.trap("Unauthorized: Can only view your own BP readings");
     };
     let key = patientId.toText() # ":" # bookingId;
@@ -466,6 +535,447 @@ actor {
       Runtime.trap("Unauthorized: Only admins can view audit logs");
     };
     auditLogs.values().toArray();
+  };
+
+  // ── Hospital Sample ───────────────────────────────────────────────────────
+
+  /// Phlebotomist-only (registered user): create a hospital sample with status SAMPLE_COLLECTED
+  public shared ({ caller }) func createHospitalSample(
+    patientName : Text,
+    phone : Text,
+    hospitalId : Text,
+    phlebotomistId : Text,
+    testId : Text,
+    mrp : Float,
+    discount : Float,
+    finalAmount : Float,
+    amountReceived : Float,
+    pendingAmount : Float,
+    paymentMode : Text,
+  ) : async () {
+    // Only authenticated (registered) users — i.e. phlebotomists — may create samples
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only phlebotomists can create hospital samples");
+    };
+
+    // Server-side discount cap validation
+    if (mrp <= 0.0) {
+      Runtime.trap("MRP must be greater than zero");
+    };
+    let discountPercentage = (discount / mrp) * 100.0;
+    if (discountPercentage > allowedDiscountPercentage) {
+      Runtime.trap("Discount exceeds the allowed limit of 20%");
+    };
+
+    let id = hospitalId # ":" # testId # ":" # Time.now().toText();
+    let sample : HospitalSample = {
+      patientName;
+      phone;
+      hospitalId;
+      phlebotomistId;
+      testId;
+      mrp;
+      discount;
+      finalAmount;
+      amountReceived;
+      pendingAmount;
+      paymentMode;
+      status = "SAMPLE_COLLECTED";
+      createdAt = Time.now();
+    };
+    hospitalSamples.add(id, sample);
+    addAuditLog(caller, "CreateHospitalSample", id);
+  };
+
+  /// Admin-only: get hospital samples filtered by hospitalId
+  public query ({ caller }) func getHospitalSamplesByHospital(hospitalId : Text) : async [HospitalSample] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view hospital samples by hospital");
+    };
+    let all = hospitalSamples.values().toArray();
+    all.filter(func(sample : HospitalSample) : Bool { sample.hospitalId == hospitalId });
+  };
+
+  /// Admin-only: get hospital samples filtered by phlebotomistId
+  public query ({ caller }) func getHospitalSamplesByPhlebotomist(phlebotomistId : Text) : async [HospitalSample] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view hospital samples by phlebotomist");
+    };
+    let all = hospitalSamples.values().toArray();
+    all.filter(func(sample : HospitalSample) : Bool { sample.phlebotomistId == phlebotomistId });
+  };
+
+  /// Patient (registered user) or admin: get hospital samples filtered by phone number.
+  /// This supports the patient-linked view. Any authenticated user may query by phone
+  /// (patients look up their own records; admins may look up any).
+  public query ({ caller }) func getHospitalSamplesByPhone(phone : Text) : async {
+    samples : [HospitalSample];
+    totalAmount : Float;
+    totalDiscount : Float;
+    totalReceived : Float;
+    totalPending : Float;
+    count : Nat;
+  } {
+    // Must be at least a registered user (patient or admin); guests are blocked
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only registered users or admins can view samples by phone");
+    };
+
+    let all = hospitalSamples.values().toArray();
+    let filtered = all.filter(func(sample : HospitalSample) : Bool { sample.phone == phone });
+
+    let count = filtered.size();
+    let totals = filtered.foldLeft(
+      {
+        totalAmount = 0.0;
+        totalDiscount = 0.0;
+        totalReceived = 0.0;
+        totalPending = 0.0;
+      },
+      func(
+        acc : {
+          totalAmount : Float;
+          totalDiscount : Float;
+          totalReceived : Float;
+          totalPending : Float;
+        },
+        sample : HospitalSample,
+      ) : {
+        totalAmount : Float;
+        totalDiscount : Float;
+        totalReceived : Float;
+        totalPending : Float;
+      } {
+        {
+          totalAmount = acc.totalAmount + sample.finalAmount;
+          totalDiscount = acc.totalDiscount + sample.discount;
+          totalReceived = acc.totalReceived + sample.amountReceived;
+          totalPending = acc.totalPending + sample.pendingAmount;
+        };
+      },
+    );
+
+    {
+      samples = filtered;
+      count;
+      totalAmount = totals.totalAmount;
+      totalDiscount = totals.totalDiscount;
+      totalReceived = totals.totalReceived;
+      totalPending = totals.totalPending;
+    };
+  };
+
+  /// Admin-only: update billing fields of a hospital sample
+  public shared ({ caller }) func updateHospitalSampleBilling(
+    id : Text,
+    discount : Float,
+    finalAmount : Float,
+    amountReceived : Float,
+    pendingAmount : Float,
+    paymentMode : Text,
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update hospital sample billing");
+    };
+
+    switch (hospitalSamples.get(id)) {
+      case (null) { Runtime.trap("Hospital sample not found") };
+      case (?sample) {
+        // Server-side discount cap validation on update as well
+        if (sample.mrp <= 0.0) {
+          Runtime.trap("MRP must be greater than zero");
+        };
+        let discountPercentage = (discount / sample.mrp) * 100.0;
+        if (discountPercentage > allowedDiscountPercentage) {
+          Runtime.trap("Discount exceeds the allowed limit of 20%");
+        };
+
+        let updatedSample : HospitalSample = {
+          sample with
+          discount;
+          finalAmount;
+          amountReceived;
+          pendingAmount;
+          paymentMode;
+        };
+        hospitalSamples.add(id, updatedSample);
+        addAuditLog(caller, "UpdateHospitalSampleBilling", id);
+      };
+    };
+  };
+
+  // ── Attendance Management ──────────────────────────────────────────────────
+
+  /// Phlebotomist-only (registered user): start a shift.
+  /// The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+  /// Validates: no existing ACTIVE shift for this phlebotomist.
+  public shared ({ caller }) func startShift(
+    phlebotomistId : Text,
+    hospitalId : Text,
+    checkInLat : Float,
+    checkInLong : Float,
+    checkInSelfieUrl : Text,
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only phlebotomists can start a shift");
+    };
+    // Ownership: the caller must be the phlebotomist whose ID is provided
+    if (caller.toText() != phlebotomistId) {
+      Runtime.trap("Unauthorized: You can only start your own shift");
+    };
+
+    // Check for an existing ACTIVE shift
+    let activeKey = phlebotomistId # ":ACTIVE";
+    switch (attendances.get(activeKey)) {
+      case (?existing) {
+        if (existing.status == "ACTIVE") {
+          Runtime.trap("Active shift already exists for this phlebotomist");
+        };
+      };
+      case (null) {};
+    };
+
+    let shiftKey = phlebotomistId # ":" # Time.now().toText();
+    let newShift : Attendance = {
+      phlebotomistId;
+      hospitalId;
+      checkInTime = Time.now();
+      checkOutTime = null;
+      checkInLat;
+      checkInLong;
+      checkOutLat = null;
+      checkOutLong = null;
+      checkInSelfieUrl;
+      totalWorkingMinutes = null;
+      status = "ACTIVE";
+    };
+    attendances.add(shiftKey, newShift);
+    attendances.add(activeKey, newShift);
+    addAuditLog(caller, "StartShift", phlebotomistId);
+  };
+
+  /// Phlebotomist-only (registered user): end their own active shift.
+  /// The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+  public shared ({ caller }) func endShift(
+    phlebotomistId : Text,
+    hospitalId : Text,
+    checkOutLat : Float,
+    checkOutLong : Float,
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only phlebotomists can end a shift");
+    };
+    // Ownership: the caller must be the phlebotomist whose ID is provided
+    if (caller.toText() != phlebotomistId) {
+      Runtime.trap("Unauthorized: You can only end your own shift");
+    };
+
+    let activeKey = phlebotomistId # ":ACTIVE";
+    switch (attendances.get(activeKey)) {
+      case (null) { Runtime.trap("No active shift found for this phlebotomist") };
+      case (?shift) {
+        if (shift.status != "ACTIVE") {
+          Runtime.trap("No active shift found for this phlebotomist");
+        };
+        let checkOutTime = Time.now();
+        // totalWorkingMinutes = (checkOutTime - checkInTime) / 60_000_000_000 (nanoseconds to minutes)
+        let totalWorkingMinutes = (checkOutTime - shift.checkInTime) / 60_000_000_000;
+        let updatedShift : Attendance = {
+          shift with
+          checkOutTime = ?checkOutTime;
+          checkOutLat = ?checkOutLat;
+          checkOutLong = ?checkOutLong;
+          totalWorkingMinutes = ?totalWorkingMinutes;
+          status = "COMPLETED";
+        };
+        attendances.add(activeKey, updatedShift);
+        addAuditLog(caller, "EndShift", phlebotomistId);
+      };
+    };
+  };
+
+  /// Phlebotomist-only (registered user): get their own active shift.
+  /// The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+  public query ({ caller }) func getActiveShift(phlebotomistId : Text) : async ?Attendance {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only phlebotomists can get their active shift");
+    };
+    // Ownership: the caller may only retrieve their own active shift
+    if (caller.toText() != phlebotomistId) {
+      Runtime.trap("Unauthorized: You can only view your own active shift");
+    };
+
+    let key = phlebotomistId # ":ACTIVE";
+    switch (attendances.get(key)) {
+      case (null) { null };
+      case (?shift) {
+        if (shift.status == "ACTIVE") { ?shift } else { null };
+      };
+    };
+  };
+
+  /// Admin-only: get all attendance records for a specific phlebotomist
+  public query ({ caller }) func getAttendanceByPhlebotomist(phlebotomistId : Text) : async [Attendance] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view attendance records");
+    };
+    let all = attendances.values().toArray();
+    all.filter(func(shift : Attendance) : Bool { shift.phlebotomistId == phlebotomistId });
+  };
+
+  /// Admin-only: get all currently active shifts
+  public query ({ caller }) func getAllActiveShifts() : async [Attendance] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view all active shifts");
+    };
+    let all = attendances.values().toArray();
+    all.filter(func(shift : Attendance) : Bool { shift.status == "ACTIVE" });
+  };
+
+  // ── Device Binding ────────────────────────────────────────────────────────
+
+  /// Authenticated users only: bind a device on first login.
+  /// If a binding already exists for a different deviceId, returns an error.
+  /// The caller must be the user identified by userId (ownership check).
+  public shared ({ caller }) func bindDevice(
+    userId : Text,
+    deviceId : Text,
+    deviceModel : Text,
+    osVersion : Text,
+  ) : async () {
+    // Must be an authenticated user — guests cannot bind devices
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can bind a device");
+    };
+    // Ownership: the caller may only bind their own userId
+    if (caller.toText() != userId) {
+      Runtime.trap("Unauthorized: You can only bind a device to your own account");
+    };
+
+    switch (deviceBindings.get(userId)) {
+      case (null) {
+        // No existing binding — store the new one
+        let newBinding : DeviceBinding = {
+          userId;
+          deviceId;
+          deviceModel;
+          osVersion;
+          boundAt = Time.now();
+        };
+        deviceBindings.add(userId, newBinding);
+        addAuditLog(caller, "BindDevice", userId);
+      };
+      case (?existing) {
+        if (existing.deviceId != deviceId) {
+          // A different device is already bound — block and surface the error
+          Runtime.trap("This account is already registered on another device. Contact admin.");
+        };
+        // Same device — silently succeed (idempotent)
+      };
+    };
+  };
+
+  /// Admin-only: remove the device binding for a given userId
+  public shared ({ caller }) func resetDeviceBinding(userId : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can reset device bindings");
+    };
+    deviceBindings.remove(userId);
+    addAuditLog(caller, "ResetDeviceBinding", userId);
+  };
+
+  // ── Session Management ────────────────────────────────────────────────────
+
+  /// Authenticated users only: create (or replace) a session token.
+  /// On login, a new ACTIVE session is written and any previous session for the
+  /// same userId is implicitly superseded (the map entry is overwritten).
+  /// The caller must be the user identified by userId (ownership check).
+  public shared ({ caller }) func createSession(userId : Text, sessionToken : Text) : async () {
+    // Must be an authenticated user — guests cannot create sessions
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can create sessions");
+    };
+    // Ownership: the caller may only create a session for their own userId
+    if (caller.toText() != userId) {
+      Runtime.trap("Unauthorized: You can only create a session for your own account");
+    };
+
+    // Always write the new ACTIVE session, overwriting any previous one
+    let newSession : Session = {
+      userId;
+      sessionToken;
+      createdAt = Time.now();
+      status = "ACTIVE";
+    };
+    sessions.add(userId, newSession);
+    addAuditLog(caller, "CreateSession", userId);
+  };
+
+  /// Authenticated users only: validate that the presented session token matches
+  /// the current ACTIVE session for the given userId.
+  /// Returns true if valid, false if the session has been superseded.
+  /// The caller must be the user identified by userId (ownership check).
+  public query ({ caller }) func validateSession(userId : Text, sessionToken : Text) : async Bool {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can validate sessions");
+    };
+    if (caller.toText() != userId) {
+      Runtime.trap("Unauthorized: You can only validate your own session");
+    };
+
+    switch (sessions.get(userId)) {
+      case (null) { false };
+      case (?session) {
+        session.status == "ACTIVE" and session.sessionToken == sessionToken;
+      };
+    };
+  };
+
+  // ── Security Logging ──────────────────────────────────────────────────────
+
+  /// Authenticated users (phlebotomists) or system: write a security log entry.
+  /// No role restriction beyond being an authenticated user — guests are blocked.
+  public shared ({ caller }) func createSecurityLog(
+    userId : Text,
+    eventType : Text,
+    deviceId : Text,
+    latitude : ?Float,
+    longitude : ?Float,
+    reason : Text,
+  ) : async () {
+    // Must be at least a registered (authenticated) user; anonymous guests are blocked
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can create security logs");
+    };
+
+    let logId = userId # ":" # eventType # ":" # Time.now().toText();
+    let newLog : SecurityLog = {
+      userId;
+      eventType;
+      deviceId;
+      latitude;
+      longitude;
+      timestamp = Time.now();
+      reason;
+    };
+    securityLogs.add(logId, newLog);
+  };
+
+  /// Admin/super-admin only: retrieve security logs, optionally filtered by userId and eventType.
+  /// Pass empty strings to skip a filter.
+  public query ({ caller }) func getSecurityLogs(userId : Text, eventType : Text) : async [SecurityLog] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view security logs");
+    };
+
+    let all = securityLogs.values().toArray();
+    all.filter(
+      func(log : SecurityLog) : Bool {
+        let matchesUser = userId == "" or log.userId == userId;
+        let matchesEvent = eventType == "" or log.eventType == eventType;
+        matchesUser and matchesEvent;
+      }
+    );
   };
 
   // ── Internal helpers ──────────────────────────────────────────────────────

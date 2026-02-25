@@ -1,14 +1,16 @@
 import React from 'react';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { Shield, ClipboardList, Upload, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Shield, ClipboardList, Upload, AlertTriangle, BarChart3, FlaskConical, Crown, Beaker } from 'lucide-react';
 import GradientButton from '../shared/GradientButton';
+import { AppRole } from '../../backend';
 
 interface StaffLoginScreenProps {
   showRoleError?: boolean;
+  onDemoMode?: (role: AppRole) => void;
 }
 
-export default function StaffLoginScreen({ showRoleError = false }: StaffLoginScreenProps) {
+export default function StaffLoginScreen({ showRoleError = false, onDemoMode }: StaffLoginScreenProps) {
   const { login, clear, loginStatus, identity } = useInternetIdentity();
   const queryClient = useQueryClient();
   const isLoggingIn = loginStatus === 'logging-in';
@@ -34,6 +36,33 @@ export default function StaffLoginScreen({ showRoleError = false }: StaffLoginSc
     { icon: Upload, label: 'Upload Reports', desc: 'Upload lab results' },
     { icon: AlertTriangle, label: 'Incident Reports', desc: 'Submit & review incidents' },
     { icon: BarChart3, label: 'Audit Logs', desc: 'Full system audit trail' },
+  ];
+
+  const demoRoles = [
+    {
+      role: AppRole.phlebotomist,
+      label: 'Phlebotomist',
+      emoji: '🩸',
+      icon: FlaskConical,
+      desc: 'Task Queue & Collections',
+      color: 'from-blue-500 to-cyan-500',
+    },
+    {
+      role: AppRole.labAdmin,
+      label: 'Lab Admin',
+      emoji: '🔬',
+      icon: Beaker,
+      desc: 'Bookings & Reports',
+      color: 'from-violet-500 to-purple-500',
+    },
+    {
+      role: AppRole.superAdmin,
+      label: 'Super Admin',
+      emoji: '👑',
+      icon: Crown,
+      desc: 'Full System Access',
+      color: 'from-amber-500 to-orange-500',
+    },
   ];
 
   return (
@@ -76,7 +105,7 @@ export default function StaffLoginScreen({ showRoleError = false }: StaffLoginSc
           )}
 
           {/* Login Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-xl mb-6">
+          <div className="bg-white rounded-2xl p-6 shadow-xl mb-4">
             <div className="text-center mb-6">
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-secondary to-primary flex items-center justify-center mx-auto mb-3 shadow-md">
                 <Shield className="w-7 h-7 text-white" />
@@ -108,6 +137,40 @@ export default function StaffLoginScreen({ showRoleError = false }: StaffLoginSc
             <p className="text-center text-xs text-muted-foreground mt-3">
               Secure, private authentication — no passwords needed
             </p>
+
+            {/* Divider */}
+            {onDemoMode && (
+              <>
+                <div className="flex items-center gap-3 my-5">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground font-medium px-1">OR TRY DEMO MODE</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                {/* Demo Mode Section */}
+                <div>
+                  <p className="text-center text-xs text-muted-foreground mb-3">
+                    Explore the app instantly — no login required
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {demoRoles.map(({ role, label, emoji, desc, color }) => (
+                      <button
+                        key={role}
+                        onClick={() => onDemoMode(role)}
+                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 border-transparent bg-gradient-to-br ${color} text-white shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all duration-150`}
+                      >
+                        <span className="text-xl leading-none">{emoji}</span>
+                        <span className="text-xs font-bold leading-tight text-center">{label}</span>
+                        <span className="text-[10px] leading-tight text-white/80 text-center">{desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-center text-[10px] text-muted-foreground mt-2">
+                    ⚠️ Demo data only — no real backend calls
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Features */}

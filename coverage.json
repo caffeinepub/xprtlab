@@ -1,104 +1,97 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-24T15:36:53.614Z",
+  "generatedAt": "2026-02-25T02:43:55.427Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 7,
+    "implemented": 0,
     "items": [
       {
-        "id": "REQ-21",
-        "summary": "Restructure the frontend into two distinct app entry points: (1) a Patient App that only loads patient-facing pages (Login, PatientHomePage, BookTestPage, SlotSelectionPage, MyBookingsPage, HomeCollectionPage, MyHomeCollectionsPage, ReportsPage, MyVitalsPage, ProfilePage), and (2) a Staff App that only loads staff-facing pages (Login, Phlebotomist pages, Admin pages, SubmitIncidentPage, AuditLogsPage, ProfilePage). Each app must have its own route configuration in App.tsx (or separate App files) so that the Patient App bundle contains zero staff modules and the Staff App bundle contains zero patient-only modules.",
-        "status": "implemented",
+        "id": "REQ-1",
+        "summary": "Add a global demo mode flag that can be activated from the StaffLoginScreen demo buttons (phlebotomist, lab admin, super admin). When demo mode is active, store the selected role and a `demoMode: true` flag in a context/state accessible throughout the entire StaffApp so all guarded features are unlocked.",
+        "status": "missing",
         "plannedFiles": [
-          "frontend/src/PatientApp.tsx",
-          "frontend/src/StaffApp.tsx",
-          "frontend/src/utils/roleConfig.ts",
-          "frontend/src/components/layout/BottomNavigation.tsx",
-          "frontend/index.html",
-          "frontend/src/main.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/PatientApp.tsx",
+          "frontend/src/contexts/DemoModeContext.tsx",
+          "frontend/src/components/auth/StaffLoginScreen.tsx",
+          "frontend/src/components/layout/StaffAppLayout.tsx",
           "frontend/src/StaffApp.tsx"
-        ]
+        ],
+        "matchedFiles": []
       },
       {
-        "id": "REQ-22",
-        "summary": "Create a Patient App login/landing screen (frontend/src/PatientApp.tsx or equivalent entry) that presents XpertLab branding and an Internet Identity sign-in button. After authentication, if the user's role is 'patient', redirect to /patient/home. If the authenticated user has a non-patient role (staff), show an error message: 'This app is for patients only. Please use the XpertLab Staff App.'",
-        "status": "implemented",
+        "id": "REQ-2",
+        "summary": "In demo mode, bypass all GPS geofencing, GPS accuracy checks, mock-location detection, and speed-jump anomaly checks in PhlebotomistAttendancePage and AttendancePage. Instead of real GPS coordinates, inject a fixed mock coordinate (e.g. the configured lab location) so that geofence validation always passes.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-3",
+        "summary": "In demo mode, bypass the device fingerprinting and device-binding enforcement on the attendance/shift pages. Skip the selfie capture step (or auto-accept it with a placeholder image) so the full shift start/end flow completes without a real camera.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-4",
+        "summary": "In demo mode, bypass the ShiftGuard so phlebotomist routes that normally require an active shift (task queue, home collection queue, vitals, hospital samples, QR scan, etc.) are all accessible without first starting a real shift. Provide a simulated active shift in demo mode.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/components/layout/ShiftGuard.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-5",
+        "summary": "In demo mode, seed all data-dependent pages with realistic mock/stub data so every screen renders meaningfully rather than showing empty states. This includes: bookings list, home collection queue, hospital samples, reports list, audit logs, incidents, security logs, attendance history, and notifications.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/utils/mockData.ts",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/hooks/useNotifications.ts"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-6",
+        "summary": "In demo mode, all mutating actions (status updates, report uploads, vitals submission, camp QR scan, incident submission, billing edits) should optimistically succeed with a toast confirmation without making real backend calls, or gracefully handle backend failures without crashing.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/admin/UploadReportPage.tsx",
+          "frontend/src/pages/staff/SubmitIncidentPage.tsx"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-7",
+        "summary": "Add a patient demo mode entry point on the PatientLoginScreen (or AppSelectorPage) so the Patient App can also be tested without Internet Identity. Patient demo mode should populate mock bookings, reports, home collection requests, vitals, and hospital samples.",
+        "status": "missing",
         "plannedFiles": [
           "frontend/src/components/auth/PatientLoginScreen.tsx",
-          "frontend/src/PatientApp.tsx"
+          "frontend/src/components/layout/PatientAppLayout.tsx",
+          "frontend/src/PatientApp.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
-        "matchedFiles": [
-          "frontend/src/components/auth/PatientLoginScreen.tsx",
-          "frontend/src/PatientApp.tsx"
-        ]
-      },
-      {
-        "id": "REQ-23",
-        "summary": "Create a Staff App login/landing screen (frontend/src/StaffApp.tsx or equivalent entry) that presents XpertLab Staff branding and an Internet Identity sign-in button. After authentication, redirect based on role: Phlebotomist → /phlebotomist/tasks, Lab Admin → /admin/bookings, Super Admin → /admin/audit-logs. If the authenticated user has the 'patient' role, show an error: 'This app is for staff only. Please use the XpertLab Patient App.'",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/auth/StaffLoginScreen.tsx",
-          "frontend/src/StaffApp.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/auth/StaffLoginScreen.tsx",
-          "frontend/src/StaffApp.tsx"
-        ]
-      },
-      {
-        "id": "REQ-24",
-        "summary": "Add a landing/selector page at the root URL (/) that presents two clearly labelled cards: 'Patient App' and 'Staff App'. Each card includes a short description and a button that navigates to the respective app's login flow. This serves as the app switcher entry point so users can self-select their app without needing two separate deployed URLs.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/AppSelectorPage.tsx",
-          "frontend/src/main.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/AppSelectorPage.tsx",
-          "frontend/src/App.tsx"
-        ]
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
     "build-request.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/PatientApp.tsx",
-    "frontend/src/StaffApp.tsx",
-    "frontend/src/components/auth/PatientLoginScreen.tsx",
-    "frontend/src/components/auth/ProfileSetupModal.tsx",
-    "frontend/src/components/auth/StaffLoginScreen.tsx",
-    "frontend/src/components/layout/PatientAppLayout.tsx",
-    "frontend/src/components/layout/StaffAppLayout.tsx",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/AppSelectorPage.tsx",
-    "frontend/src/pages/admin/AdminBookingsPage.tsx",
-    "frontend/src/pages/admin/AdminReportsPage.tsx",
-    "frontend/src/pages/admin/UploadReportPage.tsx",
-    "frontend/src/pages/patient/BookTestPage.tsx",
-    "frontend/src/pages/patient/HomeCollectionPage.tsx",
-    "frontend/src/pages/patient/MyBookingsPage.tsx",
-    "frontend/src/pages/patient/MyHomeCollectionsPage.tsx",
-    "frontend/src/pages/patient/MyVitalsPage.tsx",
-    "frontend/src/pages/patient/PatientHomePage.tsx",
-    "frontend/src/pages/patient/ProfilePage.tsx",
-    "frontend/src/pages/patient/ReportsPage.tsx",
-    "frontend/src/pages/patient/SlotSelectionPage.tsx",
-    "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx",
-    "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
-    "frontend/src/pages/staff/SubmitIncidentPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

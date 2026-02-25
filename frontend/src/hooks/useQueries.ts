@@ -1,6 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import { UserProfile, AppRole } from '../backend';
+import {
+  UserProfile,
+  Booking,
+  HomeCollectionRequest,
+  Report,
+  BPReading,
+  RBSTest,
+  Incident,
+  AuditLog,
+  HospitalSample,
+  Attendance,
+  SecurityLog,
+  Variant_canceled_pending_completed_confirmed,
+  Variant_assigned_requested_canceled_completed,
+  Variant_low_high_medium,
+  ExternalBlob,
+} from '../backend';
 
 // ── User Profile ──────────────────────────────────────────────────────────
 
@@ -89,7 +105,7 @@ export function useDeleteTest() {
 export function useGetMyBookings() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<Booking[]>({
     queryKey: ['myBookings'],
     queryFn: async () => {
       if (!actor) return [];
@@ -102,7 +118,7 @@ export function useGetMyBookings() {
 export function useGetAllBookings() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<Booking[]>({
     queryKey: ['allBookings'],
     queryFn: async () => {
       if (!actor) return [];
@@ -133,7 +149,7 @@ export function useUpdateBookingStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { id: string; status: any }) => {
+    mutationFn: async (params: { id: string; status: Variant_canceled_pending_completed_confirmed }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.updateBookingStatus(params.id, params.status);
     },
@@ -149,7 +165,7 @@ export function useUpdateBookingStatus() {
 export function useGetMyHomeCollectionRequests() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<HomeCollectionRequest[]>({
     queryKey: ['myHomeCollections'],
     queryFn: async () => {
       if (!actor) return [];
@@ -162,7 +178,7 @@ export function useGetMyHomeCollectionRequests() {
 export function useGetAllHomeCollectionRequests() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<HomeCollectionRequest[]>({
     queryKey: ['allHomeCollections'],
     queryFn: async () => {
       if (!actor) return [];
@@ -172,7 +188,7 @@ export function useGetAllHomeCollectionRequests() {
   });
 }
 
-export function useCreateHomeCollection() {
+export function useCreateHomeCollectionRequest() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
@@ -180,8 +196,8 @@ export function useCreateHomeCollection() {
     mutationFn: async (params: {
       id: string;
       address: string;
-      latitude?: number | null;
-      longitude?: number | null;
+      latitude: number | null;
+      longitude: number | null;
       selectedTests: any[];
       slot: string;
     }) => {
@@ -189,10 +205,10 @@ export function useCreateHomeCollection() {
       return actor.createHomeCollectionRequest(
         params.id,
         params.address,
-        params.latitude ?? null,
-        params.longitude ?? null,
+        params.latitude,
+        params.longitude,
         params.selectedTests,
-        params.slot,
+        params.slot
       );
     },
     onSuccess: () => {
@@ -202,12 +218,15 @@ export function useCreateHomeCollection() {
   });
 }
 
+// Alias for backward compatibility
+export const useCreateHomeCollection = useCreateHomeCollectionRequest;
+
 export function useUpdateHomeCollectionStatus() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { requestId: string; status: any }) => {
+    mutationFn: async (params: { requestId: string; status: Variant_assigned_requested_canceled_completed }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.updateHomeCollectionStatus(params.requestId, params.status);
     },
@@ -238,7 +257,7 @@ export function useAssignPhlebotomist() {
 export function useGetMyReports() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<Report[]>({
     queryKey: ['myReports'],
     queryFn: async () => {
       if (!actor) return [];
@@ -251,7 +270,7 @@ export function useGetMyReports() {
 export function useGetAllReports() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<Report[]>({
     queryKey: ['allReports'],
     queryFn: async () => {
       if (!actor) return [];
@@ -266,7 +285,12 @@ export function useUploadReport() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { id: string; patient: any; bookingId: string; file: any }) => {
+    mutationFn: async (params: {
+      id: string;
+      patient: any;
+      bookingId: string;
+      file: ExternalBlob;
+    }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.uploadReport(params.id, params.patient, params.bookingId, params.file);
     },
@@ -297,7 +321,7 @@ export function useRecordBPReading() {
         params.bookingId,
         params.systolic,
         params.diastolic,
-        params.pulse,
+        params.pulse
       );
     },
     onSuccess: () => {
@@ -321,38 +345,12 @@ export function useRecordRBSReading() {
   });
 }
 
-export function useGetBPReadings(patientId: any, bookingId: string) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery({
-    queryKey: ['bpReadings', patientId?.toString(), bookingId],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getBPReadings(patientId, bookingId);
-    },
-    enabled: !!actor && !isFetching && !!patientId && !!bookingId,
-  });
-}
-
-export function useGetRBSReadings(patientId: any, bookingId: string) {
-  const { actor, isFetching } = useActor();
-
-  return useQuery({
-    queryKey: ['rbsReadings', patientId?.toString(), bookingId],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getRBSReadings(patientId, bookingId);
-    },
-    enabled: !!actor && !isFetching && !!patientId && !!bookingId,
-  });
-}
-
 // ── Incidents ─────────────────────────────────────────────────────────────
 
 export function useGetAllIncidents() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<Incident[]>({
     queryKey: ['allIncidents'],
     queryFn: async () => {
       if (!actor) return [];
@@ -365,7 +363,7 @@ export function useGetAllIncidents() {
 export function useGetMyIncidents() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
+  return useQuery<Incident[]>({
     queryKey: ['myIncidents'],
     queryFn: async () => {
       if (!actor) return [];
@@ -383,8 +381,8 @@ export function useSubmitIncident() {
     mutationFn: async (params: {
       id: string;
       description: string;
-      severity: any;
-      photo: any | null;
+      severity: Variant_low_high_medium;
+      photo: ExternalBlob | null;
     }) => {
       if (!actor) throw new Error('Actor not available');
       return actor.submitIncident(params.id, params.description, params.severity, params.photo);
@@ -401,12 +399,288 @@ export function useSubmitIncident() {
 export function useGetAllAuditLogs() {
   const { actor, isFetching } = useActor();
 
-  return useQuery({
-    queryKey: ['auditLogs'],
+  return useQuery<AuditLog[]>({
+    queryKey: ['allAuditLogs'],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllAuditLogs();
     },
     enabled: !!actor && !isFetching,
+  });
+}
+
+// ── Hospital Samples ──────────────────────────────────────────────────────
+
+export function useGetHospitalSamplesByHospital(hospitalId: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<HospitalSample[]>({
+    queryKey: ['hospitalSamples', 'byHospital', hospitalId],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getHospitalSamplesByHospital(hospitalId);
+    },
+    enabled: !!actor && !isFetching && hospitalId.trim() !== '',
+  });
+}
+
+export function useGetHospitalSamplesByPhlebotomist(phlebotomistId: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<HospitalSample[]>({
+    queryKey: ['hospitalSamples', 'byPhlebotomist', phlebotomistId],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getHospitalSamplesByPhlebotomist(phlebotomistId);
+    },
+    enabled: !!actor && !isFetching && phlebotomistId.trim() !== '',
+  });
+}
+
+export function useGetHospitalSamplesByPhone(phone: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<{
+    samples: HospitalSample[];
+    count: bigint;
+    totalAmount: number;
+    totalDiscount: number;
+    totalReceived: number;
+    totalPending: number;
+  }>({
+    queryKey: ['hospitalSamples', 'byPhone', phone],
+    queryFn: async () => {
+      if (!actor) return {
+        samples: [],
+        count: BigInt(0),
+        totalAmount: 0,
+        totalDiscount: 0,
+        totalReceived: 0,
+        totalPending: 0,
+      };
+      return actor.getHospitalSamplesByPhone(phone);
+    },
+    enabled: !!actor && !isFetching && phone.trim() !== '',
+  });
+}
+
+export function useUpdateHospitalSampleBilling() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      id: string;
+      discount: number;
+      finalAmount: number;
+      amountReceived: number;
+      pendingAmount: number;
+      paymentMode: string;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateHospitalSampleBilling(
+        params.id,
+        params.discount,
+        params.finalAmount,
+        params.amountReceived,
+        params.pendingAmount,
+        params.paymentMode
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hospitalSamples'] });
+    },
+  });
+}
+
+export function useCreateHospitalSample() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      patientName: string;
+      phone: string;
+      hospitalId: string;
+      phlebotomistId: string;
+      testId: string;
+      mrp: number;
+      discount: number;
+      finalAmount: number;
+      amountReceived: number;
+      pendingAmount: number;
+      paymentMode: string;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.createHospitalSample(
+        params.patientName,
+        params.phone,
+        params.hospitalId,
+        params.phlebotomistId,
+        params.testId,
+        params.mrp,
+        params.discount,
+        params.finalAmount,
+        params.amountReceived,
+        params.pendingAmount,
+        params.paymentMode
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hospitalSamples'] });
+    },
+  });
+}
+
+// ── Attendance ────────────────────────────────────────────────────────────
+
+export function useGetActiveShift(phlebotomistId: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Attendance | null>({
+    queryKey: ['activeShift', phlebotomistId],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getActiveShift(phlebotomistId);
+    },
+    enabled: !!actor && !isFetching && phlebotomistId.trim() !== '',
+    refetchInterval: 30000,
+  });
+}
+
+export function useGetAllActiveShifts() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Attendance[]>({
+    queryKey: ['activeShifts'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAllActiveShifts();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useGetAttendanceByPhlebotomist(phlebotomistId: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<Attendance[]>({
+    queryKey: ['attendance', 'byPhlebotomist', phlebotomistId],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAttendanceByPhlebotomist(phlebotomistId);
+    },
+    enabled: !!actor && !isFetching && phlebotomistId.trim() !== '',
+  });
+}
+
+export function useStartShift() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      phlebotomistId: string;
+      hospitalId: string;
+      checkInLat: number;
+      checkInLong: number;
+      checkInSelfieUrl: string;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.startShift(
+        params.phlebotomistId,
+        params.hospitalId,
+        params.checkInLat,
+        params.checkInLong,
+        params.checkInSelfieUrl
+      );
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['activeShift', variables.phlebotomistId] });
+      queryClient.invalidateQueries({ queryKey: ['activeShifts'] });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+    },
+  });
+}
+
+export function useEndShift() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      phlebotomistId: string;
+      hospitalId: string;
+      checkOutLat: number;
+      checkOutLong: number;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.endShift(
+        params.phlebotomistId,
+        params.hospitalId,
+        params.checkOutLat,
+        params.checkOutLong
+      );
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['activeShift', variables.phlebotomistId] });
+      queryClient.invalidateQueries({ queryKey: ['activeShifts'] });
+      queryClient.invalidateQueries({ queryKey: ['attendance'] });
+    },
+  });
+}
+
+// ── Security Logs ─────────────────────────────────────────────────────────
+
+export function useGetSecurityLogs(userId: string, eventType: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<SecurityLog[]>({
+    queryKey: ['securityLogs', userId, eventType],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getSecurityLogs(userId, eventType);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useResetDeviceBinding() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.resetDeviceBinding(userId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['securityLogs'] });
+    },
+  });
+}
+
+export function useCreateSecurityLog() {
+  const { actor } = useActor();
+
+  return useMutation({
+    mutationFn: async (params: {
+      userId: string;
+      eventType: string;
+      deviceId: string;
+      latitude: number | null;
+      longitude: number | null;
+      reason: string;
+    }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.createSecurityLog(
+        params.userId,
+        params.eventType,
+        params.deviceId,
+        params.latitude,
+        params.longitude,
+        params.reason
+      );
+    },
   });
 }

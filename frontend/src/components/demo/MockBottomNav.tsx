@@ -11,80 +11,70 @@ import {
   LayoutDashboard,
   CheckSquare,
   Activity,
+  Clock,
+  ShieldAlert,
+  BarChart3,
+  CalendarCheck,
 } from 'lucide-react';
 import { AppRole } from '../../backend';
 import { roleNavConfig } from '../../utils/roleConfig';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
-const iconMap: Record<string, React.ReactNode> = {
-  Home: <Home className="w-5 h-5" />,
-  FlaskConical: <FlaskConical className="w-5 h-5" />,
-  FileText: <FileText className="w-5 h-5" />,
-  User: <User className="w-5 h-5" />,
-  ClipboardList: <ClipboardList className="w-5 h-5" />,
-  CheckSquare: <CheckSquare className="w-5 h-5" />,
-  QrCode: <QrCode className="w-5 h-5" />,
-  Calendar: <Calendar className="w-5 h-5" />,
-  Shield: <Shield className="w-5 h-5" />,
-  LayoutDashboard: <LayoutDashboard className="w-5 h-5" />,
-  Activity: <Activity className="w-5 h-5" />,
-};
 
 interface MockBottomNavProps {
   role: AppRole;
 }
 
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  Home,
+  FlaskConical,
+  FileText,
+  User,
+  ClipboardList,
+  CheckSquare,
+  QrCode,
+  Calendar,
+  Shield,
+  LayoutDashboard,
+  Activity,
+  Clock,
+  ShieldAlert,
+  BarChart3,
+  CalendarCheck,
+};
+
 export default function MockBottomNav({ role }: MockBottomNavProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
   const navItems = roleNavConfig[role] || [];
+  const [activeIndex, setActiveIndex] = useState(0);
 
   return (
-    <TooltipProvider>
-      <div className="bg-card border border-border rounded-2xl shadow-card overflow-hidden">
-        {/* Phone frame top bar */}
-        <div className="flex items-center justify-center gap-1.5 py-2 border-b border-border bg-muted/30">
-          <div className="w-12 h-1 rounded-full bg-muted-foreground/30" />
+    <div className="relative">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md">
+        <div className="bg-amber-50 border-b border-amber-200 px-3 py-1 text-center">
+          <span className="text-[10px] text-amber-700 font-medium">⚠️ Demo preview only</span>
         </div>
-
-        {/* Mock screen content area */}
-        <div className="h-20 bg-gradient-to-br from-muted/20 to-muted/40 flex items-center justify-center">
-          <p className="text-xs text-muted-foreground italic">App screen content</p>
+        <div className="flex items-center justify-around h-16 px-1">
+          {navItems.map((item, index) => {
+            const isActive = index === activeIndex;
+            const IconComponent = iconMap[item.iconName] || Home;
+            return (
+              <button
+                key={item.path + item.label}
+                onClick={() => setActiveIndex(index)}
+                title="Demo only — no navigation"
+                className={`flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
+                  isActive
+                    ? 'text-primary bg-primary/10'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                <IconComponent className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : ''}`} />
+                <span className={`text-[10px] font-medium truncate w-full text-center ${isActive ? 'text-primary' : ''}`}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
-
-        {/* Mock bottom nav */}
-        <nav className="bg-card border-t border-border">
-          <div className="flex items-center justify-around px-2 py-2">
-            {navItems.map((item, idx) => {
-              const isActive = idx === activeIndex;
-              return (
-                <Tooltip key={item.path + item.label}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setActiveIndex(idx)}
-                      className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
-                        isActive
-                          ? 'text-white'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                      style={
-                        isActive
-                          ? { background: 'linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%)' }
-                          : {}
-                      }
-                    >
-                      {iconMap[item.iconName] || <Home className="w-5 h-5" />}
-                      <span className="text-[10px] font-medium">{item.label}</span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="text-xs">Demo only — navigates to {item.path}</p>
-                  </TooltipContent>
-                </Tooltip>
-              );
-            })}
-          </div>
-        </nav>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }

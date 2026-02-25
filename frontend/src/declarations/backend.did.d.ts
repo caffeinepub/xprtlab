@@ -14,6 +14,19 @@ export type AppRole = { 'patient' : null } |
   { 'superAdmin' : null } |
   { 'labAdmin' : null } |
   { 'phlebotomist' : null };
+export interface Attendance {
+  'status' : string,
+  'totalWorkingMinutes' : [] | [bigint],
+  'checkInSelfieUrl' : string,
+  'checkInLong' : number,
+  'checkInTime' : bigint,
+  'phlebotomistId' : string,
+  'hospitalId' : string,
+  'checkOutLong' : [] | [number],
+  'checkOutTime' : [] | [bigint],
+  'checkInLat' : number,
+  'checkOutLat' : [] | [number],
+}
 export interface AuditLog {
   'actionType' : string,
   'actorId' : Principal,
@@ -53,6 +66,21 @@ export interface HomeCollectionRequest {
   'timestamp' : bigint,
   'assignedPhlebotomist' : [] | [Principal],
 }
+export interface HospitalSample {
+  'mrp' : number,
+  'status' : string,
+  'finalAmount' : number,
+  'createdAt' : bigint,
+  'phlebotomistId' : string,
+  'hospitalId' : string,
+  'patientName' : string,
+  'discount' : number,
+  'paymentMode' : string,
+  'phone' : string,
+  'pendingAmount' : number,
+  'amountReceived' : number,
+  'testId' : string,
+}
 export interface Incident {
   'id' : string,
   'description' : string,
@@ -71,6 +99,15 @@ export interface Report {
   'file' : ExternalBlob,
   'timestamp' : bigint,
   'uploadedBy' : Principal,
+}
+export interface SecurityLog {
+  'latitude' : [] | [number],
+  'userId' : string,
+  'longitude' : [] | [number],
+  'deviceId' : string,
+  'timestamp' : bigint,
+  'eventType' : string,
+  'reason' : string,
 }
 export interface Test {
   'id' : string,
@@ -120,6 +157,12 @@ export interface _SERVICE {
    */
   'assignPhlebotomist' : ActorMethod<[string, Principal], undefined>,
   /**
+   * / Authenticated users only: bind a device on first login.
+   * / If a binding already exists for a different deviceId, returns an error.
+   * / The caller must be the user identified by userId (ownership check).
+   */
+  'bindDevice' : ActorMethod<[string, string, string, string], undefined>,
+  /**
    * / Registered users (patients) can create bookings
    */
   'createBooking' : ActorMethod<[string, Array<Test>, string], undefined>,
@@ -131,6 +174,40 @@ export interface _SERVICE {
     undefined
   >,
   /**
+   * / Phlebotomist-only (registered user): create a hospital sample with status SAMPLE_COLLECTED
+   */
+  'createHospitalSample' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      string,
+      string,
+      number,
+      number,
+      number,
+      number,
+      number,
+      string,
+    ],
+    undefined
+  >,
+  /**
+   * / Authenticated users (phlebotomists) or system: write a security log entry.
+   * / No role restriction beyond being an authenticated user — guests are blocked.
+   */
+  'createSecurityLog' : ActorMethod<
+    [string, string, string, [] | [number], [] | [number], string],
+    undefined
+  >,
+  /**
+   * / Authenticated users only: create (or replace) a session token.
+   * / On login, a new ACTIVE session is written and any previous session for the
+   * / same userId is implicitly superseded (the map entry is overwritten).
+   * / The caller must be the user identified by userId (ownership check).
+   */
+  'createSession' : ActorMethod<[string, string], undefined>,
+  /**
    * / Admin-only: create a diagnostic test entry
    */
   'createTest' : ActorMethod<[string, string, string, bigint], undefined>,
@@ -138,6 +215,20 @@ export interface _SERVICE {
    * / Admin-only: remove a diagnostic test
    */
   'deleteTest' : ActorMethod<[string], undefined>,
+  /**
+   * / Phlebotomist-only (registered user): end their own active shift.
+   * / The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+   */
+  'endShift' : ActorMethod<[string, string, number, number], undefined>,
+  /**
+   * / Phlebotomist-only (registered user): get their own active shift.
+   * / The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+   */
+  'getActiveShift' : ActorMethod<[string], [] | [Attendance]>,
+  /**
+   * / Admin-only: get all currently active shifts
+   */
+  'getAllActiveShifts' : ActorMethod<[], Array<Attendance>>,
   /**
    * / Admin-only: view all audit logs
    */
@@ -166,17 +257,48 @@ export interface _SERVICE {
    */
   'getAllTests' : ActorMethod<[], Array<Test>>,
   /**
+   * / Admin-only: get all attendance records for a specific phlebotomist
+   */
+  'getAttendanceByPhlebotomist' : ActorMethod<[string], Array<Attendance>>,
+  /**
    * / Registered users can view BP readings for themselves; admins can view any
    */
   'getBPReadings' : ActorMethod<[Principal, string], Array<BPReading>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   /**
-   * / Registered users can view their own bookings; admins can view all
+   * / Admin-only: get hospital samples filtered by hospitalId
+   */
+  'getHospitalSamplesByHospital' : ActorMethod<[string], Array<HospitalSample>>,
+  /**
+   * / Admin-only: get hospital samples filtered by phlebotomistId
+   */
+  'getHospitalSamplesByPhlebotomist' : ActorMethod<
+    [string],
+    Array<HospitalSample>
+  >,
+  /**
+   * / Patient (registered user) or admin: get hospital samples filtered by phone number.
+   * / This supports the patient-linked view. Any authenticated user may query by phone
+   * / (patients look up their own records; admins may look up any).
+   */
+  'getHospitalSamplesByPhone' : ActorMethod<
+    [string],
+    {
+      'totalReceived' : number,
+      'count' : bigint,
+      'samples' : Array<HospitalSample>,
+      'totalAmount' : number,
+      'totalPending' : number,
+      'totalDiscount' : number,
+    }
+  >,
+  /**
+   * / Registered users can view their own bookings
    */
   'getMyBookings' : ActorMethod<[], Array<Booking>>,
   /**
-   * / Registered users can view their own home collection requests; admins see all
+   * / Registered users can view their own home collection requests
    */
   'getMyHomeCollectionRequests' : ActorMethod<[], Array<HomeCollectionRequest>>,
   /**
@@ -184,13 +306,18 @@ export interface _SERVICE {
    */
   'getMyIncidents' : ActorMethod<[], Array<Incident>>,
   /**
-   * / Registered users can view their own reports; admins can view all
+   * / Registered users can view their own reports
    */
   'getMyReports' : ActorMethod<[], Array<Report>>,
   /**
    * / Registered users can view RBS readings for themselves; admins can view any
    */
   'getRBSReadings' : ActorMethod<[Principal, string], Array<RBSTest>>,
+  /**
+   * / Admin/super-admin only: retrieve security logs, optionally filtered by userId and eventType.
+   * / Pass empty strings to skip a filter.
+   */
+  'getSecurityLogs' : ActorMethod<[string, string], Array<SecurityLog>>,
   /**
    * / Public: any caller (including guests) can browse available tests
    */
@@ -208,7 +335,20 @@ export interface _SERVICE {
    * / Registered users (phlebotomists/lab staff) can record RBS readings for a patient
    */
   'recordRBSReading' : ActorMethod<[Principal, string, bigint], undefined>,
+  /**
+   * / Admin-only: remove the device binding for a given userId
+   */
+  'resetDeviceBinding' : ActorMethod<[string], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  /**
+   * / Phlebotomist-only (registered user): start a shift.
+   * / The caller must be the phlebotomist identified by phlebotomistId (ownership check).
+   * / Validates: no existing ACTIVE shift for this phlebotomist.
+   */
+  'startShift' : ActorMethod<
+    [string, string, number, number, string],
+    undefined
+  >,
   /**
    * / Registered users (any staff) can submit incidents
    */
@@ -250,12 +390,26 @@ export interface _SERVICE {
     undefined
   >,
   /**
+   * / Admin-only: update billing fields of a hospital sample
+   */
+  'updateHospitalSampleBilling' : ActorMethod<
+    [string, number, number, number, number, string],
+    undefined
+  >,
+  /**
    * / Admin-only: upload a PDF report linked to a booking
    */
   'uploadReport' : ActorMethod<
     [string, Principal, string, ExternalBlob],
     undefined
   >,
+  /**
+   * / Authenticated users only: validate that the presented session token matches
+   * / the current ACTIVE session for the given userId.
+   * / Returns true if valid, false if the session has been superseded.
+   * / The caller must be the user identified by userId (ownership check).
+   */
+  'validateSession' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

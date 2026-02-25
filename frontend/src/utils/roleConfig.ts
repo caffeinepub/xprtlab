@@ -14,29 +14,32 @@ export const roleNavConfig: Record<AppRole, NavItem[]> = {
     { label: 'Profile', path: '/profile', iconName: 'User' },
   ],
   [AppRole.phlebotomist]: [
-    { label: 'Home', path: '/tasks', iconName: 'ClipboardList' },
-    { label: 'Tasks', path: '/tasks', iconName: 'CheckSquare' },
-    { label: 'Scan QR', path: '/scan-camp', iconName: 'QrCode' },
+    { label: 'Attendance', path: '/phlebotomist-attendance', iconName: 'CalendarCheck' },
+    { label: 'Tasks', path: '/tasks', iconName: 'ClipboardList' },
+    { label: 'Collections', path: '/home-collections', iconName: 'Home' },
+    { label: 'Add Sample', path: '/hospital-sample-entry', iconName: 'FlaskConical' },
     { label: 'Profile', path: '/profile', iconName: 'User' },
   ],
   [AppRole.labAdmin]: [
-    { label: 'Home', path: '/admin/bookings', iconName: 'LayoutDashboard' },
     { label: 'Bookings', path: '/admin/bookings', iconName: 'Calendar' },
     { label: 'Reports', path: '/admin/reports', iconName: 'FileText' },
+    { label: 'Samples', path: '/admin/hospital-samples', iconName: 'FlaskConical' },
+    { label: 'Attendance', path: '/admin/attendance', iconName: 'Clock' },
     { label: 'Profile', path: '/profile', iconName: 'User' },
   ],
   [AppRole.superAdmin]: [
-    { label: 'Home', path: '/admin/bookings', iconName: 'LayoutDashboard' },
     { label: 'Bookings', path: '/admin/bookings', iconName: 'Calendar' },
     { label: 'Audit', path: '/admin/audit-logs', iconName: 'Shield' },
-    { label: 'Profile', path: '/profile', iconName: 'User' },
+    { label: 'Samples', path: '/admin/hospital-samples', iconName: 'FlaskConical' },
+    { label: 'Attendance', path: '/admin/attendance', iconName: 'Clock' },
+    { label: 'Security', path: '/admin/security-logs', iconName: 'ShieldAlert' },
   ],
 };
 
 export function getDefaultPath(role: AppRole): string {
   switch (role) {
     case AppRole.patient: return '/home';
-    case AppRole.phlebotomist: return '/tasks';
+    case AppRole.phlebotomist: return '/phlebotomist-attendance';
     case AppRole.labAdmin: return '/admin/bookings';
     case AppRole.superAdmin: return '/admin/bookings';
     default: return '/home';
