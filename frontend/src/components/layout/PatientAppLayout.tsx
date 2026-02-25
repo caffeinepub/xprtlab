@@ -1,5 +1,5 @@
-import React from 'react';
-import { Heart, FlaskConical, Home, FileText, Activity, User, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Heart, FlaskConical, Home, FileText, Activity, User } from 'lucide-react';
 
 type PatientRoute =
   | 'home'
@@ -27,6 +27,17 @@ const navItems = [
 ];
 
 export default function PatientAppLayout({ children, currentRoute, onNavigate }: PatientAppLayoutProps) {
+  const [activeRoute, setActiveRoute] = useState<PatientRoute>(currentRoute);
+
+  useEffect(() => {
+    setActiveRoute(currentRoute);
+  }, [currentRoute]);
+
+  const handleNavigate = (route: PatientRoute) => {
+    setActiveRoute(route);
+    onNavigate(route);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -46,7 +57,7 @@ export default function PatientAppLayout({ children, currentRoute, onNavigate }:
             </div>
           </div>
           <button
-            onClick={() => onNavigate('profile')}
+            onClick={() => handleNavigate('profile')}
             className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors"
           >
             <User className="w-4 h-4 text-white" />
@@ -54,30 +65,92 @@ export default function PatientAppLayout({ children, currentRoute, onNavigate }:
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      {/* Main Content — extra bottom padding to clear the floating nav */}
+      <main className="flex-1 overflow-y-auto" style={{ paddingBottom: 'calc(80px + 16px + env(safe-area-inset-bottom, 0px))' }}>
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card border-t border-border shadow-lg">
-        <div className="flex items-center justify-around h-16 px-2 max-w-lg mx-auto">
+      {/* Floating Bottom Navigation */}
+      <nav
+        className="floating-bottom-nav"
+        style={{
+          position: 'fixed',
+          bottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+          left: '18px',
+          right: '18px',
+          zIndex: 50,
+          borderRadius: '24px',
+          background: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.35)',
+          boxShadow: '0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)',
+          willChange: 'transform',
+        }}
+      >
+        <div className="flex items-center justify-around h-16 px-2">
           {navItems.map(({ route, icon: Icon, label }) => {
-            const isActive = currentRoute === route;
+            const isActive = activeRoute === route;
             return (
               <button
                 key={route}
-                onClick={() => onNavigate(route)}
-                className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
-                  isActive
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}
+                onClick={() => handleNavigate(route)}
+                className="floating-nav-item"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '2px',
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '6px 4px',
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                  outline: 'none',
+                }}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : ''}`} />
-                <span className={`text-xs font-medium truncate ${isActive ? 'text-primary' : ''}`}>
-                  {label}
-                </span>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '2px',
+                    padding: isActive ? '6px 14px' : '6px 8px',
+                    borderRadius: '14px',
+                    background: isActive
+                      ? 'linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%)'
+                      : 'transparent',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    minWidth: isActive ? '56px' : 'auto',
+                  }}
+                >
+                  <Icon
+                    style={{
+                      width: '20px',
+                      height: '20px',
+                      flexShrink: 0,
+                      color: isActive ? '#ffffff' : '#94A3B8',
+                      transition: 'color 0.25s ease',
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      color: isActive ? '#ffffff' : '#94A3B8',
+                      transition: 'color 0.25s ease',
+                      whiteSpace: 'nowrap',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {label}
+                  </span>
+                </div>
               </button>
             );
           })}

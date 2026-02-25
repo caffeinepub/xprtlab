@@ -1,4 +1,96 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-redesign-the-bottom-navigation-bar-in-bottomnavigation-tsx-and-staffapplayout-tsx-and-patientapplayout-tsx-into-a-floating-container-that-is-positioned-fixed-at-the-bottom-with-16-20px-horizontal-margin-12-16px-bottom-margin-and-borderradius-24-the-container-must-not-scroll-with-content-must-not-allow-content-to-overlap-it-and-must-respect-safe-area-insets-on-both-ios-and-android",
+      "featureTitle": "Redesign the bottom navigation bar in BottomNavigation.tsx and StaffAppLayout.tsx (and PatientAppLayout.tsx) into a floating container that is positioned fixed at the bottom with 16–20px horizontal margin, 12–16px bottom margin, and borderRadius: 24. The container must not scroll with content, must not allow content to overlap it, and must respect safe area insets on both iOS and Android.",
+      "files": [
+        "frontend/src/components/layout/PatientAppLayout.tsx",
+        "frontend/src/components/layout/StaffAppLayout.tsx",
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-apply-a-frosted-glass-background-to-the-floating-bottom-navigation-using-a-blurview-component-intensity-60-80-tint-light-add-a-fallback-solid-background-of-rgba-255-255-255-0-9-for-environments-where-blurview-is-not-supported-add-a-subtle-border-borderwidth-1-bordercolor-rgba-255-255-255-0-3-and-a-soft-shadow-shadowcolor-000-shadowopacity-0-08-shadowradius-12-shadowoffset-width-0-height-6-elevation-10-for-android",
+      "featureTitle": "Apply a frosted-glass background to the floating bottom navigation using a BlurView component (intensity 60–80, tint: 'light'). Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported. Add a subtle border (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and a soft shadow (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android).",
+      "files": [
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-style-the-active-tab-in-the-bottom-navigation-with-a-soft-gradient-pill-background-using-colors-0d47a1-26c6da-a-white-icon-and-a-slight-scale-animation-scale-1-05-1-1-inactive-tab-icons-should-use-color-94a3b8-add-a-smooth-transition-animation-when-switching-between-tabs",
+      "featureTitle": "Style the active tab in the bottom navigation with a soft gradient pill background using colors #0D47A1 → #26C6DA, a white icon, and a slight scale animation (scale 1.05–1.1). Inactive tab icons should use color #94A3B8. Add a smooth transition animation when switching between tabs.",
+      "files": [
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-preserve-all-existing-role-based-visibility-logic-in-the-bottom-navigation-rolenavconfig-driven-nav-items-per-role-do-not-break-any-existing-routing-ensure-there-is-no-layout-shift-or-content-flicker-while-scrolling-with-the-new-floating-nav-in-place",
+      "featureTitle": "Preserve all existing role-based visibility logic in the bottom navigation (roleNavConfig-driven nav items per role). Do not break any existing routing. Ensure there is no layout shift or content flicker while scrolling with the new floating nav in place.",
+      "files": [
+        "frontend/src/components/layout/PatientAppLayout.tsx",
+        "frontend/src/components/layout/StaffAppLayout.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

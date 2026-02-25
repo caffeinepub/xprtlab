@@ -1,16 +1,17 @@
 # Specification
 
 ## Summary
-**Goal:** Add a comprehensive demo mode to the XpertLab app that bypasses GPS, device checks, and authentication so every feature can be tested end-to-end without real hardware or an Internet Identity.
+**Goal:** Redesign the bottom navigation bar into a floating, frosted-glass container with a gradient active tab pill and smooth animations, while preserving all existing role-based routing.
 
 **Planned changes:**
-- Add a global demo mode context/state that stores `demoMode: true` and the selected role, activated from demo role buttons on `StaffLoginScreen`.
-- Show a persistent demo-mode banner in `StaffAppLayout` (and `PatientAppLayout`) while demo mode is active.
-- In demo mode, bypass all GPS geofencing, accuracy checks, mock-location detection, and speed-jump anomaly checks in attendance pages; inject fixed mock coordinates so geofence validation always passes.
-- In demo mode, skip device fingerprinting/binding enforcement and auto-pass the selfie capture step with a placeholder image so shift check-in/check-out completes without a real camera.
-- Bypass `ShiftGuard` in demo mode by providing a simulated active shift, making all phlebotomist sub-pages (task queue, home collection queue, vitals, hospital samples, QR scan, etc.) accessible without starting a real shift.
-- Seed all data-dependent pages with realistic role-appropriate mock data (bookings, home collection queue, hospital samples, reports, audit logs, incidents, security logs, attendance history, notifications) so no screen shows an empty state in demo mode.
-- Make all mutating actions (status updates, report uploads, vitals submission, QR scan, incident submission, billing edits) optimistically succeed with a success toast and local UI update without real backend calls in demo mode.
-- Add a "Demo Patient" entry point on the patient login/app selector screen that enters patient demo mode with a mock profile and populates all patient pages with mock data.
+- Refactor `BottomNavigation.tsx`, `StaffAppLayout.tsx`, and `PatientAppLayout.tsx` to render the bottom nav as a fixed floating container with 16–20px horizontal margin, 12–16px bottom margin, and `borderRadius: 24`
+- Apply safe area inset support on both iOS and Android so the nav respects notches and gesture bars
+- Ensure page content does not scroll behind or overlap the floating nav
+- Add a frosted-glass background using BlurView (intensity 60–80, tint: `light`) with a fallback of `rgba(255,255,255,0.9)`
+- Add a subtle 1px semi-transparent white border and a soft drop shadow (`shadowOpacity: 0.08`, `shadowRadius: 12`, `elevation: 10`)
+- Style the active tab with a gradient pill background (`#0D47A1` → `#26C6DA`), white icon, and scale animation (1.05–1.1)
+- Render inactive tab icons in `#94A3B8`
+- Add smooth animated transitions when switching between tabs
+- Preserve all existing role-based nav item visibility logic (`roleNavConfig`) and routing behaviour
 
-**User-visible outcome:** Testers can click a demo role button (phlebotomist, lab admin, super admin, or demo patient) and immediately explore every feature of the app — including attendance, shift workflows, task queues, reports, admin logs, and patient pages — with realistic mock data and no GPS, camera, or Internet Identity required.
+**User-visible outcome:** The bottom navigation floats above page content with rounded corners, a frosted-glass blur effect, a glowing gradient pill on the active tab, and smooth animations when switching tabs — while all role-specific routes continue to work as before.

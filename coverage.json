@@ -1,97 +1,79 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T02:43:55.427Z",
+  "generatedAt": "2026-02-25T05:44:23.292Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 7,
-    "implemented": 0,
+    "total": 4,
+    "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a global demo mode flag that can be activated from the StaffLoginScreen demo buttons (phlebotomist, lab admin, super admin). When demo mode is active, store the selected role and a `demoMode: true` flag in a context/state accessible throughout the entire StaffApp so all guarded features are unlocked.",
-        "status": "missing",
+        "summary": "Redesign the bottom navigation bar in BottomNavigation.tsx and StaffAppLayout.tsx (and PatientAppLayout.tsx) into a floating container that is positioned fixed at the bottom with 16–20px horizontal margin, 12–16px bottom margin, and borderRadius: 24. The container must not scroll with content, must not allow content to overlap it, and must respect safe area insets on both iOS and Android.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/src/contexts/DemoModeContext.tsx",
-          "frontend/src/components/auth/StaffLoginScreen.tsx",
+          "frontend/src/components/layout/BottomNavigation.tsx",
           "frontend/src/components/layout/StaffAppLayout.tsx",
-          "frontend/src/StaffApp.tsx"
+          "frontend/src/components/layout/PatientAppLayout.tsx",
+          "frontend/src/index.css"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/components/layout/StaffAppLayout.tsx",
+          "frontend/src/components/layout/PatientAppLayout.tsx",
+          "frontend/src/index.css"
+        ]
       },
       {
         "id": "REQ-2",
-        "summary": "In demo mode, bypass all GPS geofencing, GPS accuracy checks, mock-location detection, and speed-jump anomaly checks in PhlebotomistAttendancePage and AttendancePage. Instead of real GPS coordinates, inject a fixed mock coordinate (e.g. the configured lab location) so that geofence validation always passes.",
-        "status": "missing",
+        "summary": "Apply a frosted-glass background to the floating bottom navigation using a BlurView component (intensity 60–80, tint: 'light'). Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported. Add a subtle border (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and a soft shadow (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android).",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
-          "frontend/src/pages/phlebotomist/AttendancePage.tsx"
+          "frontend/src/components/layout/BottomNavigation.tsx",
+          "frontend/src/index.css"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/index.css"
+        ]
       },
       {
         "id": "REQ-3",
-        "summary": "In demo mode, bypass the device fingerprinting and device-binding enforcement on the attendance/shift pages. Skip the selfie capture step (or auto-accept it with a placeholder image) so the full shift start/end flow completes without a real camera.",
-        "status": "missing",
+        "summary": "Style the active tab in the bottom navigation with a soft gradient pill background using colors #0D47A1 → #26C6DA, a white icon, and a slight scale animation (scale 1.05–1.1). Inactive tab icons should use color #94A3B8. Add a smooth transition animation when switching between tabs.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
-          "frontend/src/pages/phlebotomist/AttendancePage.tsx"
+          "frontend/src/components/layout/BottomNavigation.tsx",
+          "frontend/src/index.css"
         ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/index.css"
+        ]
       },
       {
         "id": "REQ-4",
-        "summary": "In demo mode, bypass the ShiftGuard so phlebotomist routes that normally require an active shift (task queue, home collection queue, vitals, hospital samples, QR scan, etc.) are all accessible without first starting a real shift. Provide a simulated active shift in demo mode.",
-        "status": "missing",
+        "summary": "Preserve all existing role-based visibility logic in the bottom navigation (roleNavConfig-driven nav items per role). Do not break any existing routing. Ensure there is no layout shift or content flicker while scrolling with the new floating nav in place.",
+        "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/layout/ShiftGuard.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/components/layout/BottomNavigation.tsx",
+          "frontend/src/components/layout/StaffAppLayout.tsx",
+          "frontend/src/components/layout/PatientAppLayout.tsx"
         ],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-5",
-        "summary": "In demo mode, seed all data-dependent pages with realistic mock/stub data so every screen renders meaningfully rather than showing empty states. This includes: bookings list, home collection queue, hospital samples, reports list, audit logs, incidents, security logs, attendance history, and notifications.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/utils/mockData.ts",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/hooks/useNotifications.ts"
-        ],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-6",
-        "summary": "In demo mode, all mutating actions (status updates, report uploads, vitals submission, camp QR scan, incident submission, billing edits) should optimistically succeed with a toast confirmation without making real backend calls, or gracefully handle backend failures without crashing.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/admin/UploadReportPage.tsx",
-          "frontend/src/pages/staff/SubmitIncidentPage.tsx"
-        ],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Add a patient demo mode entry point on the PatientLoginScreen (or AppSelectorPage) so the Patient App can also be tested without Internet Identity. Patient demo mode should populate mock bookings, reports, home collection requests, vitals, and hospital samples.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/components/auth/PatientLoginScreen.tsx",
-          "frontend/src/components/layout/PatientAppLayout.tsx",
-          "frontend/src/PatientApp.tsx",
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": []
+        "matchedFiles": [
+          "frontend/src/components/layout/StaffAppLayout.tsx",
+          "frontend/src/components/layout/PatientAppLayout.tsx"
+        ]
       }
     ]
   },
   "changedFiles": [
     "build-request.json",
     "feature_evidence.json",
+    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/components/layout/PatientAppLayout.tsx",
+    "frontend/src/components/layout/StaffAppLayout.tsx",
+    "frontend/src/index.css",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

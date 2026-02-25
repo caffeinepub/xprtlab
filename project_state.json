@@ -1,72 +1,53 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "A mobile app (likely for phlebotomists) with GPS-based shift management. User wants a demo mode to test all features.",
-  "architectural_notes": [],
+  "summary": "Mobile app (likely React Native/Expo) with role-based authentication (Admin, Phlebotomist roles), demo mode, and premium floating bottom navigation with BlurView, gradient active tab styling, and safe area support.",
+  "architectural_notes": [
+    "Bottom nav is a floating container with horizontal margin 16-20px, bottom margin 12-16px, borderRadius 24, fixed position respecting safe area insets",
+    "BlurView (Expo Blur) used for nav background (intensity 60-80, tint light) with fallback rgba(255,255,255,0.9)",
+    "Active tab uses gradient pill (#0D47A1 → #26C6DA), white icon, scale animation 1.05-1.1; inactive icons #94A3B8"
+  ],
   "known_issues": [],
   "isFixRequest": false,
-  "existing_features": [],
-  "new_feature_requests": [
+  "existing_features": [
     {
-      "id": "AR-1",
-      "summary": "Demo mode that allows testing all app features without real GPS or backend dependencies",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add a global demo mode flag that can be activated from the StaffLoginScreen demo buttons (phlebotomist, lab admin, super admin). When demo mode is active, store the selected role and a `demoMode: true` flag in a context/state accessible throughout the entire StaffApp so all guarded features are unlocked.",
+      "id": "feature-redesign-the-bottom-navigation-bar-in-bottomnavigation-tsx-and-staffapplayout-tsx-and-patientapplayout-tsx-into-a-floating-container-that-is-positioned-fixed-at-the-bottom-with-16-20px-horizontal-margin-12-16px-bottom-margin-and-borderradius-24-the-container-must-not-scroll-with-content-must-not-allow-content-to-overlap-it-and-must-respect-safe-area-insets-on-both-ios-and-android",
+      "title": "Redesign the bottom navigation bar in BottomNavigation.tsx and StaffAppLayout.tsx (and PatientAppLayout.tsx) into a floating container that is positioned fixed at the bottom with 16–20px horizontal margin, 12–16px bottom margin, and borderRadius: 24. The container must not scroll with content, must not allow content to overlap it, and must respect safe area insets on both iOS and Android.",
       "reqIds": [
         "REQ-1"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-3",
-      "summary": "In demo mode, bypass all GPS geofencing, GPS accuracy checks, mock-location detection, and speed-jump anomaly checks in PhlebotomistAttendancePage and AttendancePage. Instead of real GPS coordinates, inject a fixed mock coordinate (e.g. the configured lab location) so that geofence validation always passes.",
+      "id": "feature-apply-a-frosted-glass-background-to-the-floating-bottom-navigation-using-a-blurview-component-intensity-60-80-tint-light-add-a-fallback-solid-background-of-rgba-255-255-255-0-9-for-environments-where-blurview-is-not-supported-add-a-subtle-border-borderwidth-1-bordercolor-rgba-255-255-255-0-3-and-a-soft-shadow-shadowcolor-000-shadowopacity-0-08-shadowradius-12-shadowoffset-width-0-height-6-elevation-10-for-android",
+      "title": "Apply a frosted-glass background to the floating bottom navigation using a BlurView component (intensity 60–80, tint: 'light'). Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported. Add a subtle border (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and a soft shadow (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android).",
       "reqIds": [
         "REQ-2"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-4",
-      "summary": "In demo mode, bypass the device fingerprinting and device-binding enforcement on the attendance/shift pages. Skip the selfie capture step (or auto-accept it with a placeholder image) so the full shift start/end flow completes without a real camera.",
+      "id": "feature-style-the-active-tab-in-the-bottom-navigation-with-a-soft-gradient-pill-background-using-colors-0d47a1-26c6da-a-white-icon-and-a-slight-scale-animation-scale-1-05-1-1-inactive-tab-icons-should-use-color-94a3b8-add-a-smooth-transition-animation-when-switching-between-tabs",
+      "title": "Style the active tab in the bottom navigation with a soft gradient pill background using colors #0D47A1 → #26C6DA, a white icon, and a slight scale animation (scale 1.05–1.1). Inactive tab icons should use color #94A3B8. Add a smooth transition animation when switching between tabs.",
       "reqIds": [
         "REQ-3"
       ],
-      "status": "pending"
+      "version": 1
     },
     {
-      "id": "AR-5",
-      "summary": "In demo mode, bypass the ShiftGuard so phlebotomist routes that normally require an active shift (task queue, home collection queue, vitals, hospital samples, QR scan, etc.) are all accessible without first starting a real shift. Provide a simulated active shift in demo mode.",
+      "id": "feature-preserve-all-existing-role-based-visibility-logic-in-the-bottom-navigation-rolenavconfig-driven-nav-items-per-role-do-not-break-any-existing-routing-ensure-there-is-no-layout-shift-or-content-flicker-while-scrolling-with-the-new-floating-nav-in-place",
+      "title": "Preserve all existing role-based visibility logic in the bottom navigation (roleNavConfig-driven nav items per role). Do not break any existing routing. Ensure there is no layout shift or content flicker while scrolling with the new floating nav in place.",
       "reqIds": [
         "REQ-4"
       ],
-      "status": "pending"
-    },
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
     {
-      "id": "AR-6",
-      "summary": "In demo mode, seed all data-dependent pages with realistic mock/stub data so every screen renders meaningfully rather than showing empty states. This includes: bookings list, home collection queue, hospital samples, reports list, audit logs, incidents, security logs, attendance history, and notifications.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "In demo mode, all mutating actions (status updates, report uploads, vitals submission, camp QR scan, incident submission, billing edits) should optimistically succeed with a toast confirmation without making real backend calls, or gracefully handle backend failures without crashing.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-8",
-      "summary": "Add a patient demo mode entry point on the PatientLoginScreen (or AppSelectorPage) so the Patient App can also be tested without Internet Identity. Patient demo mode should populate mock bookings, reports, home collection requests, vitals, and hospital samples.",
-      "reqIds": [
-        "REQ-7"
-      ],
+      "id": "AR-1",
+      "summary": "Floating bottom navigation with BlurView, gradient active tab pill, scale animation, safe area insets, and role-based visibility",
+      "reqIds": [],
       "status": "pending"
     }
   ],

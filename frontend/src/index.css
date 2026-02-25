@@ -49,6 +49,15 @@
     --card-radius: 18px;
     --card-shadow: 0 4px 20px rgba(13, 71, 161, 0.08), 0 1px 4px rgba(0,0,0,0.04);
     --card-shadow-hover: 0 8px 32px rgba(13, 71, 161, 0.14), 0 2px 8px rgba(0,0,0,0.06);
+
+    /* Floating Nav */
+    --nav-blur: 20px;
+    --nav-bg: rgba(255, 255, 255, 0.92);
+    --nav-border: rgba(255, 255, 255, 0.35);
+    --nav-shadow: 0 6px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+    --nav-radius: 24px;
+    --nav-bottom-margin: 14px;
+    --nav-side-margin: 18px;
   }
 
   .dark {
@@ -79,6 +88,11 @@
     --sidebar-accent-foreground: oklch(0.95 0.01 240);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.65 0.16 200);
+
+    /* Floating Nav — dark mode */
+    --nav-bg: rgba(18, 22, 40, 0.92);
+    --nav-border: rgba(255, 255, 255, 0.12);
+    --nav-shadow: 0 6px 24px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.18);
   }
 
   * {
@@ -136,6 +150,52 @@
     opacity: 0.6;
     transform: none;
     cursor: not-allowed;
+  }
+
+  /* Floating Bottom Navigation */
+  .floating-bottom-nav {
+    position: fixed;
+    left: var(--nav-side-margin);
+    right: var(--nav-side-margin);
+    bottom: calc(var(--nav-bottom-margin) + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+    border-radius: var(--nav-radius);
+    background: var(--nav-bg);
+    backdrop-filter: blur(var(--nav-blur));
+    -webkit-backdrop-filter: blur(var(--nav-blur));
+    border: 1px solid var(--nav-border);
+    box-shadow: var(--nav-shadow);
+    will-change: transform;
+    /* Prevent content from bleeding through rounded corners */
+    overflow: hidden;
+  }
+
+  /* Fallback for browsers that don't support backdrop-filter */
+  @supports not (backdrop-filter: blur(1px)) {
+    .floating-bottom-nav {
+      background: rgba(255, 255, 255, 0.97);
+    }
+  }
+
+  .floating-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    padding: 6px 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .floating-nav-item:focus-visible {
+    outline: 2px solid #0D47A1;
+    outline-offset: 2px;
+    border-radius: 12px;
   }
 
   .status-pending {

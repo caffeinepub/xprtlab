@@ -1,185 +1,110 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Demo Mode – bypass GPS, device checks, and auth for full feature testing",
+  "title": "Floating Bottom Navigation with BlurView, Gradient Active Tab & Safe Area Support",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add a global demo mode context that stores demo mode state and selected role, accessible throughout the entire StaffApp. Wire demo mode activation from the StaffLoginScreen demo buttons.",
+      "summary": "Convert bottom navigation to a floating container with fixed positioning, margin spacing, rounded corners, and safe area inset support",
       "acceptanceCriteria": [
-        "Clicking a demo role button on StaffLoginScreen enters demo mode with that role immediately (no Internet Identity required).",
-        "A persistent demo-mode banner is visible in StaffAppLayout while demo mode is active.",
-        "Demo mode flag and role are accessible via context to all child components and pages."
+        "Bottom nav floats above page content with visible horizontal and bottom margins",
+        "Nav has borderRadius: 24 applied visibly",
+        "Nav stays fixed at the bottom while scrolling page content",
+        "Page content does not slide behind the nav bar",
+        "Safe area insets are respected on notched iOS devices and Android devices with gesture navigation"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/contexts/DemoModeContext.tsx",
-          "operation": "create",
-          "description": "Create a React context that manages demo mode state including demoMode boolean flag, demoRole (AppRole), and functions to enter/exit demo mode. Provide a DemoModeProvider component and useDemoMode hook for consuming the context."
-        },
-        {
-          "path": "frontend/src/components/auth/StaffLoginScreen.tsx",
+          "path": "frontend/src/components/layout/BottomNavigation.tsx",
           "operation": "modify",
-          "description": "Wire the existing demo buttons (phlebotomist, lab admin, super admin) to call the demo mode context's enterDemoMode function with the corresponding AppRole, then navigate to the staff app. Import and use useDemoMode hook."
+          "description": "Redesign the bottom navigation container to use fixed positioning with horizontal margins (16-20px), bottom margin (12-16px), and borderRadius of 24px. Add safe area inset handling using CSS env() variables (safe-area-inset-bottom) to respect iOS notches and Android gesture areas. Update container styles to float above content without scrolling."
         },
         {
           "path": "frontend/src/components/layout/StaffAppLayout.tsx",
           "operation": "modify",
-          "description": "Add a demo mode banner at the top of the layout that displays when useDemoMode().demoMode is true. The banner should show the active demo role and indicate that demo mode is active. Position it above the gradient header."
+          "description": "Update the layout to accommodate the floating bottom navigation by adding bottom padding to the main content area equal to the nav height plus margins. Ensure content does not overlap the floating nav bar and scrolling behavior remains smooth. Apply safe area padding adjustments to the content wrapper."
         },
         {
-          "path": "frontend/src/StaffApp.tsx",
+          "path": "frontend/src/components/layout/PatientAppLayout.tsx",
           "operation": "modify",
-          "description": "Wrap the StaffApp component tree with DemoModeProvider so all staff pages and components can access demo mode state via context."
+          "description": "Update the patient layout to accommodate the floating bottom navigation by adding bottom padding to the main content area equal to the nav height plus margins. Ensure content does not overlap the floating nav bar and scrolling behavior remains smooth. Apply safe area padding adjustments to the content wrapper."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Add utility classes for the floating bottom navigation container including fixed positioning, margin spacing, border radius, and safe area inset support. Include CSS custom properties for consistent spacing values across layouts."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "In demo mode, bypass all GPS geofencing, GPS accuracy checks, mock-location detection, and speed-jump anomaly checks. Inject fixed mock coordinates that always pass geofence validation.",
+      "summary": "Apply frosted-glass BlurView background with fallback, subtle border, and soft shadow to the floating navigation container",
       "acceptanceCriteria": [
-        "When demo mode is active, the attendance page skips GPS permission requests and uses mock coordinates.",
-        "Geofence check always returns 'within range' in demo mode.",
-        "Mock-location detection is skipped; no security event is logged for mock location in demo mode.",
-        "The phlebotomist can start and end a shift from the attendance page without a real GPS fix."
+        "BlurView renders a visible frosted-glass blur behind the nav bar at intensity 60–80",
+        "If BlurView is unavailable the nav bar shows rgba(255,255,255,0.9) background",
+        "A subtle 1px semi-transparent white border is visible around the nav container",
+        "A soft drop shadow (opacity 0.08, radius 12, offset y:6) is visible below the nav bar",
+        "Android shows elevation: 10"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "path": "frontend/src/components/layout/BottomNavigation.tsx",
           "operation": "modify",
-          "description": "Import useDemoMode hook and check demoMode flag. When demo mode is active, skip all GPS permission requests and geolocation API calls. Instead, inject mock coordinates (e.g., 28.7041, 77.1025 for Delhi) that match the configured lab location. Skip all GPS validation checks (accuracy, mock-location detection, speed-jump anomaly, geofence) and always proceed to the next step. Ensure no security logs are created for GPS checks in demo mode."
+          "description": "Wrap the navigation content with a BlurView component from expo-blur (or react-native-blur if using React Native Web) with intensity 60-80 and tint 'light'. Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported (use conditional rendering or error boundary). Apply border styles (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and shadow properties (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android) to the container."
         },
         {
-          "path": "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Import useDemoMode hook and apply the same demo mode GPS bypass logic as PhlebotomistAttendancePage. When demo mode is active, use mock coordinates, skip all GPS validations, and bypass security logging for GPS-related checks."
+          "description": "Add utility classes for the frosted-glass effect including border styles (1px rgba(255,255,255,0.3)), shadow properties (box-shadow with 0.08 opacity, 12px radius, 6px y-offset), and fallback background color (rgba(255,255,255,0.9)). Include CSS custom properties for consistent blur and shadow values."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "In demo mode, bypass device fingerprinting and device-binding enforcement on attendance/shift pages. Skip or auto-accept the selfie capture step with a placeholder image.",
+      "summary": "Style active tab with gradient pill background, white icon, scale animation, and smooth transitions between tabs",
       "acceptanceCriteria": [
-        "Device fingerprint check is skipped in demo mode; no device-mismatch security event is logged.",
-        "Selfie capture step is either hidden or auto-passes with a placeholder in demo mode.",
-        "Shift check-in and check-out complete successfully end-to-end in demo mode."
+        "Active tab shows a visible gradient pill (#0D47A1 to #26C6DA) behind the icon/label",
+        "Active tab icon is white",
+        "Active tab animates to scale 1.05–1.1 when selected",
+        "Inactive tab icons render in #94A3B8",
+        "Switching tabs produces a smooth animated transition with no flicker or jump"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "path": "frontend/src/components/layout/BottomNavigation.tsx",
           "operation": "modify",
-          "description": "When demo mode is active, skip device fingerprint generation and device binding validation. Skip the selfie capture step entirely or auto-accept it with a placeholder URL (e.g., 'demo-selfie-placeholder.jpg'). Ensure no device-mismatch security logs are created in demo mode. Allow shift start and end flows to complete without camera or device checks."
+          "description": "Add active tab styling with a gradient pill background using linear-gradient from #0D47A1 to #26C6DA. Apply white color to active tab icons and labels. Implement scale transform animation (1.05-1.1) on active state using CSS transitions or Framer Motion. Set inactive tab icons to color #94A3B8. Add smooth transition properties (transition: all 0.3s ease-in-out) for tab switching animations. Ensure pill background has appropriate padding and border radius to wrap the icon/label."
         },
         {
-          "path": "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Apply the same device fingerprinting and selfie bypass logic as PhlebotomistAttendancePage. In demo mode, skip device checks, auto-pass selfie capture with a placeholder, and complete shift operations without security logging."
+          "description": "Add utility classes for the active tab gradient pill (linear-gradient(to right, #0D47A1, #26C6DA)), white icon color, inactive icon color (#94A3B8), and scale animation keyframes. Include transition properties for smooth tab switching with no flicker. Define CSS custom properties for gradient colors and animation timing."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "In demo mode, bypass the ShiftGuard so phlebotomist routes are all accessible without an active shift. Provide a simulated active shift in demo mode.",
+      "summary": "Preserve existing role-based navigation logic, routing integrity, and prevent layout shift during scroll",
       "acceptanceCriteria": [
-        "ShiftGuard allows navigation to all phlebotomist sub-pages when demo mode is active.",
-        "All phlebotomist pages (TaskQueuePage, HomeCollectionQueuePage, RecordVitalsPage, ScanCampQRPage, AddHospitalSamplePage, MyHospitalSamplesPage) render without redirection in demo mode.",
-        "No 'start shift first' gate screen is shown during demo mode."
+        "Each role (patient, phlebotomist, lab admin, super admin) still sees only their role-specific nav items",
+        "All existing routes navigate correctly when tapped",
+        "No layout shift or transparency glitch occurs while scrolling page content"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/layout/ShiftGuard.tsx",
+          "path": "frontend/src/components/layout/BottomNavigation.tsx",
           "operation": "modify",
-          "description": "Import useDemoMode hook. When demo mode is active, bypass the active shift check and allow all children to render without redirection. Do not show the gate screen or redirect to the attendance page in demo mode."
+          "description": "Verify that all existing roleNavConfig-driven navigation logic remains intact after applying the floating container styles. Ensure navigation items are filtered by role exactly as before. Test that route navigation handlers (Link/navigate calls) function correctly with the new layout. Add will-change: transform CSS property to prevent rendering glitches during scroll."
         },
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/components/layout/StaffAppLayout.tsx",
           "operation": "modify",
-          "description": "In the useGetActiveShift hook, when demo mode is active, return a mock active shift object with realistic data (check-in time, hospital ID, status 'ACTIVE') instead of calling the backend. This ensures shift-dependent pages render properly in demo mode."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "In demo mode, seed all data-dependent pages with realistic mock/stub data so every screen renders meaningfully rather than showing empty states.",
-      "acceptanceCriteria": [
-        "When demo mode is active, all list pages show at least 2–3 plausible mock entries instead of empty states.",
-        "Mock data reflects the active demo role (e.g. phlebotomist demo shows phlebotomist-relevant bookings).",
-        "Admin demo role shows audit logs, incidents, and security log entries.",
-        "Notification bell shows at least one unread notification in demo mode."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/utils/mockData.ts",
-          "operation": "create",
-          "description": "Create a utility module that exports mock data generators for all entity types: bookings, home collection requests, hospital samples, reports, audit logs, incidents, security logs, notifications, etc. Each generator should return 2-3 realistic mock entries with plausible field values and timestamps."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "For all query hooks (useGetMyBookings, useGetMyHomeCollectionRequests, useGetAllAuditLogs, useGetAllIncidents, useGetSecurityLogs, useGetMyReports, useGetHospitalSamplesByPhlebotomist, useGetHospitalSamplesByPhone, etc.), check if demo mode is active. If so, return mock data from the mockData utility instead of calling the backend. Ensure mock data aligns with the active demo role."
-        },
-        {
-          "path": "frontend/src/hooks/useNotifications.ts",
-          "operation": "modify",
-          "description": "When demo mode is active, return mock notifications from the mockData utility instead of polling the backend. Ensure at least one notification has an unread status so the notification bell badge displays correctly."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "In demo mode, all mutating actions should optimistically succeed with toast confirmation without making real backend calls, or gracefully handle backend failures without crashing.",
-      "acceptanceCriteria": [
-        "Submitting any form or mutation in demo mode shows a success toast and updates local UI state.",
-        "No unhandled errors or blank screens appear when backend calls fail or are skipped in demo mode.",
-        "File upload flows (report upload, selfie, incident photo) accept any input and show a simulated progress/success state."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "For all mutation hooks (useCreateBooking, useUpdateBookingStatus, useUpdateHomeCollectionStatus, useSubmitIncident, useUploadReport, useRecordBPReading, useRecordRBSReading, useStartShift, useEndShift, useCreateHospitalSample, useUpdateHospitalSampleBilling, etc.), check if demo mode is active. If so, skip the backend call, simulate a successful response after a brief delay (e.g., 500ms), show a success toast, and invalidate or update the local query cache optimistically."
-        },
-        {
-          "path": "frontend/src/pages/admin/UploadReportPage.tsx",
-          "operation": "modify",
-          "description": "When demo mode is active, simulate file upload progress (0% to 100% over 2 seconds) and show success feedback without calling the backend. Use a timeout to update progress state incrementally."
-        },
-        {
-          "path": "frontend/src/pages/staff/SubmitIncidentPage.tsx",
-          "operation": "modify",
-          "description": "When demo mode is active, simulate photo upload progress if a photo is attached and show success feedback without backend calls. Display a success toast and navigate back on completion."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Add a patient demo mode entry point on the PatientLoginScreen so the Patient App can also be tested without Internet Identity. Patient demo mode should populate mock patient data.",
-      "acceptanceCriteria": [
-        "A 'Demo Patient' button is available on the patient login or app selector screen.",
-        "Clicking it enters patient demo mode with a mock patient profile.",
-        "All patient pages render with mock data: bookings, reports, home collections, vitals, hospital samples.",
-        "A demo banner is visible in PatientAppLayout while patient demo mode is active."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/auth/PatientLoginScreen.tsx",
-          "operation": "modify",
-          "description": "Add a 'Demo Patient' button below the Internet Identity sign-in button. When clicked, call the demo mode context's enterDemoMode function with AppRole.patient and navigate to the patient home page."
+          "description": "Ensure the content wrapper has proper z-index layering to prevent overlap with the floating nav. Add scroll event optimization (e.g., passive listeners) if needed. Verify that no layout shift occurs when content height changes or during scroll events. Test with different role configurations to confirm role-based visibility is preserved."
         },
         {
           "path": "frontend/src/components/layout/PatientAppLayout.tsx",
           "operation": "modify",
-          "description": "Import useDemoMode hook and add a demo mode banner at the top of the layout that displays when demo mode is active. The banner should indicate 'Demo Mode: Patient' and be visually distinct."
-        },
-        {
-          "path": "frontend/src/PatientApp.tsx",
-          "operation": "modify",
-          "description": "Wrap the PatientApp component tree with DemoModeProvider so all patient pages can access demo mode state. When demo mode is active, skip Internet Identity authentication checks and use a mock patient profile from the demo mode context."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Ensure all patient-facing query hooks (useGetMyBookings, useGetMyHomeCollectionRequests, useGetMyReports, useGetHospitalSamplesByPhone, useGetMyVitals) return mock data when patient demo mode is active. Use the mockData utility to generate realistic patient-specific mock entries."
+          "description": "Ensure the content wrapper has proper z-index layering to prevent overlap with the floating nav. Add scroll event optimization if needed. Verify that no layout shift occurs when content height changes or during scroll events. Test that patient-specific nav items render correctly with the new floating design."
         }
       ]
     }

@@ -1,69 +1,50 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T02:43:55.423Z",
-  "summary": "The diff only modifies a single project state tracking file (project_state.json), which records the requirements as 'pending' action items. No actual implementation code was added or modified. None of the seven requirements have been implemented — they are merely catalogued as pending tasks in a project state file.",
+  "generatedAt": "2026-02-25T05:44:23.289Z",
+  "summary": "The diff implements floating bottom navigation redesign across PatientAppLayout.tsx and StaffAppLayout.tsx with CSS-based frosted glass, fixed positioning, safe area insets, gradient active tab styling, and role-based nav items. Most requirements are partially or fully addressed, but several specific acceptance criteria have gaps or are implemented differently than specified.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Add a global demo mode flag activated from StaffLoginScreen demo buttons, storing role and demoMode flag in context accessible throughout StaffApp.",
-      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
       "id": "REQ-2",
-      "requirement": "In demo mode, bypass all GPS geofencing, accuracy checks, mock-location detection, and speed-jump anomaly checks; inject fixed mock coordinates.",
-      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
+      "requirement": "Apply a frosted-glass background using a BlurView component (intensity 60–80, tint: 'light'). Shadow must use shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android.",
+      "reason": "The diff uses CSS backdropFilter: 'blur(20px)' and boxShadow instead of a BlurView component. This is a web CSS approach, not the React Native BlurView component specified. The shadow is implemented as boxShadow rather than explicit shadowColor/shadowOpacity/shadowRadius/shadowOffset/elevation properties. There is no elevation: 10 for Android present in the diff.",
       "evidence": [
-        "project_state.json"
+        "frontend/src/components/layout/PatientAppLayout.tsx",
+        "frontend/src/components/layout/StaffAppLayout.tsx"
       ]
     },
     {
       "id": "REQ-3",
-      "requirement": "In demo mode, bypass device fingerprinting, device-binding enforcement, and skip or auto-accept selfie capture with a placeholder image.",
-      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
+      "requirement": "Active tab animates to scale 1.05–1.1 when selected; smooth transition animation when switching tabs.",
+      "reason": "The diff does not show any explicit scale transform animation on the active tab button. No transition animation for switching tabs is visible in the truncated diff. Scale animation code is absent from the visible portions of the layout files.",
       "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "In demo mode, bypass ShiftGuard for all phlebotomist routes and provide a simulated active shift.",
-      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "In demo mode, seed all data-dependent pages with realistic mock/stub data including bookings, home collection queue, hospital samples, reports, audit logs, incidents, security logs, attendance history, and notifications.",
-      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "In demo mode, all mutating actions should optimistically succeed with a toast confirmation without real backend calls, or gracefully handle backend failures.",
-      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Add a patient demo mode entry point on PatientLoginScreen or AppSelectorPage with mock patient data and a demo banner in PatientAppLayout.",
-      "reason": "No implementation code was added. The requirement is only recorded as 'pending' in project_state.json.",
-      "evidence": [
-        "project_state.json"
+        "frontend/src/components/layout/PatientAppLayout.tsx",
+        "frontend/src/components/layout/StaffAppLayout.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.99,
+  "hallucinated_features": [
+    {
+      "description": "Dark mode floating nav styles with dark background rgba(18,22,40,0.92) and adjusted border and shadow variables.",
+      "reason": "The build request only specifies a light frosted-glass nav (tint: 'light', rgba(255,255,255,0.9) fallback). Dark mode nav variables were added in index.css but were not requested.",
+      "evidence": [
+        "frontend/src/index.css"
+      ]
+    },
+    {
+      "description": "CSS custom properties (--nav-blur, --nav-bg, --nav-border, --nav-shadow, --nav-radius, --nav-bottom-margin, --nav-side-margin) added as design tokens in :root.",
+      "reason": "The build request does not mention adding CSS custom properties or design tokens for nav values; it specifies direct style values. These tokens are additional implementation detail not requested.",
+      "evidence": [
+        "frontend/src/index.css"
+      ]
+    }
+  ],
+  "confidence": 0.62,
   "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/components/layout/PatientAppLayout.tsx",
+    "frontend/src/components/layout/StaffAppLayout.tsx",
+    "frontend/src/index.css",
     "project_state.json"
   ]
 }
