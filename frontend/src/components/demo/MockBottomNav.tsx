@@ -1,80 +1,65 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { AppRole } from '../../types/models';
 import {
-  Home,
-  FlaskConical,
-  FileText,
-  User,
-  ClipboardList,
-  QrCode,
-  Calendar,
-  Shield,
-  LayoutDashboard,
-  CheckSquare,
-  Activity,
-  Clock,
-  ShieldAlert,
-  BarChart3,
-  CalendarCheck,
+  Home, FlaskConical, MapPin, FileText, User, ClipboardList,
+  CalendarCheck, Shield, BarChart3, Calendar, ShieldAlert, Clock
 } from 'lucide-react';
-import { AppRole } from '../../backend';
-import { roleNavConfig } from '../../utils/roleConfig';
+import { cn } from '@/lib/utils';
 
-interface MockBottomNavProps {
-  role: AppRole;
-}
-
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Home,
-  FlaskConical,
-  FileText,
-  User,
-  ClipboardList,
-  CheckSquare,
-  QrCode,
-  Calendar,
-  Shield,
-  LayoutDashboard,
-  Activity,
-  Clock,
-  ShieldAlert,
-  BarChart3,
-  CalendarCheck,
+const iconMap: Record<string, React.ReactNode> = {
+  Home: <Home className="h-4 w-4" />,
+  FlaskConical: <FlaskConical className="h-4 w-4" />,
+  MapPin: <MapPin className="h-4 w-4" />,
+  FileText: <FileText className="h-4 w-4" />,
+  User: <User className="h-4 w-4" />,
+  ClipboardList: <ClipboardList className="h-4 w-4" />,
+  CalendarCheck: <CalendarCheck className="h-4 w-4" />,
+  Clock: <Clock className="h-4 w-4" />,
+  Shield: <Shield className="h-4 w-4" />,
+  BarChart3: <BarChart3 className="h-4 w-4" />,
+  Calendar: <Calendar className="h-4 w-4" />,
+  ShieldAlert: <ShieldAlert className="h-4 w-4" />,
 };
 
-export default function MockBottomNav({ role }: MockBottomNavProps) {
-  const navItems = roleNavConfig[role] || [];
-  const [activeIndex, setActiveIndex] = useState(0);
+interface NavItem {
+  label: string;
+  path: string;
+  icon: string;
+}
 
+interface MockBottomNavProps {
+  navItems: NavItem[];
+  activeItem?: string;
+  onItemClick?: (path: string) => void;
+  userRole?: AppRole | string;
+}
+
+export default function MockBottomNav({ navItems, activeItem, onItemClick }: MockBottomNavProps) {
   return (
-    <div className="relative">
-      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md">
-        <div className="bg-amber-50 border-b border-amber-200 px-3 py-1 text-center">
-          <span className="text-[10px] text-amber-700 font-medium">⚠️ Demo preview only</span>
-        </div>
-        <div className="flex items-center justify-around h-16 px-1">
-          {navItems.map((item, index) => {
-            const isActive = index === activeIndex;
-            const IconComponent = iconMap[item.iconName] || Home;
-            return (
-              <button
-                key={item.path + item.label}
-                onClick={() => setActiveIndex(index)}
-                title="Demo only — no navigation"
-                className={`flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
-                  isActive
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}
-              >
-                <IconComponent className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : ''}`} />
-                <span className={`text-[10px] font-medium truncate w-full text-center ${isActive ? 'text-primary' : ''}`}>
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+    <div
+      className="flex items-center justify-around rounded-2xl px-2 py-2 w-full"
+      style={{
+        background: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(12px)',
+        boxShadow: '0 6px 14px rgba(0,0,0,0.12)',
+      }}
+    >
+      {navItems.map((item) => {
+        const isActive = activeItem === item.path;
+        return (
+          <button
+            key={item.path}
+            onClick={() => onItemClick?.(item.path)}
+            className={cn(
+              'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-0',
+              isActive ? 'bg-primary text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <span>{iconMap[item.icon] || <User className="h-4 w-4" />}</span>
+            <span className="text-[10px] font-semibold leading-tight truncate max-w-[56px]">{item.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

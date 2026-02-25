@@ -1,403 +1,405 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Loader2, AlertCircle, CheckCircle, ChevronDown } from 'lucide-react';
+import { useGetAllTests, useCreateHospitalSample, useGetAssignedHospitals } from '../../hooks/useQueries';
 import {
-  ArrowLeft,
-  User,
-  Phone,
-  Building2,
-  FlaskConical,
-  IndianRupee,
-  Lock,
-  CreditCard,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
-import MedicalCard from '../../components/shared/MedicalCard';
-import SearchableTestSelector from '../../components/shared/SearchableTestSelector';
-import { useCreateHospitalSample } from '../../hooks/useQueries';
-import { useGetCallerUserProfile } from '../../hooks/useQueries';
-import { useInternetIdentity } from '../../hooks/useInternetIdentity';
-import { Test } from '../../backend';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface AddHospitalSamplePageProps {
   onNavigate?: (route: string) => void;
 }
 
-const PAYMENT_MODES = ['Cash', 'UPI', 'Credit'] as const;
-type PaymentMode = (typeof PAYMENT_MODES)[number];
+const PAYMENT_MODES = [
+  { value: 'CASH', label: 'Cash Collected' },
+  { value: 'UPI', label: 'UPI Received' },
+  { value: 'CREDIT', label: 'Hospital Credit' },
+];
 
 export default function AddHospitalSamplePage({ onNavigate }: AddHospitalSamplePageProps) {
-  const { identity } = useInternetIdentity();
-  const { data: userProfile } = useGetCallerUserProfile();
-  const createSample = useCreateHospitalSample();
-
   const [patientName, setPatientName] = useState('');
   const [phone, setPhone] = useState('');
-  const [selectedTest, setSelectedTest] = useState<Test | null>(null);
-  const [discount, setDiscount] = useState('');
-  const [amountReceived, setAmountReceived] = useState('');
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>('Cash');
+  const [phoneError, setPhoneError] = useState('');
+  const [selectedHospitalId, setSelectedHospitalId] = useState('');
+  const [selectedTestId, setSelectedTestId] = useState('');
+  const [paymentMode, setPaymentMode] = useState('CASH');
   const [notes, setNotes] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [serverError, setServerError] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
-  const hospitalId = userProfile?.phone ? `hospital_${userProfile.phone}` : 'default_hospital';
-  const phlebotomistId = identity?.getPrincipal().toString() || '';
+  const { data: tests = [], isLoading: testsLoading } = useGetAllTests();
+  const { data: assignedHospitals = [], isLoading: hospitalsLoading } = useGetAssignedHospitals();
+  const createSampleMutation = useCreateHospitalSample();
 
-  const mrp = selectedTest ? Number(selectedTest.price) : 0;
-  const maxDiscount = (mrp / 1000) * 50;
-  const discountVal = parseFloat(discount) || 0;
-  const finalAmount = Math.max(0, mrp - discountVal);
-  const amountReceivedVal = parseFloat(amountReceived) || 0;
-  const pendingAmount = Math.max(0, finalAmount - amountReceivedVal);
+  const selectedTest = tests.find((t: any) => t.id === selectedTestId);
+  const mrp: number = selectedTest ? Number(selectedTest.price) : 0;
+  const offerPrice: number = selectedTest ? Number(selectedTest.offerPrice ?? selectedTest.price) : 0;
+  const finalAmount: number = offerPrice;
+  const amountReceived: number = (paymentMode === 'CASH' || paymentMode === 'UPI') ? finalAmount : 0;
+  const pendingAmount: number = finalAmount - amountReceived;
 
-  const discountError =
-    discountVal > maxDiscount && mrp > 0
-      ? `Discount exceeds the allowed maximum of ₹${maxDiscount.toFixed(2)}`
-      : '';
+  const selectedHospital = assignedHospitals.find((h: any) => h.id === selectedHospitalId);
 
-  const isFormValid =
-    patientName.trim().length > 0 &&
-    phone.trim().length === 10 &&
-    /^\d{10}$/.test(phone.trim()) &&
-    selectedTest !== null &&
-    !discountError;
+  const validatePhone = (value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length !== 10) {
+      setPhoneError('Enter a valid 10-digit mobile number');
+    } else {
+      setPhoneError('');
+    }
+    return digits.length === 10;
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isFormValid || !selectedTest) return;
-    setServerError('');
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setPhone(digits);
+    if (digits.length > 0) validatePhone(digits);
+    else setPhoneError('');
+  };
 
+  const handleSubmitClick = () => {
+    setSubmitError('');
+    if (!patientName.trim()) { setSubmitError('Patient name is required.'); return; }
+    if (!validatePhone(phone)) return;
+    if (!selectedHospitalId) { setSubmitError('Please select a hospital.'); return; }
+    if (!selectedTestId) { setSubmitError('Please select a test.'); return; }
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSubmit = async () => {
     try {
-      await createSample.mutateAsync({
-        patientName: patientName.trim(),
-        phone: phone.trim(),
-        hospitalId,
-        phlebotomistId,
-        testId: selectedTest.id,
+      await createSampleMutation.mutateAsync({
+        patientName,
+        phone,
+        hospitalId: selectedHospitalId,
+        testId: selectedTestId,
         mrp,
-        discount: discountVal,
+        discount: mrp - offerPrice,
         finalAmount,
-        amountReceived: amountReceivedVal,
+        amountReceived,
         pendingAmount,
         paymentMode,
+        notes,
       });
-      setSubmitted(true);
+      setShowConfirmDialog(false);
+      // Reset form
+      setPatientName('');
+      setPhone('');
+      setSelectedHospitalId('');
+      setSelectedTestId('');
+      setPaymentMode('CASH');
+      setNotes('');
+      if (onNavigate) onNavigate('task-queue');
     } catch (err: any) {
-      setServerError(err?.message || 'Failed to save hospital sample. Please try again.');
+      setShowConfirmDialog(false);
+      setSubmitError(err?.message || 'Failed to save sample. Please try again.');
     }
   };
 
-  if (submitted) {
-    return (
-      <div className="px-4 py-8 flex flex-col items-center justify-center min-h-[60vh] space-y-4 animate-fade-in">
-        <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center shadow-lg">
-          <CheckCircle className="w-10 h-10 text-white" />
+  return (
+    <div className="p-4 space-y-4 max-w-lg mx-auto">
+      <h2 className="text-lg font-bold text-foreground">Add Hospital Sample</h2>
+
+      {/* Patient Details */}
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Patient Details</h3>
+
+        {/* Patient Name */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-foreground">Patient Name *</label>
+          <input
+            type="text"
+            value={patientName}
+            onChange={e => setPatientName(e.target.value)}
+            placeholder="Enter patient name"
+            className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
         </div>
-        <h2 className="text-xl font-bold text-foreground">Sample Recorded!</h2>
-        <p className="text-sm text-muted-foreground text-center max-w-xs">
-          Hospital sample for <strong>{patientName}</strong> has been saved with status{' '}
-          <span className="text-primary font-semibold">SAMPLE_COLLECTED</span>.
-        </p>
-        <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <Lock className="w-3 h-3" /> Billing fields are now locked for editing.
-        </p>
-        <div className="flex gap-3 mt-2">
-          <button
-            onClick={() => {
-              setSubmitted(false);
-              setPatientName('');
-              setPhone('');
-              setSelectedTest(null);
-              setDiscount('');
-              setAmountReceived('');
-              setPaymentMode('Cash');
-              setNotes('');
-            }}
-            className="gradient-btn px-5 py-2.5 text-sm"
-          >
-            Add Another
-          </button>
-          {onNavigate && (
-            <button
-              onClick={() => onNavigate('tasks')}
-              className="px-5 py-2.5 text-sm border border-border rounded-xl text-foreground hover:bg-muted/50 transition-colors"
-            >
-              Back to Tasks
-            </button>
+
+        {/* Phone */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-foreground">Mobile Number *</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={handlePhoneChange}
+            placeholder="10-digit mobile number"
+            maxLength={10}
+            inputMode="numeric"
+            className={`w-full px-3 py-2 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 ${phoneError ? 'border-red-400 bg-red-50' : 'border-border'}`}
+          />
+          {phoneError && (
+            <p className="text-xs text-red-500 flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {phoneError}
+            </p>
+          )}
+        </div>
+
+        {/* Hospital — read-only dropdown */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-foreground">Hospital *</label>
+          {hospitalsLoading ? (
+            <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading hospitals...
+            </div>
+          ) : assignedHospitals.length === 0 ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 font-medium">
+              No hospitals assigned. Contact admin.
+            </div>
+          ) : (
+            <Select value={selectedHospitalId} onValueChange={setSelectedHospitalId}>
+              <SelectTrigger className="w-full rounded-xl border-border text-sm font-medium">
+                <SelectValue placeholder="Select hospital" />
+              </SelectTrigger>
+              <SelectContent>
+                {assignedHospitals.map((h: any) => (
+                  <SelectItem key={h.id} value={h.id}>
+                    <div>
+                      <p className="font-semibold">{h.name}</p>
+                      {h.address && <p className="text-xs text-muted-foreground">{h.address}</p>}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="px-4 py-5 space-y-4 animate-fade-in pb-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        {onNavigate && (
-          <button
-            onClick={() => onNavigate('tasks')}
-            className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 text-foreground" />
-          </button>
-        )}
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Add Hospital Sample</h1>
-          <p className="text-xs text-muted-foreground">Record a new patient sample</p>
+      {/* Test Selection */}
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Test & Billing</h3>
+
+        {/* Test */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-foreground">Select Test *</label>
+          {testsLoading ? (
+            <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading tests...
+            </div>
+          ) : (
+            <Select value={selectedTestId} onValueChange={setSelectedTestId}>
+              <SelectTrigger className="w-full rounded-xl border-border text-sm font-medium">
+                <SelectValue placeholder="Select test" />
+              </SelectTrigger>
+              <SelectContent>
+                {tests.map((t: any) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    <div>
+                      <p className="font-semibold">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">₹{t.price}</p>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
-      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Patient Details */}
-        <MedicalCard className="p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <User className="w-4 h-4 text-primary" />
-            Patient Details
-          </h2>
-
-          {/* Patient Name */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              Patient Name <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              placeholder="Enter patient full name"
-              className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-              required
-            />
-          </div>
-
-          {/* Mobile Number */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              Mobile Number <span className="text-destructive">*</span>
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                placeholder="10-digit mobile number"
-                className="w-full border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-                required
-              />
-            </div>
-            {phone.length > 0 && phone.length < 10 && (
-              <p className="text-xs text-destructive">Enter a valid 10-digit mobile number</p>
-            )}
-          </div>
-
-          {/* Hospital (read-only) */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <Building2 className="w-3 h-3" />
-              Hospital
-            </label>
-            <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-2.5">
-              <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm text-foreground flex-1">
-                {userProfile?.name ? `${userProfile.name}'s Hospital` : 'Assigned Hospital'}
-              </span>
-              <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-            </div>
-            <p className="text-xs text-muted-foreground">Auto-filled from your profile</p>
-          </div>
-        </MedicalCard>
-
-        {/* Test Selection */}
-        <MedicalCard className="p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <FlaskConical className="w-4 h-4 text-primary" />
-            Test Selection
-          </h2>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              Select Test <span className="text-destructive">*</span>
-            </label>
-            <SearchableTestSelector
-              value={selectedTest}
-              onChange={setSelectedTest}
-              disabled={false}
-            />
-          </div>
-
-          {/* MRP (auto-filled, read-only) */}
-          {selectedTest && (
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <IndianRupee className="w-3 h-3" />
-                MRP
+        {/* Price Fields — shown after test selection */}
+        {selectedTest && (
+          <div className="space-y-2 pt-1">
+            {/* MRP */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                MRP <Lock className="h-3 w-3 text-muted-foreground" />
               </label>
-              <div className="flex items-center gap-2 bg-muted/50 border border-border rounded-xl px-3 py-2.5">
-                <IndianRupee className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-sm font-semibold text-foreground flex-1">
-                  ₹{mrp.toLocaleString('en-IN')}
-                </span>
-                <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+              <div className="relative">
+                <input
+                  type="text"
+                  value={`₹${mrp.toFixed(2)}`}
+                  disabled
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-muted text-sm font-medium text-muted-foreground cursor-not-allowed"
+                />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
               </div>
             </div>
-          )}
-        </MedicalCard>
 
-        {/* Billing Details */}
-        <MedicalCard className="p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <IndianRupee className="w-4 h-4 text-primary" />
-            Billing Details
-          </h2>
-
-          {/* Discount */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Discount (₹)</label>
-            {mrp > 0 && (
-              <p className="text-xs text-accent font-medium">
-                Max allowed: ₹{maxDiscount.toFixed(2)} (₹50 per ₹1000 of MRP)
-              </p>
-            )}
-            <input
-              type="number"
-              value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-              className={`w-full border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${
-                discountError ? 'border-destructive focus:border-destructive' : 'border-border focus:border-primary'
-              }`}
-            />
-            {discountError && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {discountError}
-              </p>
-            )}
-          </div>
-
-          {/* Final Amount (computed) */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Final Amount (₹)</label>
-            <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-3 py-2.5">
-              <IndianRupee className="w-4 h-4 text-primary flex-shrink-0" />
-              <span className="text-sm font-bold text-primary flex-1">
-                ₹{finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-              <Lock className="w-3.5 h-3.5 text-primary/50" />
+            {/* Offer Price */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                Offer Price <Lock className="h-3 w-3 text-muted-foreground" />
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={`₹${offerPrice.toFixed(2)}`}
+                  disabled
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-muted text-sm font-medium text-muted-foreground cursor-not-allowed"
+                />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">MRP − Discount = Final Amount</p>
-          </div>
 
-          {/* Amount Received */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Amount Received (₹)</label>
-            <input
-              type="number"
-              value={amountReceived}
-              onChange={(e) => setAmountReceived(e.target.value)}
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-              className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-            />
-          </div>
-
-          {/* Pending Amount (computed) */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Pending Amount (₹)</label>
-            <div
-              className={`flex items-center gap-2 rounded-xl px-3 py-2.5 border ${
-                pendingAmount > 0
-                  ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800'
-                  : 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-              }`}
-            >
-              <IndianRupee
-                className={`w-4 h-4 flex-shrink-0 ${pendingAmount > 0 ? 'text-amber-600' : 'text-green-600'}`}
-              />
-              <span
-                className={`text-sm font-bold flex-1 ${pendingAmount > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}
-              >
-                ₹{pendingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-              <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+            {/* Final Amount */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+                Final Amount <Lock className="h-3 w-3 text-muted-foreground" />
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={`₹${finalAmount.toFixed(2)}`}
+                  disabled
+                  className="w-full px-3 py-2 rounded-xl border border-primary/30 bg-primary/5 text-sm font-bold text-primary cursor-not-allowed"
+                />
+                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary/60" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Final Amount − Amount Received</p>
-          </div>
-
-          {/* Payment Mode */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-              <CreditCard className="w-3 h-3" />
-              Payment Mode
-            </label>
-            <div className="flex gap-2">
-              {PAYMENT_MODES.map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setPaymentMode(mode)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-                    paymentMode === mode
-                      ? 'gradient-primary text-white shadow-sm'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-        </MedicalCard>
-
-        {/* Notes */}
-        <MedicalCard className="p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <FileText className="w-4 h-4 text-primary" />
-            Notes (Optional)
-          </h2>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Any additional notes..."
-            rows={3}
-            className="w-full border border-border rounded-xl px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors resize-none"
-          />
-        </MedicalCard>
-
-        {/* Server Error */}
-        {serverError && (
-          <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-            <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-destructive">{serverError}</p>
           </div>
         )}
+      </div>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={!isFormValid || createSample.isPending}
-          className="w-full gradient-btn py-3.5 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {createSample.isPending ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="w-4 h-4" />
-              Save Hospital Sample
-            </>
+      {/* Payment */}
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Payment</h3>
+
+        {/* Payment Mode */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-foreground">Payment Mode *</label>
+          <Select value={paymentMode} onValueChange={setPaymentMode}>
+            <SelectTrigger className="w-full rounded-xl border-border text-sm font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_MODES.map(pm => (
+                <SelectItem key={pm.value} value={pm.value}>
+                  {pm.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Amount Received — auto-filled, read-only */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+            Amount Received <Lock className="h-3 w-3 text-muted-foreground" />
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={`₹${amountReceived.toFixed(2)}`}
+              disabled
+              className="w-full px-3 py-2 rounded-xl border border-border bg-muted text-sm font-medium text-muted-foreground cursor-not-allowed"
+            />
+            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+          </div>
+          {(paymentMode === 'CASH' || paymentMode === 'UPI') && selectedTest && (
+            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" /> Auto-filled from Final Amount
+            </p>
           )}
-        </button>
-      </form>
+        </div>
+
+        {/* Pending Amount */}
+        {selectedTest && (
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-foreground flex items-center gap-1">
+              Pending Amount <Lock className="h-3 w-3 text-muted-foreground" />
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={`₹${pendingAmount.toFixed(2)}`}
+                disabled
+                className={`w-full px-3 py-2 rounded-xl border bg-muted text-sm font-bold cursor-not-allowed ${pendingAmount > 0 ? 'border-orange-300 text-orange-600' : 'border-border text-muted-foreground'}`}
+              />
+              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Notes */}
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
+        <label className="text-xs font-semibold text-foreground">Notes (Optional)</label>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="Any additional notes..."
+          rows={3}
+          className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+        />
+      </div>
+
+      {/* Error */}
+      {submitError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-red-600 font-medium">{submitError}</p>
+        </div>
+      )}
+
+      {/* Submit */}
+      <button
+        onClick={handleSubmitClick}
+        disabled={createSampleMutation.isPending}
+        className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+      >
+        {createSampleMutation.isPending ? (
+          <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
+        ) : (
+          'Save Sample Entry'
+        )}
+      </button>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Sample Entry</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Confirm submission? Billing details cannot be edited after saving.</p>
+                <div className="bg-muted rounded-xl p-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-medium">Patient:</span>
+                    <span className="font-bold text-foreground">{patientName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-medium">Hospital:</span>
+                    <span className="font-bold text-foreground">{selectedHospital?.name || selectedHospitalId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-medium">Test:</span>
+                    <span className="font-bold text-foreground">{selectedTest?.name || selectedTestId}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-medium">Final Amount:</span>
+                    <span className="font-bold text-primary">₹{finalAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-medium">Payment Mode:</span>
+                    <span className="font-bold text-foreground">{PAYMENT_MODES.find(p => p.value === paymentMode)?.label}</span>
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmit} disabled={createSampleMutation.isPending}>
+              {createSampleMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Saving...</>
+              ) : 'Confirm & Save'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

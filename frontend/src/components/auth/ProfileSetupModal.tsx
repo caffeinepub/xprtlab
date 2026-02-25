@@ -1,88 +1,98 @@
 import React, { useState } from 'react';
+import { AppRole } from '../../types/models';
 import { useSaveCallerUserProfile } from '../../hooks/useQueries';
-import { AppRole } from '../../backend';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import GradientButton from '../shared/GradientButton';
+import { Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface ProfileSetupModalProps {
-  onComplete: () => void;
-  defaultRole?: AppRole;
+  open: boolean;
+  appType?: 'patient' | 'staff';
+  onComplete?: () => void;
 }
 
-export default function ProfileSetupModal({ onComplete, defaultRole = AppRole.patient }: ProfileSetupModalProps) {
+export default function ProfileSetupModal({ open, appType = 'patient', onComplete }: ProfileSetupModalProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<AppRole>(defaultRole);
-  const saveProfile = useSaveCallerUserProfile();
+  const [role, setRole] = useState<AppRole>('patient');
+  const saveMutation = useSaveCallerUserProfile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    await saveProfile.mutateAsync({
-      name: name.trim(),
-      phone: phone.trim(),
-      appRole: role,
-    });
-    onComplete();
+    try {
+      await saveMutation.mutateAsync({ name, phone, appRole: role });
+      onComplete?.();
+    } catch (err) {
+      console.error('Failed to save profile', err);
+    }
   };
 
-  const isStaffDefault = defaultRole !== AppRole.patient;
+  const staffRoles: { value: AppRole; label: string }[] = [
+    { value: 'phlebotomist', label: 'Phlebotomist' },
+    { value: 'labAdmin', label: 'Lab Admin' },
+    { value: 'superAdmin', label: 'Super Admin' },
+  ];
 
   return (
-    <Dialog open>
-      <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog open={open}>
+      <DialogContent className="max-w-sm mx-auto">
         <DialogHeader>
           <DialogTitle>Complete Your Profile</DialogTitle>
           <DialogDescription>
-            Please provide your details to get started with XpertLab.
+            Please provide your details to get started.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Full Name *</Label>
-            <Input
-              id="name"
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-foreground">Full Name *</label>
+            <input
+              type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={e => setName(e.target.value)}
               placeholder="Enter your full name"
               required
+              className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+91 XXXXX XXXXX"
+          <div className="space-y-1">
+            <label className="text-xs font-semibold text-foreground">Phone Number</label>
+            <input
               type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+              placeholder="10-digit mobile number"
+              className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
-          {isStaffDefault && (
-            <div className="space-y-1.5">
-              <Label htmlFor="role">Your Role</Label>
-              <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
-                <SelectTrigger id="role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={AppRole.phlebotomist}>Phlebotomist</SelectItem>
-                  <SelectItem value={AppRole.labAdmin}>Lab Admin</SelectItem>
-                  <SelectItem value={AppRole.superAdmin}>Super Admin</SelectItem>
-                </SelectContent>
-              </Select>
+          {appType === 'staff' && (
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-foreground">Role *</label>
+              <select
+                value={role}
+                onChange={e => setRole(e.target.value as AppRole)}
+                className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
+              >
+                {staffRoles.map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
             </div>
           )}
-          <GradientButton
+          <button
             type="submit"
-            loading={saveProfile.isPending}
-            className="w-full"
+            disabled={saveMutation.isPending || !name.trim()}
+            className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            Save Profile & Continue
-          </GradientButton>
+            {saveMutation.isPending ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
+            ) : 'Save Profile'}
+          </button>
         </form>
       </DialogContent>
     </Dialog>

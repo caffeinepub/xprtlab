@@ -1,116 +1,348 @@
 {
   "kind": "build_request",
-  "title": "Floating Bottom Navigation with BlurView, Gradient Active Tab & Safe Area Support",
-  "projectName": "XpertLab",
+  "title": "XprtLab Phlebotomist Portal — UI Corrections & Operational Control Hardening",
+  "projectName": "XprtLab Portal",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Redesign the bottom navigation bar in BottomNavigation.tsx and StaffAppLayout.tsx (and PatientAppLayout.tsx) into a floating container that is positioned fixed at the bottom with 16–20px horizontal margin, 12–16px bottom margin, and borderRadius: 24. The container must not scroll with content, must not allow content to overlap it, and must respect safe area insets on both iOS and Android.",
+      "text": "Remove the 'Built with ❤️ using caffeine.ai' footer/branding text from all screens and layouts.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent-user"
+          "msg-4"
         ],
         "quotes": [
-          "Make the bottom navigation a floating container with 16–20px horizontal margin and 12–16px bottom margin",
-          "Add borderRadius: 24",
-          "Must remain fixed at bottom",
-          "Must not scroll with content",
-          "Must not allow content to overlap",
-          "Respect safe area insets (iOS + Android)"
+          "Remove \"Built with ❤️ using caffeine.ai\"."
         ]
       },
       "acceptanceCriteria": [
-        "Bottom nav floats above page content with visible horizontal and bottom margins",
-        "Nav has borderRadius: 24 applied visibly",
-        "Nav stays fixed at the bottom while scrolling page content",
-        "Page content does not slide behind the nav bar",
-        "Safe area insets are respected on notched iOS devices and Android devices with gesture navigation"
+        "No occurrence of 'caffeine.ai' text appears anywhere in the app.",
+        "All layouts (StaffAppLayout, PatientAppLayout, AppLayout) are free of this branding."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Apply a frosted-glass background to the floating bottom navigation using a BlurView component (intensity 60–80, tint: 'light'). Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported. Add a subtle border (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and a soft shadow (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android).",
+      "text": "Add the official XprtLab logo to the header in StaffAppLayout and PatientAppLayout. Slightly reduce the header height for better mobile usability.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent-user"
+          "msg-4"
         ],
         "quotes": [
-          "Use BlurView (Expo Blur) for background with: intensity: 60–80, tint: 'light'",
-          "Add fallback solid background color #FFFFFF with slight transparency (rgba(255,255,255,0.9)) if BlurView is not supported",
-          "Add subtle border: borderWidth: 1, borderColor: rgba(255,255,255,0.3)",
-          "Add soft shadow: shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 (Android)"
+          "Add official XprtLab logo in header.",
+          "Reduce header height slightly for better mobile usage."
         ]
       },
       "acceptanceCriteria": [
-        "BlurView renders a visible frosted-glass blur behind the nav bar at intensity 60–80",
-        "If BlurView is unavailable the nav bar shows rgba(255,255,255,0.9) background",
-        "A subtle 1px semi-transparent white border is visible around the nav container",
-        "A soft drop shadow (opacity 0.08, radius 12, offset y:6) is visible below the nav bar",
-        "Android shows elevation: 10"
+        "XprtLab logo image is rendered in the header on both staff and patient layouts.",
+        "Header height is visibly reduced compared to the previous version and fits comfortably on a 375px-wide mobile screen.",
+        "Logo scales appropriately without overflow."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Style the active tab in the bottom navigation with a soft gradient pill background using colors #0D47A1 → #26C6DA, a white icon, and a slight scale animation (scale 1.05–1.1). Inactive tab icons should use color #94A3B8. Add a smooth transition animation when switching between tabs.",
+      "text": "Improve global UI spacing, font weights, and contrast across all screens to achieve a professional medical look. Increase font weight for labels and headings; ensure sufficient contrast ratios for text on colored backgrounds.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-recent-user"
+          "msg-4"
         ],
         "quotes": [
-          "Add soft gradient pill background (#0D47A1 → #26C6DA)",
-          "White icon for active tab",
-          "Slight scale animation on active tab (scale 1.05–1.1)",
-          "Inactive icons: #94A3B8",
-          "Add smooth transition animation when switching tabs."
+          "Improve spacing, font weight, and contrast for professional medical look."
         ]
       },
       "acceptanceCriteria": [
-        "Active tab shows a visible gradient pill (#0D47A1 to #26C6DA) behind the icon/label",
-        "Active tab icon is white",
-        "Active tab animates to scale 1.05–1.1 when selected",
-        "Inactive tab icons render in #94A3B8",
-        "Switching tabs produces a smooth animated transition with no flicker or jump"
+        "Labels and section headings use font-weight semibold or bold.",
+        "Body text has sufficient contrast against its background (minimum WCAG AA).",
+        "Card and section padding is consistent and not cramped on mobile."
       ]
     },
     {
       "id": "REQ-4",
-      "text": "Preserve all existing role-based visibility logic in the bottom navigation (roleNavConfig-driven nav items per role). Do not break any existing routing. Ensure there is no layout shift or content flicker while scrolling with the new floating nav in place.",
-      "target": "frontend",
+      "text": "On the Attendance screen (PhlebotomistAttendancePage / AttendancePage), add a 'Today Summary' section that displays: Total Samples Collected, Cash Collected, UPI Collected, and Pending Amount — computed from the current day's hospital sample records for the logged-in phlebotomist.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-recent-user"
+          "msg-4"
         ],
         "quotes": [
-          "Maintain role-based visibility logic.",
-          "Do not break routing.",
-          "Ensure no layout shift or flicker while scrolling."
+          "Add 'Today Summary' section: Total Samples Collected, Cash Collected, UPI Collected, Pending Amount"
         ]
       },
       "acceptanceCriteria": [
-        "Each role (patient, phlebotomist, lab admin, super admin) still sees only their role-specific nav items",
-        "All existing routes navigate correctly when tapped",
-        "No layout shift or transparency glitch occurs while scrolling page content"
+        "Today Summary section is visible on the Attendance screen when a shift is active.",
+        "Values are derived from backend data (hospital samples recorded today by the phlebotomist).",
+        "Pending Amount reflects unpaid/credit amounts correctly.",
+        "Backend exposes a query or the frontend aggregates from existing hospital sample data for the daily summary."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "On the Attendance screen, rename the 'End Shift' button to 'End Shift & Submit Summary'. When clicked, show a confirmation popup with the message: 'Are you sure you want to end shift? After submission, today's entries cannot be edited.' Only proceed with shift closure if the user confirms.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Change button text: 'End Shift' → 'End Shift & Submit Summary'",
+          "Add confirmation popup: 'Are you sure you want to end shift? After submission, today's entries cannot be edited.'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Button label reads 'End Shift & Submit Summary'.",
+        "Clicking the button opens a confirmation dialog with the exact specified message.",
+        "Shift is only closed if the user confirms; cancelling leaves the shift active.",
+        "Today Summary section is visible within or near the confirmation dialog."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Enforce that a phlebotomist cannot start a new shift if a previous shift is still open. The 'Start Shift' action must be blocked and display an informative message if an active shift exists.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Ensure shift must be closed before starting a new shift."
+        ]
+      },
+      "acceptanceCriteria": [
+        "If an active (unclosed) shift exists in the backend, the Start Shift button is disabled or hidden.",
+        "A clear message is shown: e.g., 'You have an active shift. Please end it before starting a new one.'",
+        "The ShiftGuard or attendance logic enforces this check on page load."
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "text": "On the Task Queue page (TaskQueuePage), add a manual 'Refresh' button, display a 'Last Updated' timestamp that updates on each fetch, and enable automatic data refresh every 15 seconds using React Query's refetchInterval. Update the empty state message to: 'No tasks yet. Stay available — new assignments will appear automatically.'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Add manual Refresh button.",
+          "Show 'Last Updated Time'.",
+          "Enable auto-refresh every 15 seconds.",
+          "Improve empty message: 'No tasks yet. Stay available — new assignments will appear automatically.'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "A 'Refresh' button is visible on the Task Queue page and triggers an immediate re-fetch.",
+        "'Last Updated: HH:MM:SS' timestamp is shown and updates after each successful fetch.",
+        "React Query refetchInterval is set to 15000ms for the task queue query.",
+        "Empty state shows the exact message: 'No tasks yet. Stay available — new assignments will appear automatically.'"
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "text": "On the Hospital Sample form (AddHospitalSamplePage), make the Hospital field a read-only dropdown populated exclusively from the admin-assigned hospitals list for the logged-in phlebotomist. The frontend must not hardcode any maximum number of hospitals — it must render all hospitals returned by the backend.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Hospital field must be non-editable manually.",
+          "Show dropdown of only admin-assigned hospitals.",
+          "Do NOT set any maximum hospital limit in frontend."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Hospital field is rendered as a dropdown (not a free-text input).",
+        "Dropdown options are fetched from the backend (assigned hospitals for the phlebotomist).",
+        "The field cannot be typed into manually — selection only.",
+        "All hospitals returned by the backend are shown without any frontend cap.",
+        "Backend provides a query to fetch the list of hospitals assigned to the calling phlebotomist."
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "text": "On the Hospital Sample form, enforce that the patient mobile number field accepts exactly 10 numeric digits with inline validation. Display an error message if the input is not exactly 10 digits.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Mobile number must allow only 10 digits with validation."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Mobile field restricts input to numeric characters only.",
+        "Inline error 'Enter a valid 10-digit mobile number' appears if the value is not exactly 10 digits.",
+        "Form cannot be submitted if mobile number validation fails."
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "text": "On the Hospital Sample form, when a test is selected, display the test's MRP and Offer Price, and auto-calculate the Final Amount. The Final Amount field must be read-only (non-editable) with a lock icon indicator. Price fields must not be manipulable by the user.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Show MRP",
+          "Show Offer Price",
+          "Auto-calculate Final Amount",
+          "Final Amount must NOT be manually editable.",
+          "Add lock indicator for price fields."
+        ]
+      },
+      "acceptanceCriteria": [
+        "After test selection, MRP and Offer Price are displayed from the test record.",
+        "Final Amount is auto-calculated (e.g., based on offer price or discount logic) and displayed in a read-only field.",
+        "A lock icon is shown adjacent to MRP, Offer Price, and Final Amount fields.",
+        "User cannot type into or modify Final Amount or price fields.",
+        "Price values cannot be changed after test selection without re-selecting the test."
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "text": "On the Hospital Sample form, restrict Payment Mode options to: 'Cash Collected', 'UPI Received', and 'Hospital Credit'. When 'Cash Collected' or 'UPI Received' is selected, auto-fill the Amount Received field with the Final Amount value and make it non-editable. When 'Hospital Credit' is selected, leave Amount Received as zero or empty.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Payment Mode options: Cash Collected, UPI Received, Hospital Credit",
+          "If Cash or UPI selected: Amount Received should auto-fill equal to Final Amount.",
+          "Prevent price manipulation by user."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Payment Mode dropdown contains exactly three options: Cash Collected, UPI Received, Hospital Credit.",
+        "Selecting Cash Collected or UPI Received auto-fills Amount Received with Final Amount and makes the field read-only.",
+        "Selecting Hospital Credit sets Amount Received to zero or leaves it empty.",
+        "User cannot manually override the auto-filled Amount Received value."
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "text": "On the Hospital Sample form, add a confirmation dialog before final submission. The dialog must show a summary of the sample entry (patient name, test, final amount, payment mode) and ask: 'Confirm submission? Billing details cannot be edited after saving.'",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Require confirmation before saving sample."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Clicking the submit button opens a confirmation dialog.",
+        "Dialog shows: patient name, test name, final amount, payment mode.",
+        "Dialog includes 'Confirm' and 'Cancel' actions.",
+        "Form is only submitted after user confirms."
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "text": "Redesign the Home Collection Queue page (HomeCollectionQueuePage) so each task card displays: Patient Name, Address, Contact Number, Assigned Tests, Payable Amount, a 'Call' button (opens phone dialer), a 'Start Visit' button, a 'Mark as Collected' button, and a 'Mark as Not Available' button.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Each task card must show: Patient Name, Address, Contact Number, Assigned Tests, Payable Amount, Call Button, Start Visit Button, Mark as Collected, Mark as Not Available"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Each home collection task card shows all six data fields: Patient Name, Address, Contact Number, Assigned Tests, Payable Amount.",
+        "'Call' button triggers tel: link with the contact number.",
+        "'Start Visit' button updates task status to in-progress.",
+        "'Mark as Collected' button updates task status to collected.",
+        "'Mark as Not Available' button updates task status to not-available.",
+        "Status updates are persisted via existing useUpdateHomeCollectionStatus hook or equivalent."
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Add the following sections to the phlebotomist Profile page: (1) Assigned Hospitals List — showing hospitals assigned by admin, (2) Support / Call Admin — a button that opens a phone dialer to the admin contact number, (3) App Version — static display of the current app version string, (4) Logout confirmation popup — 'Are you sure you want to log out?' with Confirm/Cancel actions before signing out.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Add: Assigned Hospitals List, Support / Call Admin, App Version, Logout confirmation popup"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Assigned Hospitals List section fetches and renders admin-assigned hospitals from the backend.",
+        "Support / Call Admin button triggers a tel: link.",
+        "App Version is displayed as a static string (e.g., 'v1.0.0').",
+        "Logout button opens a confirmation dialog; sign-out only proceeds if user confirms.",
+        "Cancelling the logout dialog keeps the user signed in."
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "Ensure the daily summary (Today Summary) is rendered and visible on the Attendance screen before the 'End Shift & Submit Summary' button is enabled. If no samples have been recorded, show the summary with zero values but still allow shift closure.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Ensure daily summary visible before shift closure."
+        ]
+      },
+      "acceptanceCriteria": [
+        "Today Summary section is always shown when an active shift exists, above the End Shift button.",
+        "End Shift & Submit Summary button is only enabled after the summary section has been rendered/loaded.",
+        "Zero-value summaries are displayed correctly when no samples have been collected."
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "text": "Add or extend backend data model and queries to support: (1) assigning hospitals to a specific phlebotomist (stored as a list per user), (2) querying assigned hospitals for the calling phlebotomist, (3) aggregating today's sample totals (count, cash, UPI, pending/credit) per phlebotomist for the daily summary.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Hospitals are assigned dynamically by Admin.",
+          "Radius and assignment logic controlled by backend/admin.",
+          "Total Samples Collected, Cash Collected, UPI Collected, Pending Amount"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend stores a mapping of phlebotomist principal → assigned hospital IDs.",
+        "A query getAssignedHospitals() returns the list of hospitals assigned to the calling phlebotomist.",
+        "Admin can update/set assigned hospitals for a phlebotomist.",
+        "A query getDailySummary() returns total samples, cash collected, UPI collected, and pending amount for today for the calling phlebotomist.",
+        "Hospital sample records include payment mode (Cash/UPI/Credit) to enable aggregation."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "Do not alter backend logic or data models",
-    "Do not break existing role-based routing or shift-guard behaviour",
-    "All user-facing text must remain in English"
+    "Do not redesign the app completely — only refine and secure the current structure.",
+    "Do not hardcode or set any maximum hospital count limit in the frontend.",
+    "Hospital assignment and radius logic must be controlled exclusively by the backend/admin.",
+    "Final Amount and price fields must remain non-editable by the phlebotomist at all times.",
+    "Do not modify files listed in frontend.immutablePaths.",
+    "Keep all Motoko logic within the single main actor (backend/main.mo)."
   ],
   "nonGoals": [
-    "Adding new navigation routes or tabs",
-    "Changing the header or any non-navigation layout components",
-    "Backend changes of any kind",
-    "Modifying authentication or demo-mode logic"
+    "Full visual redesign or theme change.",
+    "GPS-based radius enforcement in the frontend.",
+    "Adding new patient-facing features.",
+    "Real-time WebSocket or push notification support.",
+    "Changing the authentication mechanism (Internet Identity remains).",
+    "Any admin panel UI changes beyond what is needed to support assigned hospitals."
   ],
   "imageRequirements": {
-    "required": [],
+    "required": [
+      "XprtLab official logo — a clean, modern medical diagnostics brand mark with 'XprtLab' wordmark, teal/navy color scheme, suitable for a white or dark header background (xprtlab-logo.dim_320x80.png)"
+    ],
     "edits": []
   }
 }

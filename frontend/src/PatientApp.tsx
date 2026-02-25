@@ -2,7 +2,6 @@ import React, { useState, lazy, Suspense } from 'react';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetCallerUserProfile } from './hooks/useQueries';
-import { AppRole } from './backend';
 import LoadingScreen from './components/shared/LoadingScreen';
 import PatientLoginScreen from './components/auth/PatientLoginScreen';
 import ProfileSetupModal from './components/auth/ProfileSetupModal';
@@ -37,6 +36,7 @@ function PatientAppInner() {
 
   const [currentRoute, setCurrentRoute] = useState<PatientRoute>('home');
   const [bookingContext, setBookingContext] = useState<{ selectedTests?: string[] } | null>(null);
+  const [showProfileSetupModal, setShowProfileSetupModal] = useState(false);
 
   const {
     data: userProfile,
@@ -45,8 +45,7 @@ function PatientAppInner() {
   } = useGetCallerUserProfile();
 
   const showProfileSetup = isAuthenticated && !profileLoading && profileFetched && userProfile === null;
-
-  const isPatient = userProfile?.appRole === AppRole.patient;
+  const isPatient = !userProfile || userProfile?.appRole === 'patient';
   const isWrongRole = isAuthenticated && profileFetched && userProfile !== null && !isPatient;
 
   if (isInitializing || (isAuthenticated && profileLoading)) {
@@ -61,8 +60,8 @@ function PatientAppInner() {
     return <PatientLoginScreen showRoleError />;
   }
 
-  const navigate = (route: PatientRoute, ctx?: { selectedTests?: string[] }) => {
-    setCurrentRoute(route);
+  const navigate = (route: string, ctx?: { selectedTests?: string[] }) => {
+    setCurrentRoute(route as PatientRoute);
     if (ctx) setBookingContext(ctx);
   };
 
@@ -90,7 +89,7 @@ function PatientAppInner() {
       case 'my-vitals':
         return <MyVitalsPage onNavigate={navigate} />;
       case 'profile':
-        return <ProfilePage onNavigate={(r: string) => navigate(r as PatientRoute)} appType="patient" />;
+        return <ProfilePage onNavigate={navigate} />;
       default:
         return <PatientHomePage onNavigate={navigate} />;
     }
@@ -100,11 +99,18 @@ function PatientAppInner() {
     <Suspense fallback={<LoadingScreen message="Loading..." />}>
       {showProfileSetup && (
         <ProfileSetupModal
+          open={showProfileSetup}
+          appType="patient"
           onComplete={() => queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] })}
-          defaultRole={AppRole.patient}
         />
       )}
-      <PatientAppLayout currentRoute={currentRoute} onNavigate={navigate}>
+      <PatientAppLayout currentPath={currentRoute} onNavigate={navigate} navItems={[
+        { label: 'Home', path: 'home', icon: '🏠' },
+        { label: 'Book Test', path: 'book-test', icon: '🧪' },
+        { label: 'Collections', path: 'home-collection', icon: '📍' },
+        { label: 'Reports', path: 'reports', icon: '📄' },
+        { label: 'Profile', path: 'profile', icon: '👤' },
+      ]}>
         {renderPage()}
       </PatientAppLayout>
     </Suspense>

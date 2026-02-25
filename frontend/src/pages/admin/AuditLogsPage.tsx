@@ -1,164 +1,133 @@
-import React, { useState, useMemo } from 'react';
-import { Shield, Search, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import MedicalCard from '../../components/shared/MedicalCard';
+import React, { useState } from 'react';
 import { useGetAllAuditLogs } from '../../hooks/useQueries';
-import { formatDateTime, formatPrincipal } from '../../utils/formatters';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Search, Loader2, FileText } from 'lucide-react';
 
-const PAGE_SIZE = 20;
+interface AuditLogsPageProps {
+  onNavigate?: (route: string) => void;
+}
 
-export default function AuditLogsPage() {
-  const { data: logs = [], isLoading } = useGetAllAuditLogs();
+export default function AuditLogsPage({ onNavigate }: AuditLogsPageProps) {
   const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
-  const filtered = useMemo(() => {
-    return logs
-      .filter((log) => {
-        const matchSearch =
-          log.actionType.toLowerCase().includes(search.toLowerCase()) ||
-          log.targetDocument.toLowerCase().includes(search.toLowerCase()) ||
-          log.actorId.toString().toLowerCase().includes(search.toLowerCase());
+  const { data: logs = [], isLoading } = useGetAllAuditLogs();
 
-        const ts = Number(log.timestamp) / 1_000_000;
-        const matchFrom = !dateFrom || ts >= new Date(dateFrom).getTime();
-        const matchTo = !dateTo || ts <= new Date(dateTo + 'T23:59:59').getTime();
+  const filtered = logs.filter((log: any) => {
+    const matchSearch =
+      !search ||
+      log.actionType?.toLowerCase().includes(search.toLowerCase()) ||
+      log.actorId?.toString().includes(search) ||
+      log.targetDocument?.toLowerCase().includes(search.toLowerCase());
 
-        return matchSearch && matchFrom && matchTo;
-      })
-      .sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
-  }, [logs, search, dateFrom, dateTo]);
+    const ts = Number(log.timestamp) / 1_000_000;
+    const matchStart = !startDate || ts >= new Date(startDate).getTime();
+    const matchEnd = !endDate || ts <= new Date(endDate).getTime() + 86400000;
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    return matchSearch && matchStart && matchEnd;
+  });
+
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
-  const handleSearchChange = (val: string) => {
-    setSearch(val);
-    setPage(1);
+  const formatTime = (ts: number) => {
+    const ms = ts > 1e12 ? ts / 1_000_000 : ts;
+    return new Date(ms).toLocaleString('en-IN');
   };
 
   return (
-    <div className="px-4 py-5 space-y-4 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Audit Logs</h1>
-        <p className="text-sm text-muted-foreground">{filtered.length} entries</p>
-      </div>
+    <div className="p-4 space-y-4 max-w-2xl mx-auto">
+      <h2 className="text-lg font-bold text-foreground">Audit Logs</h2>
 
       {/* Filters */}
-      <div className="space-y-2">
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search action, target, or actor..."
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
             value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9 rounded-xl"
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search by action, user, or document..."
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground font-medium">From</label>
-            <Input
+            <label className="text-xs font-semibold text-foreground">From</label>
+            <input
               type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-              className="rounded-xl text-xs"
+              value={startDate}
+              onChange={e => { setStartDate(e.target.value); setPage(1); }}
+              className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground font-medium">To</label>
-            <Input
+            <label className="text-xs font-semibold text-foreground">To</label>
+            <input
               type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-              className="rounded-xl text-xs"
+              value={endDate}
+              onChange={e => { setEndDate(e.target.value); setPage(1); }}
+              className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
           </div>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-12 rounded-xl" />
-          ))}
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : paginated.length === 0 ? (
-        <MedicalCard className="text-center py-12">
-          <Shield className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground font-medium">No audit logs found</p>
-        </MedicalCard>
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
+          <FileText className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm font-semibold text-foreground">No audit logs found</p>
+        </div>
       ) : (
-        <>
-          <MedicalCard className="p-0 overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs w-36">Timestamp</TableHead>
-                    <TableHead className="text-xs">Action</TableHead>
-                    <TableHead className="text-xs">Target</TableHead>
-                    <TableHead className="text-xs">Actor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginated.map((log, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatDateTime(log.timestamp)}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-xs font-semibold bg-gradient-primary-soft text-brand-blue px-2 py-0.5 rounded-full">
-                          {log.actionType}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground max-w-[100px] truncate">
-                        {log.targetDocument}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">
-                        {formatPrincipal(log.actorId)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        <div className="space-y-2">
+          {paginated.map((log: any, i: number) => (
+            <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-1">
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  {log.actionType}
+                </span>
+                <span className="text-xs text-muted-foreground flex-shrink-0">
+                  {formatTime(Number(log.timestamp))}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground font-mono truncate">
+                Actor: {log.actorId?.toString()}
+              </p>
+              {log.targetDocument && (
+                <p className="text-xs text-muted-foreground">Target: {log.targetDocument}</p>
+              )}
             </div>
-          </MedicalCard>
+          ))}
+        </div>
+      )}
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Page {page} of {totalPages} · {filtered.length} entries
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="w-8 h-8 rounded-xl border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="w-8 h-8 rounded-xl border border-border flex items-center justify-center disabled:opacity-40 hover:bg-muted transition-colors"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1.5 rounded-xl border border-border text-xs font-semibold disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-xs text-muted-foreground font-medium">
+            {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-3 py-1.5 rounded-xl border border-border text-xs font-semibold disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
       )}
     </div>
   );

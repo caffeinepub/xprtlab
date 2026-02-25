@@ -2,12 +2,12 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-redesign-the-bottom-navigation-bar-in-bottomnavigation-tsx-and-staffapplayout-tsx-and-patientapplayout-tsx-into-a-floating-container-that-is-positioned-fixed-at-the-bottom-with-16-20px-horizontal-margin-12-16px-bottom-margin-and-borderradius-24-the-container-must-not-scroll-with-content-must-not-allow-content-to-overlap-it-and-must-respect-safe-area-insets-on-both-ios-and-android",
-      "featureTitle": "Redesign the bottom navigation bar in BottomNavigation.tsx and StaffAppLayout.tsx (and PatientAppLayout.tsx) into a floating container that is positioned fixed at the bottom with 16–20px horizontal margin, 12–16px bottom margin, and borderRadius: 24. The container must not scroll with content, must not allow content to overlap it, and must respect safe area insets on both iOS and Android.",
+      "featureId": "feature-remove-the-built-with-using-caffeine-ai-footer-branding-text-from-all-screens-and-layouts",
+      "featureTitle": "Remove the 'Built with ❤️ using caffeine.ai' footer/branding text from all screens and layouts.",
       "files": [
+        "frontend/src/components/layout/AppLayout.tsx",
         "frontend/src/components/layout/PatientAppLayout.tsx",
-        "frontend/src/components/layout/StaffAppLayout.tsx",
-        "frontend/src/index.css"
+        "frontend/src/components/layout/StaffAppLayout.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -26,10 +26,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-apply-a-frosted-glass-background-to-the-floating-bottom-navigation-using-a-blurview-component-intensity-60-80-tint-light-add-a-fallback-solid-background-of-rgba-255-255-255-0-9-for-environments-where-blurview-is-not-supported-add-a-subtle-border-borderwidth-1-bordercolor-rgba-255-255-255-0-3-and-a-soft-shadow-shadowcolor-000-shadowopacity-0-08-shadowradius-12-shadowoffset-width-0-height-6-elevation-10-for-android",
-      "featureTitle": "Apply a frosted-glass background to the floating bottom navigation using a BlurView component (intensity 60–80, tint: 'light'). Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported. Add a subtle border (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and a soft shadow (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android).",
+      "featureId": "feature-add-the-official-xprtlab-logo-to-the-header-in-staffapplayout-and-patientapplayout-slightly-reduce-the-header-height-for-better-mobile-usability",
+      "featureTitle": "Add the official XprtLab logo to the header in StaffAppLayout and PatientAppLayout. Slightly reduce the header height for better mobile usability.",
       "files": [
-        "frontend/src/index.css"
+        "frontend/src/components/layout/PatientAppLayout.tsx",
+        "frontend/src/components/layout/StaffAppLayout.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -48,10 +49,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-style-the-active-tab-in-the-bottom-navigation-with-a-soft-gradient-pill-background-using-colors-0d47a1-26c6da-a-white-icon-and-a-slight-scale-animation-scale-1-05-1-1-inactive-tab-icons-should-use-color-94a3b8-add-a-smooth-transition-animation-when-switching-between-tabs",
-      "featureTitle": "Style the active tab in the bottom navigation with a soft gradient pill background using colors #0D47A1 → #26C6DA, a white icon, and a slight scale animation (scale 1.05–1.1). Inactive tab icons should use color #94A3B8. Add a smooth transition animation when switching between tabs.",
+      "featureId": "feature-improve-global-ui-spacing-font-weights-and-contrast-across-all-screens-to-achieve-a-professional-medical-look-increase-font-weight-for-labels-and-headings-ensure-sufficient-contrast-ratios-for-text-on-colored-backgrounds",
+      "featureTitle": "Improve global UI spacing, font weights, and contrast across all screens to achieve a professional medical look. Increase font weight for labels and headings; ensure sufficient contrast ratios for text on colored backgrounds.",
       "files": [
-        "frontend/src/index.css"
+        "frontend/src/index.css",
+        "frontend/tailwind.config.js"
       ],
       "components": [
         "authorization@4.0.0",
@@ -70,11 +72,12 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-preserve-all-existing-role-based-visibility-logic-in-the-bottom-navigation-rolenavconfig-driven-nav-items-per-role-do-not-break-any-existing-routing-ensure-there-is-no-layout-shift-or-content-flicker-while-scrolling-with-the-new-floating-nav-in-place",
-      "featureTitle": "Preserve all existing role-based visibility logic in the bottom navigation (roleNavConfig-driven nav items per role). Do not break any existing routing. Ensure there is no layout shift or content flicker while scrolling with the new floating nav in place.",
+      "featureId": "feature-on-the-attendance-screen-phlebotomistattendancepage-attendancepage-add-a-today-summary-section-that-displays-total-samples-collected-cash-collected-upi-collected-and-pending-amount-computed-from-the-current-day-s-hospital-sample-records-for-the-logged-in-phlebotomist",
+      "featureTitle": "On the Attendance screen (PhlebotomistAttendancePage / AttendancePage), add a 'Today Summary' section that displays: Total Samples Collected, Cash Collected, UPI Collected, and Pending Amount — computed from the current day's hospital sample records for the logged-in phlebotomist.",
       "files": [
-        "frontend/src/components/layout/PatientAppLayout.tsx",
-        "frontend/src/components/layout/StaffAppLayout.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+        "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -89,6 +92,253 @@
       ],
       "testIds": [
         "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-attendance-screen-rename-the-end-shift-button-to-end-shift-submit-summary-when-clicked-show-a-confirmation-popup-with-the-message-are-you-sure-you-want-to-end-shift-after-submission-today-s-entries-cannot-be-edited-only-proceed-with-shift-closure-if-the-user-confirms",
+      "featureTitle": "On the Attendance screen, rename the 'End Shift' button to 'End Shift & Submit Summary'. When clicked, show a confirmation popup with the message: 'Are you sure you want to end shift? After submission, today's entries cannot be edited.' Only proceed with shift closure if the user confirms.",
+      "files": [
+        "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+        "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-enforce-that-a-phlebotomist-cannot-start-a-new-shift-if-a-previous-shift-is-still-open-the-start-shift-action-must-be-blocked-and-display-an-informative-message-if-an-active-shift-exists",
+      "featureTitle": "Enforce that a phlebotomist cannot start a new shift if a previous shift is still open. The 'Start Shift' action must be blocked and display an informative message if an active shift exists.",
+      "files": [
+        "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+        "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-task-queue-page-taskqueuepage-add-a-manual-refresh-button-display-a-last-updated-timestamp-that-updates-on-each-fetch-and-enable-automatic-data-refresh-every-15-seconds-using-react-query-s-refetchinterval-update-the-empty-state-message-to-no-tasks-yet-stay-available-new-assignments-will-appear-automatically",
+      "featureTitle": "On the Task Queue page (TaskQueuePage), add a manual 'Refresh' button, display a 'Last Updated' timestamp that updates on each fetch, and enable automatic data refresh every 15 seconds using React Query's refetchInterval. Update the empty state message to: 'No tasks yet. Stay available — new assignments will appear automatically.'",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/phlebotomist/TaskQueuePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-7"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-hospital-sample-form-addhospitalsamplepage-make-the-hospital-field-a-read-only-dropdown-populated-exclusively-from-the-admin-assigned-hospitals-list-for-the-logged-in-phlebotomist-the-frontend-must-not-hardcode-any-maximum-number-of-hospitals-it-must-render-all-hospitals-returned-by-the-backend",
+      "featureTitle": "On the Hospital Sample form (AddHospitalSamplePage), make the Hospital field a read-only dropdown populated exclusively from the admin-assigned hospitals list for the logged-in phlebotomist. The frontend must not hardcode any maximum number of hospitals — it must render all hospitals returned by the backend.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-8"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-hospital-sample-form-enforce-that-the-patient-mobile-number-field-accepts-exactly-10-numeric-digits-with-inline-validation-display-an-error-message-if-the-input-is-not-exactly-10-digits",
+      "featureTitle": "On the Hospital Sample form, enforce that the patient mobile number field accepts exactly 10 numeric digits with inline validation. Display an error message if the input is not exactly 10 digits.",
+      "files": [
+        "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-9"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-hospital-sample-form-when-a-test-is-selected-display-the-test-s-mrp-and-offer-price-and-auto-calculate-the-final-amount-the-final-amount-field-must-be-read-only-non-editable-with-a-lock-icon-indicator-price-fields-must-not-be-manipulable-by-the-user",
+      "featureTitle": "On the Hospital Sample form, when a test is selected, display the test's MRP and Offer Price, and auto-calculate the Final Amount. The Final Amount field must be read-only (non-editable) with a lock icon indicator. Price fields must not be manipulable by the user.",
+      "files": [
+        "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-10"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-hospital-sample-form-restrict-payment-mode-options-to-cash-collected-upi-received-and-hospital-credit-when-cash-collected-or-upi-received-is-selected-auto-fill-the-amount-received-field-with-the-final-amount-value-and-make-it-non-editable-when-hospital-credit-is-selected-leave-amount-received-as-zero-or-empty",
+      "featureTitle": "On the Hospital Sample form, restrict Payment Mode options to: 'Cash Collected', 'UPI Received', and 'Hospital Credit'. When 'Cash Collected' or 'UPI Received' is selected, auto-fill the Amount Received field with the Final Amount value and make it non-editable. When 'Hospital Credit' is selected, leave Amount Received as zero or empty.",
+      "files": [
+        "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-11"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-on-the-hospital-sample-form-add-a-confirmation-dialog-before-final-submission-the-dialog-must-show-a-summary-of-the-sample-entry-patient-name-test-final-amount-payment-mode-and-ask-confirm-submission-billing-details-cannot-be-edited-after-saving",
+      "featureTitle": "On the Hospital Sample form, add a confirmation dialog before final submission. The dialog must show a summary of the sample entry (patient name, test, final amount, payment mode) and ask: 'Confirm submission? Billing details cannot be edited after saving.'",
+      "files": [
+        "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-12"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-redesign-the-home-collection-queue-page-homecollectionqueuepage-so-each-task-card-displays-patient-name-address-contact-number-assigned-tests-payable-amount-a-call-button-opens-phone-dialer-a-start-visit-button-a-mark-as-collected-button-and-a-mark-as-not-available-button",
+      "featureTitle": "Redesign the Home Collection Queue page (HomeCollectionQueuePage) so each task card displays: Patient Name, Address, Contact Number, Assigned Tests, Payable Amount, a 'Call' button (opens phone dialer), a 'Start Visit' button, a 'Mark as Collected' button, and a 'Mark as Not Available' button.",
+      "files": [
+        "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-13"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-the-following-sections-to-the-phlebotomist-profile-page-1-assigned-hospitals-list-showing-hospitals-assigned-by-admin-2-support-call-admin-a-button-that-opens-a-phone-dialer-to-the-admin-contact-number-3-app-version-static-display-of-the-current-app-version-string-4-logout-confirmation-popup-are-you-sure-you-want-to-log-out-with-confirm-cancel-actions-before-signing-out",
+      "featureTitle": "Add the following sections to the phlebotomist Profile page: (1) Assigned Hospitals List — showing hospitals assigned by admin, (2) Support / Call Admin — a button that opens a phone dialer to the admin contact number, (3) App Version — static display of the current app version string, (4) Logout confirmation popup — 'Are you sure you want to log out?' with Confirm/Cancel actions before signing out.",
+      "files": [
+        "frontend/src/pages/patient/ProfilePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-14"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-ensure-the-daily-summary-today-summary-is-rendered-and-visible-on-the-attendance-screen-before-the-end-shift-submit-summary-button-is-enabled-if-no-samples-have-been-recorded-show-the-summary-with-zero-values-but-still-allow-shift-closure",
+      "featureTitle": "Ensure the daily summary (Today Summary) is rendered and visible on the Attendance screen before the 'End Shift & Submit Summary' button is enabled. If no samples have been recorded, show the summary with zero values but still allow shift closure.",
+      "files": [
+        "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+        "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "blob-storage@4.0.0",
+        "qr-code@1.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-15"
       ],
       "confidence": "high"
     }

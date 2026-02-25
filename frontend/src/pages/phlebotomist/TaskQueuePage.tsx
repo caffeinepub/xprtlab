@@ -1,247 +1,155 @@
-import React, { useState } from 'react';
-import {
-  ClipboardList,
-  MapPin,
-  Clock,
-  FlaskConical,
-  Home,
-  QrCode,
-  Activity,
-} from 'lucide-react';
-import MedicalCard from '../../components/shared/MedicalCard';
-import StatusBadge from '../../components/shared/StatusBadge';
-import {
-  useGetMyBookings,
-  useGetMyHomeCollectionRequests,
-  useUpdateBookingStatus,
-  useUpdateHomeCollectionStatus,
-} from '../../hooks/useQueries';
-import {
-  Variant_canceled_pending_completed_confirmed,
-  Variant_assigned_requested_canceled_completed,
-} from '../../backend';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-
-type StaffRoute = 'tasks' | 'home-collections' | 'record-vitals' | 'scan-qr' | 'admin-bookings' | 'admin-reports' | 'upload-report' | 'incidents' | 'audit-logs' | 'create-camp' | 'submit-incident' | 'profile';
+import React, { useState, useEffect } from 'react';
+import { RefreshCw, Clock, Loader2, ClipboardList, Home, FlaskConical } from 'lucide-react';
+import { useGetAllBookings, useGetAllHomeCollectionRequests } from '../../hooks/useQueries';
 
 interface TaskQueuePageProps {
-  onNavigate?: (route: StaffRoute) => void;
-}
-
-type TaskType = 'booking' | 'home_collection';
-
-interface Task {
-  id: string;
-  type: TaskType;
-  patientId: string;
-  tests: string[];
-  slot: string;
-  status: string;
-  timestamp: bigint;
-  address?: string;
+  onNavigate?: (route: string) => void;
 }
 
 export default function TaskQueuePage({ onNavigate }: TaskQueuePageProps) {
-  const { data: bookings = [], isLoading: bookingsLoading } = useGetMyBookings();
-  const { data: homeCollections = [], isLoading: hcLoading } = useGetMyHomeCollectionRequests();
-  const updateBooking = useUpdateBookingStatus();
-  const updateHC = useUpdateHomeCollectionStatus();
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const isLoading = bookingsLoading || hcLoading;
+  const {
+    data: bookings = [],
+    isLoading: bookingsLoading,
+    refetch: refetchBookings,
+    dataUpdatedAt: bookingsUpdatedAt,
+  } = useGetAllBookings();
 
-  const tasks: Task[] = [
-    ...bookings.map((b) => ({
-      id: b.id,
-      type: 'booking' as TaskType,
-      patientId: b.patient.toString(),
-      tests: b.tests.map((t) => t.name),
-      slot: b.slot,
-      status: b.status,
-      timestamp: b.timestamp,
-    })),
-    ...homeCollections.map((hc) => ({
-      id: hc.id,
-      type: 'home_collection' as TaskType,
-      patientId: hc.patient.toString(),
-      tests: hc.tests.map((t) => t.name),
-      slot: hc.slot,
-      status: hc.status,
-      timestamp: hc.timestamp,
-      address: hc.address,
-    })),
-  ].sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
+  const {
+    data: homeCollections = [],
+    isLoading: homeLoading,
+    refetch: refetchHome,
+    dataUpdatedAt: homeUpdatedAt,
+  } = useGetAllHomeCollectionRequests();
 
-  const handleBookingStatusChange = async (id: string, status: string) => {
-    setUpdatingId(id);
-    try {
-      await updateBooking.mutateAsync({
-        id,
-        status: status as Variant_canceled_pending_completed_confirmed,
-      });
-    } finally {
-      setUpdatingId(null);
+  const isLoading = bookingsLoading || homeLoading;
+
+  useEffect(() => {
+    if (bookingsUpdatedAt || homeUpdatedAt) {
+      setLastUpdated(new Date());
     }
+  }, [bookingsUpdatedAt, homeUpdatedAt]);
+
+  const handleRefresh = () => {
+    refetchBookings();
+    refetchHome();
+    setLastUpdated(new Date());
   };
 
-  const handleHCStatusChange = async (id: string, status: string) => {
-    setUpdatingId(id);
-    try {
-      await updateHC.mutateAsync({
-        requestId: id,
-        status: status as Variant_assigned_requested_canceled_completed,
-      });
-    } finally {
-      setUpdatingId(null);
-    }
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
+
+  const pendingBookings = bookings.filter((b: any) => b.status === 'pending' || b.status?.pending !== undefined);
+  const assignedCollections = homeCollections.filter((h: any) => h.status === 'assigned' || h.status?.assigned !== undefined);
+
+  const totalTasks = pendingBookings.length + assignedCollections.length;
 
   return (
-    <div className="px-4 py-5 space-y-4 animate-fade-in">
+    <div className="p-4 space-y-4 max-w-lg mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Task Queue</h1>
-          <p className="text-sm text-muted-foreground">{tasks.length} tasks assigned</p>
+          <h2 className="text-lg font-bold text-foreground">Task Queue</h2>
+          {lastUpdated && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Clock className="h-3 w-3" />
+              Last Updated: {formatTime(lastUpdated)}
+            </p>
+          )}
         </div>
-        {onNavigate && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => onNavigate('scan-qr')}
-              className="gradient-btn px-3 py-2 text-xs flex items-center gap-1"
-            >
-              <QrCode className="w-3.5 h-3.5" />
-              Scan QR
-            </button>
-            <button
-              onClick={() => onNavigate('record-vitals')}
-              className="gradient-btn px-3 py-2 text-xs flex items-center gap-1"
-            >
-              <Activity className="w-3.5 h-3.5" />
-              Vitals
-            </button>
-          </div>
-        )}
+        <button
+          onClick={handleRefresh}
+          disabled={isLoading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary font-semibold text-xs disabled:opacity-50 hover:bg-primary/20 transition-colors"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-36 rounded-card" />
+      {/* Loading */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && totalTasks === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <ClipboardList className="h-8 w-8 text-primary/60" />
+          </div>
+          <p className="text-base font-semibold text-foreground">No tasks yet.</p>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            Stay available — new assignments will appear automatically.
+          </p>
+        </div>
+      )}
+
+      {/* Hospital Bookings */}
+      {!isLoading && pendingBookings.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <FlaskConical className="h-3.5 w-3.5" /> Hospital Samples ({pendingBookings.length})
+          </h3>
+          {pendingBookings.map((booking: any) => (
+            <div key={booking.id} className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-sm text-foreground">{booking.patientName || 'Patient'}</p>
+                  <p className="text-xs text-muted-foreground">{booking.phone || booking.patient?.toString?.()?.slice(0, 12) + '...'}</p>
+                </div>
+                <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                  Pending
+                </span>
+              </div>
+              {booking.tests && booking.tests.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Tests: {booking.tests.map((t: any) => t.name).join(', ')}
+                </p>
+              )}
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('hospital-sample-entry')}
+                  className="w-full py-2 rounded-xl bg-primary text-white font-semibold text-xs mt-1"
+                >
+                  Add Sample
+                </button>
+              )}
+            </div>
           ))}
         </div>
-      ) : tasks.length === 0 ? (
-        <MedicalCard className="text-center py-12">
-          <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground font-medium">No tasks assigned</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            New tasks will appear here when assigned
-          </p>
-        </MedicalCard>
-      ) : (
-        <div className="space-y-3">
-          {tasks.map((task) => (
-            <MedicalCard key={`${task.type}-${task.id}`}>
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
-                    {task.type === 'booking' ? (
-                      <FlaskConical className="w-4 h-4 text-white" />
-                    ) : (
-                      <Home className="w-4 h-4 text-white" />
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold bg-gradient-primary-soft text-brand-blue px-2 py-0.5 rounded-full">
-                      {task.type === 'booking' ? 'Lab Booking' : 'Home Collection'}
-                    </span>
-                  </div>
-                </div>
-                <StatusBadge status={task.status as any} />
-              </div>
+      )}
 
-              <div className="space-y-1.5 mb-3">
-                <div className="flex flex-wrap gap-1">
-                  {task.tests.map((t, i) => (
-                    <span
-                      key={i}
-                      className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full"
-                    >
-                      {t}
-                    </span>
-                  ))}
+      {/* Home Collections */}
+      {!isLoading && assignedCollections.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Home className="h-3.5 w-3.5" /> Home Collections ({assignedCollections.length})
+          </h3>
+          {assignedCollections.map((task: any) => (
+            <div key={task.id} className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-sm text-foreground">{task.patientName || 'Patient'}</p>
+                  <p className="text-xs text-muted-foreground">{task.address}</p>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock className="w-3 h-3" />
-                  <span>{task.slot}</span>
-                </div>
-                {task.address && (
-                  <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
-                    <span className="line-clamp-1">{task.address}</span>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground font-mono">
-                  Patient: {task.patientId.slice(0, 16)}...
-                </p>
+                <span className="text-xs font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                  Assigned
+                </span>
               </div>
-
-              {task.type === 'booking' ? (
-                <Select
-                  value={task.status}
-                  onValueChange={(val) => handleBookingStatusChange(task.id, val)}
-                  disabled={updatingId === task.id}
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('home-collection-queue')}
+                  className="w-full py-2 rounded-xl bg-green-600 text-white font-semibold text-xs mt-1"
                 >
-                  <SelectTrigger className="rounded-xl text-xs h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={Variant_canceled_pending_completed_confirmed.pending}>
-                      Pending
-                    </SelectItem>
-                    <SelectItem value={Variant_canceled_pending_completed_confirmed.confirmed}>
-                      Confirmed
-                    </SelectItem>
-                    <SelectItem value={Variant_canceled_pending_completed_confirmed.completed}>
-                      Completed
-                    </SelectItem>
-                    <SelectItem value={Variant_canceled_pending_completed_confirmed.canceled}>
-                      Canceled
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Select
-                  value={task.status}
-                  onValueChange={(val) => handleHCStatusChange(task.id, val)}
-                  disabled={updatingId === task.id}
-                >
-                  <SelectTrigger className="rounded-xl text-xs h-9">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={Variant_assigned_requested_canceled_completed.requested}>
-                      Requested
-                    </SelectItem>
-                    <SelectItem value={Variant_assigned_requested_canceled_completed.assigned}>
-                      Assigned
-                    </SelectItem>
-                    <SelectItem value={Variant_assigned_requested_canceled_completed.completed}>
-                      Completed
-                    </SelectItem>
-                    <SelectItem value={Variant_assigned_requested_canceled_completed.canceled}>
-                      Canceled
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  View Details
+                </button>
               )}
-            </MedicalCard>
+            </div>
           ))}
         </div>
       )}

@@ -1,199 +1,87 @@
 import React from 'react';
-import {
-  ArrowLeft,
-  FlaskConical,
-  IndianRupee,
-  Phone,
-  Calendar,
-  CreditCard,
-  ClipboardList,
-  TrendingUp,
-  CheckCircle,
-  Clock,
-} from 'lucide-react';
-import MedicalCard from '../../components/shared/MedicalCard';
-import { useGetHospitalSamplesByPhone, useGetAllTests } from '../../hooks/useQueries';
-import { useGetCallerUserProfile } from '../../hooks/useQueries';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useGetHospitalSamplesByPhone } from '../../hooks/useQueries';
+import { Loader2, FlaskConical, IndianRupee } from 'lucide-react';
 
-type PatientRoute = string;
+export default function MyHospitalSamplesPage() {
+  const { data: samples = [], isLoading } = useGetHospitalSamplesByPhone();
 
-interface MyHospitalSamplesPageProps {
-  onNavigate?: (route: PatientRoute) => void;
-}
+  const totalAmount = samples.reduce((sum: number, s: any) => sum + Number(s.finalAmount || 0), 0);
+  const totalReceived = samples.reduce((sum: number, s: any) => sum + Number(s.amountReceived || 0), 0);
+  const totalPending = samples.reduce((sum: number, s: any) => sum + Number(s.pendingAmount || 0), 0);
+  const totalDiscount = samples.reduce((sum: number, s: any) => sum + Number(s.discount || 0), 0);
+  const count = samples.length;
 
-function formatDate(ts: bigint): string {
-  return new Date(Number(ts) / 1_000_000).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
-export default function PatientMyHospitalSamplesPage({ onNavigate }: MyHospitalSamplesPageProps) {
-  const { data: userProfile } = useGetCallerUserProfile();
-  const phone = userProfile?.phone || '';
-  const { data: result, isLoading } = useGetHospitalSamplesByPhone(phone);
-  const { data: allTests = [] } = useGetAllTests();
-
-  const samples = result?.samples || [];
-  const totalAmount = result?.totalAmount || 0;
-  const totalReceived = result?.totalReceived || 0;
-  const totalPending = result?.totalPending || 0;
-  const totalDiscount = result?.totalDiscount || 0;
-  const count = result?.count ? Number(result.count) : 0;
-
-  const getTestName = (testId: string) => {
-    const test = allTests.find((t) => t.id === testId);
-    return test?.name || testId;
+  const formatTime = (ts: number) => {
+    const ms = ts > 1e12 ? ts / 1_000_000 : ts;
+    return new Date(ms).toLocaleDateString('en-IN');
   };
 
-  return (
-    <div className="px-4 py-5 space-y-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        {onNavigate && (
-          <button
-            onClick={() => onNavigate('home')}
-            className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 text-foreground" />
-          </button>
-        )}
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Hospital Samples</h1>
-          <p className="text-xs text-muted-foreground">{count} records linked to your number</p>
-        </div>
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
 
-      {isLoading ? (
-        <div className="space-y-3">
-          <Skeleton className="h-28 rounded-card" />
-          {[1, 2].map((i) => (
-            <Skeleton key={i} className="h-44 rounded-card" />
-          ))}
+  return (
+    <div className="p-4 space-y-4 max-w-lg mx-auto">
+      <h2 className="text-lg font-bold text-foreground">My Lab Samples</h2>
+
+      {/* Summary */}
+      {count > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+            <p className="text-xs text-blue-600 font-semibold">Total Samples</p>
+            <p className="text-2xl font-bold text-blue-700">{count}</p>
+          </div>
+          <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
+            <p className="text-xs text-green-600 font-semibold">Total Amount</p>
+            <p className="text-xl font-bold text-green-700">₹{totalAmount.toFixed(0)}</p>
+          </div>
+          <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
+            <p className="text-xs text-purple-600 font-semibold">Received</p>
+            <p className="text-xl font-bold text-purple-700">₹{totalReceived.toFixed(0)}</p>
+          </div>
+          <div className="bg-orange-50 rounded-xl p-3 text-center border border-orange-100">
+            <p className="text-xs text-orange-600 font-semibold">Pending</p>
+            <p className="text-xl font-bold text-orange-700">₹{totalPending.toFixed(0)}</p>
+          </div>
+        </div>
+      )}
+
+      {samples.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
+          <FlaskConical className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm font-semibold text-foreground">No samples found</p>
+          <p className="text-xs text-muted-foreground">Your lab sample records will appear here.</p>
         </div>
       ) : (
-        <>
-          {/* Summary Card */}
-          {count > 0 && (
-            <MedicalCard className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-foreground">Summary</h3>
+        <div className="space-y-3">
+          {samples.map((sample: any, i: number) => (
+            <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-sm text-foreground">{sample.patientName}</p>
+                  <p className="text-xs text-muted-foreground">{sample.phone}</p>
+                </div>
+                <span className="text-xs text-muted-foreground">{formatTime(Number(sample.createdAt))}</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-primary/5 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground">Total Amount</p>
-                  <p className="text-base font-bold text-primary">
-                    ₹{totalAmount.toLocaleString('en-IN')}
-                  </p>
-                </div>
-                <div className="bg-green-50 dark:bg-green-950/20 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground">Paid</p>
-                  <p className="text-base font-bold text-green-600">
-                    ₹{totalReceived.toLocaleString('en-IN')}
-                  </p>
-                </div>
-                <div className="bg-amber-50 dark:bg-amber-950/20 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground">Pending</p>
-                  <p className="text-base font-bold text-amber-600">
-                    ₹{totalPending.toLocaleString('en-IN')}
-                  </p>
-                </div>
-                <div className="bg-muted/50 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground">Total Discount</p>
-                  <p className="text-base font-bold text-foreground">
-                    ₹{totalDiscount.toLocaleString('en-IN')}
-                  </p>
-                </div>
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <span className="text-muted-foreground">Hospital: <span className="font-semibold text-foreground">{sample.hospitalId}</span></span>
+                <span className="text-muted-foreground">Test: <span className="font-semibold text-foreground">{sample.testId}</span></span>
+                <span className="text-muted-foreground">Final: <span className="font-bold text-primary">₹{Number(sample.finalAmount).toFixed(0)}</span></span>
+                <span className="text-muted-foreground">Mode: <span className="font-semibold text-foreground">{sample.paymentMode}</span></span>
               </div>
-            </MedicalCard>
-          )}
-
-          {/* Sample Records */}
-          {samples.length === 0 ? (
-            <MedicalCard className="text-center py-12">
-              <ClipboardList className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground font-medium">No hospital samples found</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Records linked to your phone number will appear here
-              </p>
-            </MedicalCard>
-          ) : (
-            <div className="space-y-3">
-              {[...samples]
-                .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
-                .map((sample, idx) => (
-                  <MedicalCard key={idx} className="p-4 space-y-3">
-                    {/* Test & Status */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
-                          <FlaskConical className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm text-foreground">
-                            {getTestName(sample.testId)}
-                          </p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Calendar className="w-3 h-3" />
-                            <span>{formatDate(sample.createdAt)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <span className="text-xs bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
-                        {sample.status}
-                      </span>
-                    </div>
-
-                    {/* Billing */}
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-primary/5 rounded-lg p-2">
-                        <p className="text-muted-foreground">Final Amount</p>
-                        <p className="font-bold text-primary text-sm">
-                          ₹{sample.finalAmount.toLocaleString('en-IN')}
-                        </p>
-                      </div>
-                      <div
-                        className={`rounded-lg p-2 ${
-                          sample.pendingAmount > 0
-                            ? 'bg-amber-50 dark:bg-amber-950/20'
-                            : 'bg-green-50 dark:bg-green-950/20'
-                        }`}
-                      >
-                        <p className="text-muted-foreground">Pending</p>
-                        <p
-                          className={`font-bold text-sm ${sample.pendingAmount > 0 ? 'text-amber-600' : 'text-green-600'}`}
-                        >
-                          ₹{sample.pendingAmount.toLocaleString('en-IN')}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Payment Mode */}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <CreditCard className="w-3 h-3" />
-                        <span>{sample.paymentMode}</span>
-                      </div>
-                      {sample.pendingAmount === 0 ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="w-3 h-3" />
-                          <span>Fully Paid</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-amber-600">
-                          <Clock className="w-3 h-3" />
-                          <span>Payment Pending</span>
-                        </div>
-                      )}
-                    </div>
-                  </MedicalCard>
-                ))}
+              {Number(sample.pendingAmount) > 0 && (
+                <div className="flex items-center gap-1 text-xs font-bold text-orange-600">
+                  <IndianRupee className="h-3 w-3" />
+                  Pending: ₹{Number(sample.pendingAmount).toFixed(0)}
+                </div>
+              )}
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </div>
   );

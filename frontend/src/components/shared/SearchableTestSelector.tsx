@@ -1,197 +1,97 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, ChevronDown, FlaskConical, Check } from 'lucide-react';
-import { Test } from '../../backend';
-import { useGetAllTests } from '../../hooks/useQueries';
-
-const PAGE_SIZE = 20;
+import React, { useState } from 'react';
+import { Test } from '../../types/models';
+import { Search, X, Check } from 'lucide-react';
 
 interface SearchableTestSelectorProps {
-  value: Test | null;
-  onChange: (test: Test | null) => void;
-  disabled?: boolean;
-  error?: string;
+  tests: Test[];
+  selectedTests: Test[];
+  onSelectionChange: (tests: Test[]) => void;
+  isLoading?: boolean;
 }
 
 export default function SearchableTestSelector({
-  value,
-  onChange,
-  disabled = false,
-  error,
+  tests,
+  selectedTests,
+  onSelectionChange,
+  isLoading,
 }: SearchableTestSelectorProps) {
-  const { data: allTests = [], isLoading } = useGetAllTests();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [search, setSearch] = useState('');
 
-  // 300ms debounce
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const filtered = tests.filter(t =>
+    t.name.toLowerCase().includes(search.toLowerCase()) ||
+    t.description?.toLowerCase().includes(search.toLowerCase())
+  );
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const isSelected = (test: Test) => selectedTests.some(s => s.id === test.id);
 
-  const filteredTests = useCallback(() => {
-    if (!debouncedQuery.trim()) return allTests;
-    const q = debouncedQuery.toLowerCase();
-    return allTests.filter(
-      (t) =>
-        t.name.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q) ||
-        t.description.toLowerCase().includes(q),
-    );
-  }, [allTests, debouncedQuery])();
-
-  const paginatedTests = filteredTests.slice(0, page * PAGE_SIZE);
-  const hasMore = paginatedTests.length < filteredTests.length;
-
-  const handleSelect = (test: Test) => {
-    onChange(test);
-    setIsOpen(false);
-    setSearchQuery('');
+  const toggleTest = (test: Test) => {
+    if (isSelected(test)) {
+      onSelectionChange(selectedTests.filter(s => s.id !== test.id));
+    } else {
+      onSelectionChange([...selectedTests, test]);
+    }
   };
-
-  const handleClear = () => {
-    onChange(null);
-    setSearchQuery('');
-    setPage(1);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') setIsOpen(false);
-  };
-
-  // If a test is selected, show read-only display
-  if (value) {
-    return (
-      <div className="space-y-1">
-        <div
-          className={`flex items-center justify-between bg-muted/50 border rounded-xl px-3 py-3 ${
-            error ? 'border-destructive' : 'border-border'
-          }`}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center flex-shrink-0">
-              <FlaskConical className="w-4 h-4 text-white" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground truncate">{value.name}</p>
-              <p className="text-xs text-muted-foreground">
-                Code: {value.id} · ₹{Number(value.price).toLocaleString('en-IN')}
-              </p>
-            </div>
-          </div>
-          {!disabled && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="ml-2 w-7 h-7 rounded-lg bg-muted hover:bg-destructive/10 flex items-center justify-center transition-colors flex-shrink-0"
-              title="Clear selection"
-            >
-              <X className="w-3.5 h-3.5 text-muted-foreground hover:text-destructive" />
-            </button>
-          )}
-        </div>
-        {error && <p className="text-xs text-destructive">{error}</p>}
-      </div>
-    );
-  }
 
   return (
-    <div ref={containerRef} className="relative space-y-1">
-      {/* Search Input */}
-      <div
-        className={`flex items-center gap-2 border rounded-xl px-3 py-2.5 bg-background transition-colors ${
-          isOpen ? 'border-primary ring-2 ring-primary/20' : error ? 'border-destructive' : 'border-border'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-text'}`}
-        onClick={() => {
-          if (!disabled) {
-            setIsOpen(true);
-            inputRef.current?.focus();
-          }
-        }}
-      >
-        <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+    <div className="space-y-3">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
-          ref={inputRef}
           type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          onKeyDown={handleKeyDown}
-          placeholder="Search by test name, code, or description..."
-          disabled={disabled}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search tests..."
+          className="w-full pl-9 pr-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
-        <ChevronDown
-          className={`w-4 h-4 text-muted-foreground flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
-
-      {/* Dropdown */}
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
-          {isLoading ? (
-            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-              Loading tests...
-            </div>
-          ) : filteredTests.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-              No tests found for "{debouncedQuery}"
-            </div>
-          ) : (
-            <div className="max-h-64 overflow-y-auto">
-              {paginatedTests.map((test) => (
-                <button
-                  key={test.id}
-                  type="button"
-                  onClick={() => handleSelect(test)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-primary/5 transition-colors text-left border-b border-border/50 last:border-0"
-                >
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <FlaskConical className="w-3.5 h-3.5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground truncate">{test.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {test.id} · ₹{Number(test.price).toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                  <Check className="w-4 h-4 text-primary opacity-0 flex-shrink-0" />
-                </button>
-              ))}
-              {hasMore && (
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => p + 1)}
-                  className="w-full py-2.5 text-xs text-primary font-medium hover:bg-primary/5 transition-colors"
-                >
-                  Load more ({filteredTests.length - paginatedTests.length} remaining)
-                </button>
-              )}
-            </div>
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2 max-h-64 overflow-y-auto">
+          {filtered.map(test => (
+            <button
+              key={test.id}
+              onClick={() => toggleTest(test)}
+              className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-colors ${
+                isSelected(test)
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border bg-white hover:bg-muted/30'
+              }`}
+            >
+              <div>
+                <p className="text-sm font-semibold text-foreground">{test.name}</p>
+                {test.description && (
+                  <p className="text-xs text-muted-foreground">{test.description}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-sm font-bold text-primary">₹{test.price}</span>
+                {isSelected(test) && <Check className="h-4 w-4 text-primary" />}
+              </div>
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground py-4">No tests found</p>
           )}
+        </div>
+      )}
+
+      {selectedTests.length > 0 && (
+        <div className="bg-primary/5 rounded-xl p-3">
+          <p className="text-xs font-bold text-primary mb-1">{selectedTests.length} test(s) selected</p>
+          <p className="text-xs text-muted-foreground">
+            Total: ₹{selectedTests.reduce((sum, t) => sum + t.price, 0)}
+          </p>
         </div>
       )}
     </div>

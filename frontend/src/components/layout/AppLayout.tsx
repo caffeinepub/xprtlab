@@ -1,50 +1,81 @@
 import React from 'react';
-import { Outlet, useNavigate } from '@tanstack/react-router';
-import BottomNavigation from './BottomNavigation';
-import NotificationBell from './NotificationBell';
-import { useAuth } from '../../hooks/useAuth';
+import { cn } from '@/lib/utils';
 
-export default function AppLayout() {
-  const { userProfile } = useAuth();
-  const navigate = useNavigate();
+interface NavItem {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
+}
 
+interface AppLayoutProps {
+  children: React.ReactNode;
+  onNavigate?: (route: string) => void;
+  currentPath?: string;
+  navItems?: NavItem[];
+}
+
+export default function AppLayout({
+  children,
+  onNavigate,
+  currentPath,
+  navItems,
+}: AppLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col bg-background max-w-md mx-auto relative">
-      {/* App Bar */}
-      <header className="gradient-primary sticky top-0 z-40 shadow-gradient-glow">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => navigate({ to: '/' })}
-            className="flex items-center gap-2"
-          >
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-primary to-primary/80 shadow-md">
+        <div className="flex items-center justify-between px-4 py-2">
+          <div className="flex items-center gap-2">
             <img
-              src="/assets/generated/logo.png"
-              alt="XpertLab"
+              src="/assets/generated/xprtlab-logo.dim_256x256.png"
+              alt="XprtLab"
               className="h-9 w-auto object-contain"
               style={{ filter: 'brightness(0) invert(1)' }}
             />
-          </button>
-
-          <div className="flex items-center gap-2">
-            <NotificationBell />
-            {userProfile && (
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">
-                  {userProfile.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
-        <Outlet />
+      <main className={cn('flex-1', navItems && navItems.length > 0 ? 'pb-24' : '')}>
+        {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <BottomNavigation />
+      {/* Floating Bottom Navigation */}
+      {navItems && navItems.length > 0 && onNavigate && (
+        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md">
+          <div
+            className="flex items-center justify-around rounded-2xl px-2 py-2"
+            style={{
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              boxShadow: '0 6px 14px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+            }}
+          >
+            {navItems.map((item) => {
+              const isActive = currentPath === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => onNavigate(item.path)}
+                  className={cn(
+                    'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-0',
+                    isActive
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <span className="text-base">{item.icon}</span>
+                  <span className="text-[10px] font-semibold leading-tight truncate max-w-[56px]">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }

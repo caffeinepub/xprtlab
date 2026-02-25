@@ -2,7 +2,7 @@ import React, { useState, lazy, Suspense } from 'react';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
 import { useGetCallerUserProfile } from './hooks/useQueries';
-import { AppRole } from './backend';
+import { AppRole } from './types/models';
 import LoadingScreen from './components/shared/LoadingScreen';
 import StaffLoginScreen from './components/auth/StaffLoginScreen';
 import ProfileSetupModal from './components/auth/ProfileSetupModal';
@@ -49,26 +49,16 @@ export type StaffRoute =
 
 function getDefaultRouteForRole(role: AppRole): StaffRoute {
   switch (role) {
-    case AppRole.phlebotomist:
+    case 'phlebotomist':
       return 'phlebotomist-attendance';
-    case AppRole.labAdmin:
+    case 'labAdmin':
       return 'admin-bookings';
-    case AppRole.superAdmin:
+    case 'superAdmin':
       return 'audit-logs';
     default:
       return 'tasks';
   }
 }
-
-/** Routes that require an active shift for phlebotomist role */
-const SHIFT_GATED_ROUTES: StaffRoute[] = [
-  'tasks',
-  'home-collections',
-  'record-vitals',
-  'scan-qr',
-  'hospital-sample-entry',
-  'submit-incident',
-];
 
 /** Routes that are admin-only — phlebotomist should never see these */
 const ADMIN_ONLY_ROUTES: StaffRoute[] = [
@@ -83,12 +73,52 @@ const ADMIN_ONLY_ROUTES: StaffRoute[] = [
   'security-logs',
 ];
 
+const phlebotomistNavItems = [
+  { label: 'Attendance', path: 'phlebotomist-attendance', icon: '📅' },
+  { label: 'Tasks', path: 'tasks', icon: '📋' },
+  { label: 'Collections', path: 'home-collections', icon: '🏠' },
+  { label: 'Add Sample', path: 'hospital-sample-entry', icon: '🧪' },
+  { label: 'Profile', path: 'profile', icon: '👤' },
+];
+
+const labAdminNavItems = [
+  { label: 'Bookings', path: 'admin-bookings', icon: '📅' },
+  { label: 'Reports', path: 'admin-reports', icon: '📄' },
+  { label: 'Samples', path: 'hospital-samples', icon: '🧪' },
+  { label: 'Attendance', path: 'attendance', icon: '🕐' },
+  { label: 'Profile', path: 'profile', icon: '👤' },
+];
+
+const superAdminNavItems = [
+  { label: 'Bookings', path: 'admin-bookings', icon: '📅' },
+  { label: 'Audit', path: 'audit-logs', icon: '📊' },
+  { label: 'Samples', path: 'hospital-samples', icon: '🧪' },
+  { label: 'Security', path: 'security-logs', icon: '🛡️' },
+  { label: 'Profile', path: 'profile', icon: '👤' },
+];
+
+function getNavItems(role?: AppRole) {
+  switch (role) {
+    case 'labAdmin': return labAdminNavItems;
+    case 'superAdmin': return superAdminNavItems;
+    default: return phlebotomistNavItems;
+  }
+}
+
+function getRoleLabel(role?: AppRole): string {
+  switch (role) {
+    case 'phlebotomist': return 'Phlebotomist';
+    case 'labAdmin': return 'Lab Admin';
+    case 'superAdmin': return 'Super Admin';
+    default: return 'Staff';
+  }
+}
+
 function StaffAppInner() {
   const { identity, isInitializing } = useInternetIdentity();
   const isAuthenticated = !!identity;
   const queryClient = useQueryClient();
 
-  // Demo mode state — in-memory only, cleared on reload
   const [demoRole, setDemoRole] = useState<AppRole | null>(null);
   const isDemoMode = demoRole !== null;
 
@@ -98,14 +128,13 @@ function StaffAppInner() {
     isFetched: profileFetched,
   } = useGetCallerUserProfile();
 
-  const isPatient = userProfile?.appRole === AppRole.patient;
+  const isPatient = userProfile?.appRole === 'patient';
   const isWrongRole = isAuthenticated && profileFetched && userProfile !== null && isPatient;
   const showProfileSetup = isAuthenticated && !profileLoading && profileFetched && userProfile === null;
 
-  // Determine effective role: demo role takes precedence over real profile
   const effectiveRole: AppRole | undefined = isDemoMode
     ? demoRole!
-    : userProfile?.appRole;
+    : (userProfile?.appRole as AppRole | undefined);
 
   const defaultRoute = effectiveRole ? getDefaultRouteForRole(effectiveRole) : 'phlebotomist-attendance';
   const [currentRoute, setCurrentRoute] = useState<StaffRoute | null>(null);
@@ -122,44 +151,37 @@ function StaffAppInner() {
     setCurrentRoute(null);
   };
 
-  // Show loading only for real auth flow
   if (!isDemoMode && (isInitializing || (isAuthenticated && profileLoading))) {
     return <LoadingScreen message="Loading Staff App..." />;
   }
 
-  // Show login if not authenticated and not in demo mode
   if (!isDemoMode && !isAuthenticated) {
     return <StaffLoginScreen onDemoMode={handleEnterDemoMode} />;
   }
 
-  // Show role error for patient accounts (not in demo mode)
   if (!isDemoMode && isWrongRole) {
-    return <StaffLoginScreen showRoleError onDemoMode={handleEnterDemoMode} />;
+    return <StaffLoginScreen onDemoMode={handleEnterDemoMode} />;
   }
 
-  const navigate = (route: StaffRoute) => {
-    // Prevent phlebotomist from accessing admin-only routes
-    if (effectiveRole === AppRole.phlebotomist && ADMIN_ONLY_ROUTES.includes(route)) {
+  // All navigation uses string to avoid contravariance issues
+  const navigate = (route: string) => {
+    const staffRoute = route as StaffRoute;
+    if (effectiveRole === 'phlebotomist' && ADMIN_ONLY_ROUTES.includes(staffRoute)) {
       setCurrentRoute('phlebotomist-attendance');
       return;
     }
-    setCurrentRoute(route);
+    setCurrentRoute(staffRoute);
   };
-
-  // A string-accepting wrapper for components that type onNavigate as (route: string) => void
-  const navigateFromString = (route: string) => navigate(route as StaffRoute);
 
   const renderPage = () => {
     switch (activeRoute) {
-      // ── Phlebotomist-only routes ──────────────────────────────────────────
       case 'phlebotomist-attendance':
-        // Attendance page is always accessible — no ShiftGuard
         return <PhlebotomistAttendancePage />;
 
       case 'hospital-sample-entry':
         return (
           <ShiftGuard onNavigate={navigate} userRole={effectiveRole}>
-            <AddHospitalSamplePage onNavigate={navigateFromString} />
+            <AddHospitalSamplePage onNavigate={navigate} />
           </ShiftGuard>
         );
 
@@ -198,7 +220,6 @@ function StaffAppInner() {
           </ShiftGuard>
         );
 
-      // ── Admin-only routes ─────────────────────────────────────────────────
       case 'admin-bookings':
         return <AdminBookingsPage onNavigate={navigate} />;
       case 'admin-reports':
@@ -206,24 +227,23 @@ function StaffAppInner() {
       case 'upload-report':
         return <UploadReportPage onNavigate={navigate} />;
       case 'incidents':
-        return <IncidentsPage />;
+        return <IncidentsPage onNavigate={navigate} />;
       case 'audit-logs':
-        return <AuditLogsPage />;
+        return <AuditLogsPage onNavigate={navigate} />;
       case 'create-camp':
         return <CreateCampPage />;
       case 'hospital-samples':
-        return <AdminHospitalSamplesPage onNavigate={navigate} userRole={effectiveRole} />;
+        return <AdminHospitalSamplesPage onNavigate={navigate} />;
       case 'attendance':
-        return <AdminAttendancePage />;
+        return <AdminAttendancePage onNavigate={navigate} />;
       case 'security-logs':
-        return <SecurityLogsPage />;
+        return <SecurityLogsPage onNavigate={navigate} />;
 
-      // ── Shared routes ─────────────────────────────────────────────────────
       case 'profile':
-        return <ProfilePage onNavigate={(r: string) => navigate(r as StaffRoute)} appType="staff" />;
+        return <ProfilePage onNavigate={navigate} />;
 
       default:
-        if (effectiveRole === AppRole.phlebotomist) {
+        if (effectiveRole === 'phlebotomist') {
           return <PhlebotomistAttendancePage />;
         }
         return <AdminBookingsPage onNavigate={navigate} />;
@@ -234,14 +254,16 @@ function StaffAppInner() {
     <Suspense fallback={<LoadingScreen message="Loading..." />}>
       {!isDemoMode && showProfileSetup && (
         <ProfileSetupModal
+          open={showProfileSetup}
+          appType="staff"
           onComplete={() => queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] })}
-          defaultRole={AppRole.phlebotomist}
         />
       )}
       <StaffAppLayout
-        currentRoute={activeRoute}
+        currentPath={activeRoute}
         onNavigate={navigate}
-        userRole={effectiveRole}
+        navItems={getNavItems(effectiveRole)}
+        userRole={getRoleLabel(effectiveRole)}
         isDemoMode={isDemoMode}
         onExitDemoMode={handleExitDemoMode}
       >

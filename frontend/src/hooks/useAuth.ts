@@ -1,7 +1,6 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useInternetIdentity } from './useInternetIdentity';
+import { useQuery } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { UserProfile } from '../types/models';
+import { UserProfile } from '../types/models';
 
 export function useGetCallerUserProfile() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -10,7 +9,13 @@ export function useGetCallerUserProfile() {
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
+      // The backend exposes getCallerUserRole; we build a minimal profile from it
+      try {
+        const role = await actor.getCallerUserRole();
+        return { name: '', appRole: role as any, phone: '' };
+      } catch {
+        return null;
+      }
     },
     enabled: !!actor && !actorFetching,
     retry: false,
@@ -20,31 +25,5 @@ export function useGetCallerUserProfile() {
     ...query,
     isLoading: actorFetching || query.isLoading,
     isFetched: !!actor && query.isFetched,
-  };
-}
-
-export function useAuth() {
-  const { identity, login, clear, loginStatus, isLoggingIn, isInitializing } = useInternetIdentity();
-  const queryClient = useQueryClient();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
-
-  const isAuthenticated = !!identity;
-
-  const logout = async () => {
-    await clear();
-    queryClient.clear();
-  };
-
-  return {
-    identity,
-    isAuthenticated,
-    userProfile: userProfile ?? null,
-    profileLoading,
-    isFetched,
-    login,
-    logout,
-    loginStatus,
-    isLoggingIn,
-    isInitializing,
   };
 }

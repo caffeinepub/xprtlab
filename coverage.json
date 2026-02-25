@@ -1,79 +1,262 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T05:44:23.292Z",
+  "generatedAt": "2026-02-25T09:46:04.159Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
-    "implemented": 4,
+    "total": 16,
+    "implemented": 15,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Redesign the bottom navigation bar in BottomNavigation.tsx and StaffAppLayout.tsx (and PatientAppLayout.tsx) into a floating container that is positioned fixed at the bottom with 16–20px horizontal margin, 12–16px bottom margin, and borderRadius: 24. The container must not scroll with content, must not allow content to overlap it, and must respect safe area insets on both iOS and Android.",
+        "summary": "Remove the 'Built with ❤️ using caffeine.ai' footer/branding text from all screens and layouts.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/layout/BottomNavigation.tsx",
           "frontend/src/components/layout/StaffAppLayout.tsx",
           "frontend/src/components/layout/PatientAppLayout.tsx",
-          "frontend/src/index.css"
+          "frontend/src/components/layout/AppLayout.tsx"
         ],
         "matchedFiles": [
           "frontend/src/components/layout/StaffAppLayout.tsx",
           "frontend/src/components/layout/PatientAppLayout.tsx",
-          "frontend/src/index.css"
+          "frontend/src/components/layout/AppLayout.tsx"
         ]
       },
       {
-        "id": "REQ-2",
-        "summary": "Apply a frosted-glass background to the floating bottom navigation using a BlurView component (intensity 60–80, tint: 'light'). Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported. Add a subtle border (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and a soft shadow (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android).",
+        "id": "REQ-10",
+        "summary": "On the Hospital Sample form, when a test is selected, display the test's MRP and Offer Price, and auto-calculate the Final Amount. The Final Amount field must be read-only (non-editable) with a lock icon indicator. Price fields must not be manipulable by the user.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/layout/BottomNavigation.tsx",
-          "frontend/src/index.css"
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/index.css"
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-11",
+        "summary": "On the Hospital Sample form, restrict Payment Mode options to: 'Cash Collected', 'UPI Received', and 'Hospital Credit'. When 'Cash Collected' or 'UPI Received' is selected, auto-fill the Amount Received field with the Final Amount value and make it non-editable. When 'Hospital Credit' is selected, leave Amount Received as zero or empty.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-12",
+        "summary": "On the Hospital Sample form, add a confirmation dialog before final submission. The dialog must show a summary of the sample entry (patient name, test, final amount, payment mode) and ask: 'Confirm submission? Billing details cannot be edited after saving.'",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-13",
+        "summary": "Redesign the Home Collection Queue page (HomeCollectionQueuePage) so each task card displays: Patient Name, Address, Contact Number, Assigned Tests, Payable Amount, a 'Call' button (opens phone dialer), a 'Start Visit' button, a 'Mark as Collected' button, and a 'Mark as Not Available' button.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-14",
+        "summary": "Add the following sections to the phlebotomist Profile page: (1) Assigned Hospitals List — showing hospitals assigned by admin, (2) Support / Call Admin — a button that opens a phone dialer to the admin contact number, (3) App Version — static display of the current app version string, (4) Logout confirmation popup — 'Are you sure you want to log out?' with Confirm/Cancel actions before signing out.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/patient/ProfilePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/patient/ProfilePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-15",
+        "summary": "Ensure the daily summary (Today Summary) is rendered and visible on the Attendance screen before the 'End Shift & Submit Summary' button is enabled. If no samples have been recorded, show the summary with zero values but still allow shift closure.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-16",
+        "summary": "Add or extend backend data model and queries to support: (1) assigning hospitals to a specific phlebotomist (stored as a list per user), (2) querying assigned hospitals for the calling phlebotomist, (3) aggregating today's sample totals (count, cash, UPI, pending/credit) per phlebotomist for the daily summary.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add the official XprtLab logo to the header in StaffAppLayout and PatientAppLayout. Slightly reduce the header height for better mobile usability.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/layout/StaffAppLayout.tsx",
+          "frontend/src/components/layout/PatientAppLayout.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/layout/StaffAppLayout.tsx",
+          "frontend/src/components/layout/PatientAppLayout.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Style the active tab in the bottom navigation with a soft gradient pill background using colors #0D47A1 → #26C6DA, a white icon, and a slight scale animation (scale 1.05–1.1). Inactive tab icons should use color #94A3B8. Add a smooth transition animation when switching between tabs.",
+        "summary": "Improve global UI spacing, font weights, and contrast across all screens to achieve a professional medical look. Increase font weight for labels and headings; ensure sufficient contrast ratios for text on colored backgrounds.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/layout/BottomNavigation.tsx",
-          "frontend/src/index.css"
+          "frontend/src/index.css",
+          "frontend/tailwind.config.js"
         ],
         "matchedFiles": [
-          "frontend/src/index.css"
+          "frontend/src/index.css",
+          "frontend/tailwind.config.js"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "Preserve all existing role-based visibility logic in the bottom navigation (roleNavConfig-driven nav items per role). Do not break any existing routing. Ensure there is no layout shift or content flicker while scrolling with the new floating nav in place.",
+        "summary": "On the Attendance screen (PhlebotomistAttendancePage / AttendancePage), add a 'Today Summary' section that displays: Total Samples Collected, Cash Collected, UPI Collected, and Pending Amount — computed from the current day's hospital sample records for the logged-in phlebotomist.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/layout/BottomNavigation.tsx",
-          "frontend/src/components/layout/StaffAppLayout.tsx",
-          "frontend/src/components/layout/PatientAppLayout.tsx"
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/components/layout/StaffAppLayout.tsx",
-          "frontend/src/components/layout/PatientAppLayout.tsx"
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "On the Attendance screen, rename the 'End Shift' button to 'End Shift & Submit Summary'. When clicked, show a confirmation popup with the message: 'Are you sure you want to end shift? After submission, today's entries cannot be edited.' Only proceed with shift closure if the user confirms.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Enforce that a phlebotomist cannot start a new shift if a previous shift is still open. The 'Start Shift' action must be blocked and display an informative message if an active shift exists.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-7",
+        "summary": "On the Task Queue page (TaskQueuePage), add a manual 'Refresh' button, display a 'Last Updated' timestamp that updates on each fetch, and enable automatic data refresh every 15 seconds using React Query's refetchInterval. Update the empty state message to: 'No tasks yet. Stay available — new assignments will appear automatically.'",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-8",
+        "summary": "On the Hospital Sample form (AddHospitalSamplePage), make the Hospital field a read-only dropdown populated exclusively from the admin-assigned hospitals list for the logged-in phlebotomist. The frontend must not hardcode any maximum number of hospitals — it must render all hospitals returned by the backend.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+          "frontend/src/hooks/useQueries.ts"
+        ]
+      },
+      {
+        "id": "REQ-9",
+        "summary": "On the Hospital Sample form, enforce that the patient mobile number field accepts exactly 10 numeric digits with inline validation. Display an error message if the input is not exactly 10 digits.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/public/assets/generated/xprtlab-logo.dim_320x80.png",
+    "frontend/src/PatientApp.tsx",
+    "frontend/src/StaffApp.tsx",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/auth/LoginScreen.tsx",
+    "frontend/src/components/auth/ProfileSetupModal.tsx",
+    "frontend/src/components/auth/StaffLoginScreen.tsx",
+    "frontend/src/components/demo/MockBottomNav.tsx",
+    "frontend/src/components/demo/RolePermissionsTable.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/layout/BottomNavigation.tsx",
     "frontend/src/components/layout/PatientAppLayout.tsx",
+    "frontend/src/components/layout/RoleGuard.tsx",
+    "frontend/src/components/layout/ShiftGuard.tsx",
     "frontend/src/components/layout/StaffAppLayout.tsx",
+    "frontend/src/components/shared/SearchableTestSelector.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
+    "frontend/src/hooks/useAuth.ts",
+    "frontend/src/hooks/useNotifications.ts",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/index.css",
+    "frontend/src/pages/admin/AdminAttendancePage.tsx",
+    "frontend/src/pages/admin/AdminBookingsPage.tsx",
+    "frontend/src/pages/admin/AdminHospitalSamplesPage.tsx",
+    "frontend/src/pages/admin/AuditLogsPage.tsx",
+    "frontend/src/pages/admin/IncidentsPage.tsx",
+    "frontend/src/pages/admin/SecurityLogsPage.tsx",
+    "frontend/src/pages/demo/RBACDemoPage.tsx",
+    "frontend/src/pages/patient/MyHospitalSamplesPage.tsx",
+    "frontend/src/pages/patient/ProfilePage.tsx",
+    "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+    "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+    "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx",
+    "frontend/src/pages/phlebotomist/MyHospitalSamplesPage.tsx",
+    "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+    "frontend/src/pages/phlebotomist/RecordVitalsPage.tsx",
+    "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
+    "frontend/src/pages/staff/SubmitIncidentPage.tsx",
+    "frontend/src/types/models.ts",
+    "frontend/src/utils/roleConfig.ts",
+    "frontend/src/utils/roleHelpers.ts",
+    "frontend/tailwind.config.js",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

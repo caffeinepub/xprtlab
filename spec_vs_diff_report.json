@@ -1,50 +1,163 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T05:44:23.289Z",
-  "summary": "The diff implements floating bottom navigation redesign across PatientAppLayout.tsx and StaffAppLayout.tsx with CSS-based frosted glass, fixed positioning, safe area insets, gradient active tab styling, and role-based nav items. Most requirements are partially or fully addressed, but several specific acceptance criteria have gaps or are implemented differently than specified.",
+  "generatedAt": "2026-02-25T09:46:04.154Z",
+  "summary": "The diff implements many of the required changes, but several requirements are partially or fully missing. Key gaps include: the explicit removal of caffeine.ai branding is not evidenced, the Task Queue page enhancements (REQ-7) are not shown, the Hospital Sample form changes (REQ-8 through REQ-12) are not shown, the Home Collection Queue redesign (REQ-13) is not shown, the Profile page additions (REQ-14) are not fully shown, and the Attendance page Today Summary / End Shift confirmation details (REQ-4, REQ-5, REQ-6, REQ-15) are not directly evidenced. The backend changes in main.mo and migration.mo partially address REQ-16. The layouts show the logo added and header height reduced (REQ-2). Global UI improvements appear in index.css and component files (REQ-3). However, due to truncation, some implementations may exist but are not visible in the diff.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Apply a frosted-glass background using a BlurView component (intensity 60–80, tint: 'light'). Shadow must use shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android.",
-      "reason": "The diff uses CSS backdropFilter: 'blur(20px)' and boxShadow instead of a BlurView component. This is a web CSS approach, not the React Native BlurView component specified. The shadow is implemented as boxShadow rather than explicit shadowColor/shadowOpacity/shadowRadius/shadowOffset/elevation properties. There is no elevation: 10 for Android present in the diff.",
+      "id": "REQ-1",
+      "requirement": "Remove the 'Built with using caffeine.ai' footer/branding text from all screens and layouts.",
+      "reason": "No evidence in the diff that caffeine.ai branding was explicitly removed from any layout file. The layout files are shown but no before/after evidence of removal is present.",
       "evidence": [
+        "frontend/src/components/layout/StaffAppLayout.tsx",
         "frontend/src/components/layout/PatientAppLayout.tsx",
-        "frontend/src/components/layout/StaffAppLayout.tsx"
+        "frontend/src/components/layout/AppLayout.tsx"
       ]
     },
     {
-      "id": "REQ-3",
-      "requirement": "Active tab animates to scale 1.05–1.1 when selected; smooth transition animation when switching tabs.",
-      "reason": "The diff does not show any explicit scale transform animation on the active tab button. No transition animation for switching tabs is visible in the truncated diff. Scale animation code is absent from the visible portions of the layout files.",
+      "id": "REQ-4",
+      "requirement": "On the Attendance screen, add a Today Summary section displaying Total Samples Collected, Cash Collected, UPI Collected, and Pending Amount.",
+      "reason": "No PhlebotomistAttendancePage or AttendancePage file is shown in the diff. The Today Summary section implementation cannot be confirmed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-5",
+      "requirement": "Rename End Shift button to End Shift & Submit Summary with a confirmation popup containing the exact specified message.",
+      "reason": "No attendance page file is shown in the diff to confirm this change was made.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-6",
+      "requirement": "Enforce that a phlebotomist cannot start a new shift if a previous shift is still open, with an informative message.",
+      "reason": "ShiftGuard.tsx only handles redirecting when no active shift exists. No evidence that blocking start-shift when one is already active is implemented with the required message.",
       "evidence": [
-        "frontend/src/components/layout/PatientAppLayout.tsx",
-        "frontend/src/components/layout/StaffAppLayout.tsx"
+        "frontend/src/components/layout/ShiftGuard.tsx"
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "requirement": "On TaskQueuePage, add a Refresh button, Last Updated timestamp, 15-second refetchInterval, and updated empty state message.",
+      "reason": "No TaskQueuePage file is shown in the diff. These changes cannot be confirmed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-8",
+      "requirement": "On Hospital Sample form, make the Hospital field a read-only dropdown populated from admin-assigned hospitals list.",
+      "reason": "No AddHospitalSamplePage file is shown in the diff. The implementation cannot be confirmed.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-9",
+      "requirement": "On Hospital Sample form, enforce exactly 10 numeric digits for mobile number with inline validation.",
+      "reason": "No AddHospitalSamplePage file is shown in the diff.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-10",
+      "requirement": "On Hospital Sample form, display MRP and Offer Price after test selection, auto-calculate Final Amount as read-only with lock icon.",
+      "reason": "No AddHospitalSamplePage file is shown in the diff.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-11",
+      "requirement": "On Hospital Sample form, restrict Payment Mode to three options and auto-fill Amount Received for Cash/UPI modes.",
+      "reason": "No AddHospitalSamplePage file is shown in the diff.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-12",
+      "requirement": "On Hospital Sample form, add a confirmation dialog before submission showing sample summary.",
+      "reason": "No AddHospitalSamplePage file is shown in the diff.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-13",
+      "requirement": "Redesign HomeCollectionQueuePage with specified card fields and action buttons.",
+      "reason": "No HomeCollectionQueuePage file is shown in the diff.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-14",
+      "requirement": "Add Assigned Hospitals List, Support/Call Admin, App Version, and Logout confirmation popup to the phlebotomist Profile page.",
+      "reason": "No Profile page file is shown in the diff.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-15",
+      "requirement": "Ensure Today Summary is rendered and visible before End Shift & Submit Summary button is enabled; show zero values if no samples.",
+      "reason": "No attendance page file is shown in the diff to confirm this logic.",
+      "evidence": []
+    },
+    {
+      "id": "REQ-16",
+      "requirement": "Admin can update/set assigned hospitals for a phlebotomist.",
+      "reason": "The migration.mo and truncated main.mo show the data structure for assignedHospitals, but there is no explicit evidence of an admin-callable update function for assigning hospitals in the visible portions of the diff.",
+      "evidence": [
+        "backend/main.mo",
+        "backend/migration.mo"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Dark mode floating nav styles with dark background rgba(18,22,40,0.92) and adjusted border and shadow variables.",
-      "reason": "The build request only specifies a light frosted-glass nav (tint: 'light', rgba(255,255,255,0.9) fallback). Dark mode nav variables were added in index.css but were not requested.",
+      "description": "A separate backend/migration.mo module file was added outside of main.mo",
+      "reason": "The build request constraint states to keep all Motoko logic within the single main actor (backend/main.mo). Adding a separate migration.mo file may violate this constraint.",
       "evidence": [
-        "frontend/src/index.css"
+        "backend/migration.mo"
       ]
     },
     {
-      "description": "CSS custom properties (--nav-blur, --nav-bg, --nav-border, --nav-shadow, --nav-radius, --nav-bottom-margin, --nav-side-margin) added as design tokens in :root.",
-      "reason": "The build request does not mention adding CSS custom properties or design tokens for nav values; it specifies direct style values. These tokens are additional implementation detail not requested.",
+      "description": "Demo mode role-selection buttons in StaffLoginScreen for Phlebotomist, Lab Admin, and Super Admin",
+      "reason": "The build request does not request adding or modifying demo mode login functionality. This feature is not listed in any requirement.",
       "evidence": [
-        "frontend/src/index.css"
+        "frontend/src/components/auth/StaffLoginScreen.tsx"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.52,
   "changed_files": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
+    "frontend/src/PatientApp.tsx",
+    "frontend/src/StaffApp.tsx",
+    "frontend/src/components/auth/LoginScreen.tsx",
+    "frontend/src/components/auth/ProfileSetupModal.tsx",
+    "frontend/src/components/auth/StaffLoginScreen.tsx",
+    "frontend/src/components/demo/MockBottomNav.tsx",
+    "frontend/src/components/demo/RolePermissionsTable.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/layout/BottomNavigation.tsx",
     "frontend/src/components/layout/PatientAppLayout.tsx",
+    "frontend/src/components/layout/RoleGuard.tsx",
+    "frontend/src/components/layout/ShiftGuard.tsx",
     "frontend/src/components/layout/StaffAppLayout.tsx",
+    "frontend/src/components/shared/SearchableTestSelector.tsx",
+    "frontend/src/hooks/useAuth.ts",
+    "frontend/src/hooks/useNotifications.ts",
+    "frontend/src/hooks/useQueries.ts",
     "frontend/src/index.css",
+    "frontend/src/pages/admin/AdminAttendancePage.tsx",
+    "frontend/src/pages/admin/AdminBookingsPage.tsx",
+    "frontend/src/pages/admin/AdminHospitalSamplesPage.tsx",
+    "frontend/src/pages/admin/AuditLogsPage.tsx",
+    "frontend/src/pages/admin/IncidentsPage.tsx",
+    "frontend/src/pages/admin/SecurityLogsPage.tsx",
+    "frontend/src/pages/demo/RBACDemoPage.tsx",
+    "frontend/src/pages/patient/MyHospitalSamplesPage.tsx",
+    "frontend/src/pages/patient/ProfilePage.tsx",
+    "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+    "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+    "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx",
+    "frontend/src/pages/phlebotomist/MyHospitalSamplesPage.tsx",
+    "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+    "frontend/src/pages/phlebotomist/RecordVitalsPage.tsx",
+    "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
+    "frontend/src/pages/staff/SubmitIncidentPage.tsx",
+    "frontend/src/types/models.ts",
+    "frontend/src/utils/roleConfig.ts",
+    "frontend/src/utils/roleHelpers.ts",
+    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

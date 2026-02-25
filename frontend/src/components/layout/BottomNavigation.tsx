@@ -1,69 +1,67 @@
 import React from 'react';
-import { useNavigate, useLocation } from '@tanstack/react-router';
+import { cn } from '@/lib/utils';
+import { AppRole } from '../../types/models';
 import {
-  Home,
-  FlaskConical,
-  FileText,
-  User,
-  ClipboardList,
-  QrCode,
-  Calendar,
-  Shield,
-  LayoutDashboard,
-  CheckSquare,
-  Activity,
+  Home, FlaskConical, MapPin, FileText, User, ClipboardList,
+  CalendarCheck, Shield, BarChart3, Calendar, ShieldAlert
 } from 'lucide-react';
-import { AppRole } from '../../backend';
-import { useAuth } from '../../hooks/useAuth';
-import { roleNavConfig } from '../../utils/roleConfig';
 
 const iconMap: Record<string, React.ReactNode> = {
-  Home: <Home className="w-5 h-5" />,
-  FlaskConical: <FlaskConical className="w-5 h-5" />,
-  FileText: <FileText className="w-5 h-5" />,
-  User: <User className="w-5 h-5" />,
-  ClipboardList: <ClipboardList className="w-5 h-5" />,
-  CheckSquare: <CheckSquare className="w-5 h-5" />,
-  QrCode: <QrCode className="w-5 h-5" />,
-  Calendar: <Calendar className="w-5 h-5" />,
-  Shield: <Shield className="w-5 h-5" />,
-  LayoutDashboard: <LayoutDashboard className="w-5 h-5" />,
-  Activity: <Activity className="w-5 h-5" />,
+  Home: <Home className="h-4 w-4" />,
+  FlaskConical: <FlaskConical className="h-4 w-4" />,
+  MapPin: <MapPin className="h-4 w-4" />,
+  FileText: <FileText className="h-4 w-4" />,
+  User: <User className="h-4 w-4" />,
+  ClipboardList: <ClipboardList className="h-4 w-4" />,
+  CalendarCheck: <CalendarCheck className="h-4 w-4" />,
+  Shield: <Shield className="h-4 w-4" />,
+  BarChart3: <BarChart3 className="h-4 w-4" />,
+  Calendar: <Calendar className="h-4 w-4" />,
+  ShieldAlert: <ShieldAlert className="h-4 w-4" />,
 };
 
-export default function BottomNavigation() {
-  const { userProfile } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+interface NavItem {
+  label: string;
+  path: string;
+  icon: string;
+}
 
-  if (!userProfile) return null;
+interface BottomNavigationProps {
+  navItems: NavItem[];
+  currentPath: string;
+  onNavigate: (path: string) => void;
+  userRole?: AppRole | string;
+}
 
-  const navItems = roleNavConfig[userProfile.appRole] || [];
-
+export default function BottomNavigation({ navItems, currentPath, onNavigate }: BottomNavigationProps) {
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card border-t border-border z-40 shadow-card">
-      <div className="flex items-center justify-around px-2 py-2">
+    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md">
+      <div
+        className="flex items-center justify-around rounded-2xl px-2 py-2"
+        style={{
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          boxShadow: '0 6px 14px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+        }}
+      >
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path ||
-            (item.path !== '/' && location.pathname.startsWith(item.path));
-
+          const isActive = currentPath === item.path;
           return (
             <button
-              key={item.path + item.label}
-              onClick={() => navigate({ to: item.path })}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${
+              key={item.path}
+              onClick={() => onNavigate(item.path)}
+              className={cn(
+                'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-0',
                 isActive
-                  ? 'text-white'
+                  ? 'bg-primary text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
-              }`}
-              style={
-                isActive
-                  ? { background: 'linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%)' }
-                  : {}
-              }
+              )}
             >
-              {iconMap[item.iconName] || <Home className="w-5 h-5" />}
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className="text-base">{iconMap[item.icon] || <User className="h-4 w-4" />}</span>
+              <span className="text-[10px] font-semibold leading-tight truncate max-w-[56px]">
+                {item.label}
+              </span>
             </button>
           );
         })}

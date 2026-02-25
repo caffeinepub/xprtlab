@@ -1,169 +1,63 @@
 import React from 'react';
+import { AppRole } from '../../types/models';
 import { Check, X } from 'lucide-react';
-import { AppRole } from '../../backend';
-import MedicalCard from '../shared/MedicalCard';
 
-interface PermissionRow {
+interface Permission {
   module: string;
-  icon: string;
-  permissions: Record<AppRole, boolean>;
+  patient: boolean;
+  phlebotomist: boolean;
+  labAdmin: boolean;
+  superAdmin: boolean;
 }
 
-const permissionsData: PermissionRow[] = [
-  {
-    module: 'Test Booking',
-    icon: '🧪',
-    permissions: {
-      [AppRole.patient]: true,
-      [AppRole.phlebotomist]: false,
-      [AppRole.labAdmin]: true,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'Home Collection',
-    icon: '🏠',
-    permissions: {
-      [AppRole.patient]: true,
-      [AppRole.phlebotomist]: true,
-      [AppRole.labAdmin]: true,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'PDF Reports',
-    icon: '📄',
-    permissions: {
-      [AppRole.patient]: true,
-      [AppRole.phlebotomist]: false,
-      [AppRole.labAdmin]: true,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'BP/RBS Entry',
-    icon: '💉',
-    permissions: {
-      [AppRole.patient]: false,
-      [AppRole.phlebotomist]: true,
-      [AppRole.labAdmin]: true,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'Phlebotomist Task Queue',
-    icon: '📋',
-    permissions: {
-      [AppRole.patient]: false,
-      [AppRole.phlebotomist]: true,
-      [AppRole.labAdmin]: true,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'Society Camp QR',
-    icon: '📷',
-    permissions: {
-      [AppRole.patient]: false,
-      [AppRole.phlebotomist]: true,
-      [AppRole.labAdmin]: true,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'Incident Log',
-    icon: '⚠️',
-    permissions: {
-      [AppRole.patient]: false,
-      [AppRole.phlebotomist]: true,
-      [AppRole.labAdmin]: true,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'Audit Log',
-    icon: '🔍',
-    permissions: {
-      [AppRole.patient]: false,
-      [AppRole.phlebotomist]: false,
-      [AppRole.labAdmin]: false,
-      [AppRole.superAdmin]: true,
-    },
-  },
-  {
-    module: 'User Management',
-    icon: '👥',
-    permissions: {
-      [AppRole.patient]: false,
-      [AppRole.phlebotomist]: false,
-      [AppRole.labAdmin]: false,
-      [AppRole.superAdmin]: true,
-    },
-  },
+const permissions: Permission[] = [
+  { module: 'Book Tests', patient: true, phlebotomist: false, labAdmin: false, superAdmin: true },
+  { module: 'Home Collection', patient: true, phlebotomist: true, labAdmin: false, superAdmin: true },
+  { module: 'View Reports', patient: true, phlebotomist: false, labAdmin: true, superAdmin: true },
+  { module: 'Upload Reports', patient: false, phlebotomist: false, labAdmin: true, superAdmin: true },
+  { module: 'Record Vitals', patient: false, phlebotomist: true, labAdmin: false, superAdmin: true },
+  { module: 'Attendance', patient: false, phlebotomist: true, labAdmin: true, superAdmin: true },
+  { module: 'Hospital Samples', patient: false, phlebotomist: true, labAdmin: true, superAdmin: true },
+  { module: 'Incidents', patient: false, phlebotomist: true, labAdmin: false, superAdmin: true },
+  { module: 'Audit Logs', patient: false, phlebotomist: false, labAdmin: false, superAdmin: true },
 ];
 
-const roleColumns: { role: AppRole; label: string; shortLabel: string }[] = [
-  { role: AppRole.patient, label: 'Patient', shortLabel: 'Patient' },
-  { role: AppRole.phlebotomist, label: 'Phlebotomist', shortLabel: 'Phlebo' },
-  { role: AppRole.labAdmin, label: 'Lab Admin', shortLabel: 'Lab' },
-  { role: AppRole.superAdmin, label: 'Super Admin', shortLabel: 'Super' },
+const roles: { key: keyof Omit<Permission, 'module'>; label: string }[] = [
+  { key: 'patient', label: 'Patient' },
+  { key: 'phlebotomist', label: 'Phlebotomist' },
+  { key: 'labAdmin', label: 'Lab Admin' },
+  { key: 'superAdmin', label: 'Super Admin' },
 ];
 
 export default function RolePermissionsTable() {
   return (
-    <MedicalCard className="p-0 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[420px]">
-          <thead>
-            <tr>
-              <th
-                className="text-left px-4 py-3 text-sm font-semibold text-white"
-                style={{ background: 'linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%)' }}
-              >
-                Module / Feature
-              </th>
-              {roleColumns.map((col) => (
-                <th
-                  key={col.role}
-                  className="px-3 py-3 text-center text-xs font-semibold text-white whitespace-nowrap"
-                  style={{ background: 'linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%)' }}
-                >
-                  <span className="hidden sm:inline">{col.label}</span>
-                  <span className="sm:hidden">{col.shortLabel}</span>
-                </th>
+    <div className="overflow-x-auto rounded-2xl border border-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gradient-to-r from-primary to-primary/80">
+            <th className="text-left px-4 py-3 text-white font-bold text-xs">Module</th>
+            {roles.map(r => (
+              <th key={r.key} className="px-3 py-3 text-white font-bold text-xs text-center">{r.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {permissions.map((perm, i) => (
+            <tr key={perm.module} className={i % 2 === 0 ? 'bg-white' : 'bg-muted/30'}>
+              <td className="px-4 py-2.5 font-semibold text-foreground text-xs">{perm.module}</td>
+              {roles.map(r => (
+                <td key={r.key} className="px-3 py-2.5 text-center">
+                  {perm[r.key] ? (
+                    <Check className="h-4 w-4 text-green-500 mx-auto" />
+                  ) : (
+                    <X className="h-4 w-4 text-red-400 mx-auto" />
+                  )}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {permissionsData.map((row, idx) => (
-              <tr
-                key={row.module}
-                className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/40'}
-              >
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base leading-none">{row.icon}</span>
-                    <span className="text-sm font-medium text-foreground">{row.module}</span>
-                  </div>
-                </td>
-                {roleColumns.map((col) => (
-                  <td key={col.role} className="px-3 py-3 text-center">
-                    {row.permissions[col.role] ? (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 mx-auto">
-                        <Check className="w-3.5 h-3.5 text-green-600" strokeWidth={2.5} />
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-50 mx-auto">
-                        <X className="w-3.5 h-3.5 text-red-400" strokeWidth={2.5} />
-                      </span>
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </MedicalCard>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

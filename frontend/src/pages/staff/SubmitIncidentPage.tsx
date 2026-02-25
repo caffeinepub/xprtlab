@@ -1,200 +1,164 @@
 import React, { useState, useRef } from 'react';
-import { AlertTriangle, Camera, X } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import MedicalCard from '../../components/shared/MedicalCard';
-import GradientButton from '../../components/shared/GradientButton';
 import { useSubmitIncident } from '../../hooks/useQueries';
-import { ExternalBlob, Variant_low_high_medium } from '../../backend';
-import { generateId } from '../../utils/formatters';
-import { Progress } from '@/components/ui/progress';
-import { toast } from 'sonner';
+import { Loader2, Camera, X, AlertTriangle, CheckCircle } from 'lucide-react';
 
-type StaffRoute = 'tasks' | 'home-collections' | 'record-vitals' | 'scan-qr' | 'admin-bookings' | 'admin-reports' | 'upload-report' | 'incidents' | 'audit-logs' | 'create-camp' | 'submit-incident' | 'profile';
+type Severity = 'low' | 'medium' | 'high';
 
 interface SubmitIncidentPageProps {
-  onNavigate?: (route: StaffRoute) => void;
+  onNavigate?: (route: string) => void;
 }
 
 export default function SubmitIncidentPage({ onNavigate }: SubmitIncidentPageProps) {
-  const submitIncident = useSubmitIncident();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [description, setDescription] = useState('');
-  const [severity, setSeverity] = useState<Variant_low_high_medium>(Variant_low_high_medium.low);
+  const [severity, setSeverity] = useState<Severity>('low');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const submitMutation = useSubmitIncident();
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setPhotoFile(file);
-      const reader = new FileReader();
-      reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const removePhoto = () => {
-    setPhotoFile(null);
-    setPhotoPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (!file) return;
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
-
-    setIsSubmitting(true);
-    setUploadProgress(0);
-
     try {
-      let photoBlob: ExternalBlob | null = null;
-
-      if (photoFile) {
-        const arrayBuffer = await photoFile.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        photoBlob = ExternalBlob.fromBytes(bytes).withUploadProgress((pct) => {
-          setUploadProgress(pct);
-        });
-      }
-
-      const id = generateId();
-      await submitIncident.mutateAsync({
-        id,
-        description: description.trim(),
+      await submitMutation.mutateAsync({
+        description,
         severity,
-        photo: photoBlob,
+        photo: photoFile,
       });
-
-      toast.success('Incident reported successfully');
-      if (onNavigate) {
-        onNavigate('profile');
-      }
-    } catch {
-      toast.error('Failed to submit incident report');
-    } finally {
-      setIsSubmitting(false);
-      setUploadProgress(0);
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Failed to submit incident', err);
     }
   };
 
-  const severityColors = {
-    [Variant_low_high_medium.low]: 'border-green-300 bg-green-50 text-green-700',
-    [Variant_low_high_medium.medium]: 'border-yellow-300 bg-yellow-50 text-yellow-700',
-    [Variant_low_high_medium.high]: 'border-red-300 bg-red-50 text-red-700',
+  const severityColors: Record<Severity, string> = {
+    low: 'bg-green-50 border-green-300 text-green-700',
+    medium: 'bg-yellow-50 border-yellow-300 text-yellow-700',
+    high: 'bg-red-50 border-red-300 text-red-700',
   };
 
-  return (
-    <div className="px-4 py-5 space-y-5 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Report Incident</h1>
-        <p className="text-sm text-muted-foreground">Submit an incident report for review</p>
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
+        <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+          <CheckCircle className="h-8 w-8 text-green-600" />
+        </div>
+        <h2 className="text-lg font-bold text-foreground">Incident Submitted</h2>
+        <p className="text-sm text-muted-foreground">Your incident report has been submitted successfully.</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setSubmitted(false); setDescription(''); setPhotoFile(null); setPhotoPreview(null); setSeverity('low'); }}
+            className="px-4 py-2 rounded-xl bg-primary text-white font-semibold text-sm"
+          >
+            Submit Another
+          </button>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('tasks')}
+              className="px-4 py-2 rounded-xl border border-border text-sm font-semibold text-foreground"
+            >
+              Back to Tasks
+            </button>
+          )}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-4 max-w-lg mx-auto">
+      <h2 className="text-lg font-bold text-foreground">Submit Incident</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Severity */}
-        <MedicalCard>
-          <h2 className="text-sm font-bold text-foreground mb-3">Severity Level</h2>
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
+          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Severity *</label>
           <div className="grid grid-cols-3 gap-2">
-            {[
-              { value: Variant_low_high_medium.low, label: 'Low', desc: 'Minor issue' },
-              { value: Variant_low_high_medium.medium, label: 'Medium', desc: 'Moderate impact' },
-              { value: Variant_low_high_medium.high, label: 'High', desc: 'Critical issue' },
-            ].map((opt) => (
+            {(['low', 'medium', 'high'] as Severity[]).map(s => (
               <button
-                key={opt.value}
+                key={s}
                 type="button"
-                onClick={() => setSeverity(opt.value)}
-                className={`p-3 rounded-xl border-2 text-center transition-all ${
-                  severity === opt.value
-                    ? severityColors[opt.value]
-                    : 'border-border hover:border-muted-foreground/30'
+                onClick={() => setSeverity(s)}
+                className={`py-2 rounded-xl border font-semibold text-xs transition-colors ${
+                  severity === s ? severityColors[s] : 'border-border text-muted-foreground hover:bg-muted/30'
                 }`}
               >
-                <p className="text-sm font-bold">{opt.label}</p>
-                <p className="text-[10px] opacity-70 mt-0.5">{opt.desc}</p>
+                {s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
             ))}
           </div>
-        </MedicalCard>
+        </div>
 
         {/* Description */}
-        <MedicalCard>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-bold">Description</Label>
-            <Textarea
-              placeholder="Describe the incident in detail — what happened, when, where, and who was involved..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              rows={5}
-              className="rounded-xl resize-none"
-            />
-          </div>
-        </MedicalCard>
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
+          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Description *</label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Describe the incident in detail..."
+            rows={4}
+            required
+            className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+          />
+        </div>
 
         {/* Photo */}
-        <MedicalCard>
-          <h2 className="text-sm font-bold text-foreground mb-3">Photo (Optional)</h2>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            className="hidden"
-          />
-
+        <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
+          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Photo (Optional)</label>
           {photoPreview ? (
             <div className="relative">
-              <img
-                src={photoPreview}
-                alt="Incident photo"
-                className="w-full h-40 object-cover rounded-xl"
-              />
+              <img src={photoPreview} alt="Incident photo" className="w-full rounded-xl object-cover max-h-48" />
               <button
                 type="button"
-                onClick={removePhoto}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center"
+                onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center"
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" />
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 hover:border-brand-blue/50 transition-colors"
+              className="w-full py-8 rounded-xl border-2 border-dashed border-border text-muted-foreground flex flex-col items-center gap-2 hover:bg-muted/30 transition-colors"
             >
-              <Camera className="w-8 h-8 text-muted-foreground" />
-              <p className="text-sm font-medium text-foreground">Add Photo</p>
-              <p className="text-xs text-muted-foreground">Tap to capture or select</p>
+              <Camera className="h-6 w-6" />
+              <span className="text-xs font-semibold">Tap to add photo</span>
             </button>
           )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+        </div>
 
-          {isSubmitting && photoFile && uploadProgress > 0 && (
-            <div className="mt-3 space-y-1.5">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Uploading photo...</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <Progress value={uploadProgress} className="h-2" />
-            </div>
-          )}
-        </MedicalCard>
-
-        <GradientButton
+        {/* Submit */}
+        <button
           type="submit"
-          loading={isSubmitting}
-          disabled={!description.trim()}
-          className="w-full"
-          size="lg"
+          disabled={submitMutation.isPending || !description.trim()}
+          className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
         >
-          <AlertTriangle className="w-4 h-4" />
-          Submit Incident Report
-        </GradientButton>
+          {submitMutation.isPending ? (
+            <><Loader2 className="h-4 w-4 animate-spin" /> Submitting...</>
+          ) : (
+            <><AlertTriangle className="h-4 w-4" /> Submit Incident</>
+          )}
+        </button>
       </form>
     </div>
   );

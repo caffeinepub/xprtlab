@@ -1,110 +1,313 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Floating Bottom Navigation with BlurView, Gradient Active Tab & Safe Area Support",
+  "title": "XprtLab Phlebotomist Portal — UI Corrections & Operational Control Hardening",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Convert bottom navigation to a floating container with fixed positioning, margin spacing, rounded corners, and safe area inset support",
+      "summary": "Remove the 'Built with ❤️ using caffeine.ai' footer/branding text from all screens and layouts",
       "acceptanceCriteria": [
-        "Bottom nav floats above page content with visible horizontal and bottom margins",
-        "Nav has borderRadius: 24 applied visibly",
-        "Nav stays fixed at the bottom while scrolling page content",
-        "Page content does not slide behind the nav bar",
-        "Safe area insets are respected on notched iOS devices and Android devices with gesture navigation"
+        "No occurrence of 'caffeine.ai' text appears anywhere in the app.",
+        "All layouts (StaffAppLayout, PatientAppLayout, AppLayout) are free of this branding."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/layout/BottomNavigation.tsx",
-          "operation": "modify",
-          "description": "Redesign the bottom navigation container to use fixed positioning with horizontal margins (16-20px), bottom margin (12-16px), and borderRadius of 24px. Add safe area inset handling using CSS env() variables (safe-area-inset-bottom) to respect iOS notches and Android gesture areas. Update container styles to float above content without scrolling."
-        },
-        {
           "path": "frontend/src/components/layout/StaffAppLayout.tsx",
           "operation": "modify",
-          "description": "Update the layout to accommodate the floating bottom navigation by adding bottom padding to the main content area equal to the nav height plus margins. Ensure content does not overlap the floating nav bar and scrolling behavior remains smooth. Apply safe area padding adjustments to the content wrapper."
+          "description": "Search for and remove any 'caffeine.ai' branding text or footer elements from the component JSX and ensure no footer section references the branding."
         },
         {
           "path": "frontend/src/components/layout/PatientAppLayout.tsx",
           "operation": "modify",
-          "description": "Update the patient layout to accommodate the floating bottom navigation by adding bottom padding to the main content area equal to the nav height plus margins. Ensure content does not overlap the floating nav bar and scrolling behavior remains smooth. Apply safe area padding adjustments to the content wrapper."
+          "description": "Search for and remove any 'caffeine.ai' branding text or footer elements from the component JSX and ensure no footer section references the branding."
         },
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/src/components/layout/AppLayout.tsx",
           "operation": "modify",
-          "description": "Add utility classes for the floating bottom navigation container including fixed positioning, margin spacing, border radius, and safe area inset support. Include CSS custom properties for consistent spacing values across layouts."
+          "description": "Search for and remove any 'caffeine.ai' branding text or footer elements from the component JSX and ensure no footer section references the branding."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Apply frosted-glass BlurView background with fallback, subtle border, and soft shadow to the floating navigation container",
+      "summary": "Add the official XprtLab logo to the header in StaffAppLayout and PatientAppLayout, and reduce header height for better mobile usability",
       "acceptanceCriteria": [
-        "BlurView renders a visible frosted-glass blur behind the nav bar at intensity 60–80",
-        "If BlurView is unavailable the nav bar shows rgba(255,255,255,0.9) background",
-        "A subtle 1px semi-transparent white border is visible around the nav container",
-        "A soft drop shadow (opacity 0.08, radius 12, offset y:6) is visible below the nav bar",
-        "Android shows elevation: 10"
+        "XprtLab logo image is rendered in the header on both staff and patient layouts.",
+        "Header height is visibly reduced compared to the previous version and fits comfortably on a 375px-wide mobile screen.",
+        "Logo scales appropriately without overflow."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/layout/BottomNavigation.tsx",
+          "path": "frontend/src/components/layout/StaffAppLayout.tsx",
           "operation": "modify",
-          "description": "Wrap the navigation content with a BlurView component from expo-blur (or react-native-blur if using React Native Web) with intensity 60-80 and tint 'light'. Add a fallback solid background of rgba(255,255,255,0.9) for environments where BlurView is not supported (use conditional rendering or error boundary). Apply border styles (borderWidth: 1, borderColor: rgba(255,255,255,0.3)) and shadow properties (shadowColor: #000, shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 10 for Android) to the container."
+          "description": "Replace the existing header logo or placeholder with the generated XprtLab logo at frontend/public/assets/generated/xprtlab-logo.dim_256x256.png. Reduce the header height by adjusting padding classes (e.g., from py-4 to py-2) and ensure the logo image has appropriate max-height constraints (e.g., h-10 or h-12) for mobile screens."
         },
         {
-          "path": "frontend/src/index.css",
+          "path": "frontend/src/components/layout/PatientAppLayout.tsx",
           "operation": "modify",
-          "description": "Add utility classes for the frosted-glass effect including border styles (1px rgba(255,255,255,0.3)), shadow properties (box-shadow with 0.08 opacity, 12px radius, 6px y-offset), and fallback background color (rgba(255,255,255,0.9)). Include CSS custom properties for consistent blur and shadow values."
+          "description": "Replace the existing header logo or placeholder with the generated XprtLab logo at frontend/public/assets/generated/xprtlab-logo.dim_256x256.png. Reduce the header height by adjusting padding classes (e.g., from py-4 to py-2) and ensure the logo image has appropriate max-height constraints (e.g., h-10 or h-12) for mobile screens."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Style active tab with gradient pill background, white icon, scale animation, and smooth transitions between tabs",
+      "summary": "Improve global UI spacing, font weights, and contrast across all screens to achieve a professional medical look",
       "acceptanceCriteria": [
-        "Active tab shows a visible gradient pill (#0D47A1 to #26C6DA) behind the icon/label",
-        "Active tab icon is white",
-        "Active tab animates to scale 1.05–1.1 when selected",
-        "Inactive tab icons render in #94A3B8",
-        "Switching tabs produces a smooth animated transition with no flicker or jump"
+        "Labels and section headings use font-weight semibold or bold.",
+        "Body text has sufficient contrast against its background (minimum WCAG AA).",
+        "Card and section padding is consistent and not cramped on mobile."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/layout/BottomNavigation.tsx",
-          "operation": "modify",
-          "description": "Add active tab styling with a gradient pill background using linear-gradient from #0D47A1 to #26C6DA. Apply white color to active tab icons and labels. Implement scale transform animation (1.05-1.1) on active state using CSS transitions or Framer Motion. Set inactive tab icons to color #94A3B8. Add smooth transition properties (transition: all 0.3s ease-in-out) for tab switching animations. Ensure pill background has appropriate padding and border radius to wrap the icon/label."
-        },
-        {
           "path": "frontend/src/index.css",
           "operation": "modify",
-          "description": "Add utility classes for the active tab gradient pill (linear-gradient(to right, #0D47A1, #26C6DA)), white icon color, inactive icon color (#94A3B8), and scale animation keyframes. Include transition properties for smooth tab switching with no flicker. Define CSS custom properties for gradient colors and animation timing."
+          "description": "Update global typography rules to enforce font-weight: 600 (semibold) or 700 (bold) for labels, headings, and section titles. Review and adjust CSS custom properties for text colors to ensure WCAG AA contrast ratios against background colors. Add or update base card and section padding utilities to ensure consistent spacing (e.g., min padding of p-4 on mobile)."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Extend the Tailwind theme to set default font-weight for headings and labels to semibold or bold. Ensure color palette custom properties provide sufficient contrast for text on colored backgrounds. Optionally add spacing scale adjustments to enforce consistent card/section padding."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Preserve existing role-based navigation logic, routing integrity, and prevent layout shift during scroll",
+      "summary": "On the Attendance screen, add a 'Today Summary' section displaying Total Samples Collected, Cash Collected, UPI Collected, and Pending Amount computed from the current day's hospital sample records",
       "acceptanceCriteria": [
-        "Each role (patient, phlebotomist, lab admin, super admin) still sees only their role-specific nav items",
-        "All existing routes navigate correctly when tapped",
-        "No layout shift or transparency glitch occurs while scrolling page content"
+        "Today Summary section is visible on the Attendance screen when a shift is active.",
+        "Values are derived from backend data (hospital samples recorded today by the phlebotomist).",
+        "Pending Amount reflects unpaid/credit amounts correctly.",
+        "Backend exposes a query or the frontend aggregates from existing hospital sample data for the daily summary."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/layout/BottomNavigation.tsx",
+          "path": "frontend/src/pages/phlebotomist/AttendancePage.tsx",
           "operation": "modify",
-          "description": "Verify that all existing roleNavConfig-driven navigation logic remains intact after applying the floating container styles. Ensure navigation items are filtered by role exactly as before. Test that route navigation handlers (Link/navigate calls) function correctly with the new layout. Add will-change: transform CSS property to prevent rendering glitches during scroll."
+          "description": "Add a 'Today Summary' section that fetches the daily summary from the backend using a new React Query hook (e.g., useGetTodaySummary). Display four summary cards: Total Samples Collected, Cash Collected (₹), UPI Collected (₹), and Pending Amount (₹). Position this section above the shift action buttons and ensure it is visible whenever a shift is active. Handle loading and empty states gracefully."
         },
         {
-          "path": "frontend/src/components/layout/StaffAppLayout.tsx",
+          "path": "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
           "operation": "modify",
-          "description": "Ensure the content wrapper has proper z-index layering to prevent overlap with the floating nav. Add scroll event optimization (e.g., passive listeners) if needed. Verify that no layout shift occurs when content height changes or during scroll events. Test with different role configurations to confirm role-based visibility is preserved."
+          "description": "Add the same 'Today Summary' section as in AttendancePage, fetching data from the backend and displaying the four summary metrics (Total Samples, Cash Collected, UPI Collected, Pending Amount). Position above the shift action buttons."
         },
         {
-          "path": "frontend/src/components/layout/PatientAppLayout.tsx",
+          "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Ensure the content wrapper has proper z-index layering to prevent overlap with the floating nav. Add scroll event optimization if needed. Verify that no layout shift occurs when content height changes or during scroll events. Test that patient-specific nav items render correctly with the new floating design."
+          "description": "Add a new React Query hook useGetTodaySummary() that calls actor.getTodaySummary() to fetch the daily summary data. Configure queryKey as ['todaySummary'], enable only when actor is available, and set appropriate staleTime and cacheTime for real-time updates."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "On the Attendance screen, rename the 'End Shift' button to 'End Shift & Submit Summary' and show a confirmation popup with the specified message when clicked",
+      "acceptanceCriteria": [
+        "Button label reads 'End Shift & Submit Summary'.",
+        "Clicking the button opens a confirmation dialog with the exact specified message.",
+        "Shift is only closed if the user confirms; cancelling leaves the shift active.",
+        "Today Summary section is visible within or near the confirmation dialog."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "operation": "modify",
+          "description": "Change the 'End Shift' button label to 'End Shift & Submit Summary'. Add an onClick handler that opens a confirmation dialog (using shadcn/ui AlertDialog or Dialog) displaying the message: 'Are you sure you want to end shift? After submission, today's entries cannot be edited.' Include the Today Summary data in or near the dialog content. Provide 'Confirm' and 'Cancel' actions; only proceed with shift closure if the user confirms."
+        },
+        {
+          "path": "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "operation": "modify",
+          "description": "Apply the same changes as AttendancePage: rename button to 'End Shift & Submit Summary', add confirmation dialog with the specified message and Today Summary display, and enforce confirmation before shift closure."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Enforce that a phlebotomist cannot start a new shift if a previous shift is still open",
+      "acceptanceCriteria": [
+        "If an active (unclosed) shift exists in the backend, the Start Shift button is disabled or hidden.",
+        "A clear message is shown: e.g., 'You have an active shift. Please end it before starting a new one.'",
+        "The ShiftGuard or attendance logic enforces this check on page load."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "operation": "modify",
+          "description": "Add logic to check for an existing active shift on page load (via a backend query or existing shift state). If an active shift is detected, disable or hide the 'Start Shift' button and display an informative message: 'You have an active shift. Please end it before starting a new one.' Ensure this check runs before rendering the start shift UI."
+        },
+        {
+          "path": "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "operation": "modify",
+          "description": "Add the same active shift check and enforcement logic as AttendancePage, disabling the Start Shift button and showing the same informative message if a shift is already open."
+        }
+      ]
+    },
+    {
+      "id": "REQ-7",
+      "summary": "On the Task Queue page, add a manual 'Refresh' button, display a 'Last Updated' timestamp, enable automatic refresh every 15 seconds, and update the empty state message",
+      "acceptanceCriteria": [
+        "A 'Refresh' button is visible on the Task Queue page and triggers an immediate re-fetch.",
+        "'Last Updated: HH:MM:SS' timestamp is shown and updates after each successful fetch.",
+        "React Query refetchInterval is set to 15000ms for the task queue query.",
+        "Empty state shows the exact message: 'No tasks yet. Stay available — new assignments will appear automatically.'"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
+          "operation": "modify",
+          "description": "Add a 'Refresh' button to the page header that calls refetch() on the task queue query. Display a 'Last Updated: HH:MM:SS' timestamp below the header that updates after each successful fetch (track via state or query.dataUpdatedAt). Configure the task queue React Query hook with refetchInterval: 15000 to enable automatic refresh every 15 seconds. Update the empty state message to: 'No tasks yet. Stay available — new assignments will appear automatically.'"
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Update the task queue React Query hook (if not already configured) to include refetchInterval: 15000 in the query options, enabling automatic background refetching every 15 seconds."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "On the Hospital Sample form, make the Hospital field a read-only dropdown populated exclusively from the admin-assigned hospitals list for the logged-in phlebotomist",
+      "acceptanceCriteria": [
+        "Hospital field is rendered as a dropdown (not a free-text input).",
+        "Dropdown options are fetched from the backend (assigned hospitals for the phlebotomist).",
+        "The field cannot be typed into manually — selection only.",
+        "All hospitals returned by the backend are shown without any frontend cap.",
+        "Backend provides a query to fetch the list of hospitals assigned to the calling phlebotomist."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+          "operation": "modify",
+          "description": "Replace any manual Hospital input field with a read-only dropdown (using shadcn/ui Select component). Fetch the list of assigned hospitals via a new React Query hook (e.g., useGetAssignedHospitals) that calls actor.getAssignedHospitals(). Populate the dropdown with all returned hospitals without imposing any frontend maximum limit. Disable manual text input by using the Select component in controlled mode with no free-text typing allowed."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add a new React Query hook useGetAssignedHospitals() that calls actor.getAssignedHospitals() to fetch the list of hospitals assigned to the logged-in phlebotomist. Configure queryKey as ['assignedHospitals'], enable only when actor is available, and set appropriate caching."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "On the Hospital Sample form, enforce that the patient mobile number field accepts exactly 10 numeric digits with inline validation",
+      "acceptanceCriteria": [
+        "Mobile field restricts input to numeric characters only.",
+        "Inline error 'Enter a valid 10-digit mobile number' appears if the value is not exactly 10 digits.",
+        "Form cannot be submitted if mobile number validation fails."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+          "operation": "modify",
+          "description": "Add inline validation to the patient mobile number input field. Restrict input to numeric characters using type='tel' and a pattern or onChange handler that filters non-numeric characters. Validate that the input is exactly 10 digits in length and display an inline error message 'Enter a valid 10-digit mobile number' if validation fails. Disable form submission if the mobile number does not meet the validation criteria."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "On the Hospital Sample form, display test MRP and Offer Price, auto-calculate Final Amount, and make Final Amount read-only with a lock icon indicator",
+      "acceptanceCriteria": [
+        "After test selection, MRP and Offer Price are displayed from the test record.",
+        "Final Amount is auto-calculated (e.g., based on offer price or discount logic) and displayed in a read-only field.",
+        "A lock icon is shown adjacent to MRP, Offer Price, and Final Amount fields.",
+        "User cannot type into or modify Final Amount or price fields.",
+        "Price values cannot be changed after test selection without re-selecting the test."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+          "operation": "modify",
+          "description": "After a test is selected, fetch and display the test's MRP and Offer Price from the test record. Auto-calculate the Final Amount (e.g., Offer Price minus any discount) and display it in a read-only input field with disabled={true}. Add a lock icon (from lucide-react) adjacent to the MRP, Offer Price, and Final Amount fields to indicate they are non-editable. Ensure that these price fields cannot be manually typed into or modified by the user. Final Amount must recalculate only when the test selection changes."
+        }
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "summary": "On the Hospital Sample form, restrict Payment Mode options to 'Cash Collected', 'UPI Received', and 'Hospital Credit', and auto-fill Amount Received based on payment mode",
+      "acceptanceCriteria": [
+        "Payment Mode dropdown contains exactly three options: Cash Collected, UPI Received, Hospital Credit.",
+        "Selecting Cash Collected or UPI Received auto-fills Amount Received with Final Amount and makes the field read-only.",
+        "Selecting Hospital Credit sets Amount Received to zero or leaves it empty.",
+        "User cannot manually override the auto-filled Amount Received value."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+          "operation": "modify",
+          "description": "Replace any existing Payment Mode field with a dropdown (Select) containing exactly three options: 'Cash Collected', 'UPI Received', and 'Hospital Credit'. Add logic that when 'Cash Collected' or 'UPI Received' is selected, auto-fills the Amount Received field with the Final Amount value and makes it read-only (disabled={true}). When 'Hospital Credit' is selected, set Amount Received to zero or leave it empty. Ensure the Amount Received field cannot be manually edited after auto-fill by enforcing the disabled state."
+        }
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "summary": "On the Hospital Sample form, add a confirmation dialog before final submission showing a summary of the sample entry",
+      "acceptanceCriteria": [
+        "Clicking the submit button opens a confirmation dialog.",
+        "Dialog shows: patient name, test name, final amount, payment mode.",
+        "Dialog includes 'Confirm' and 'Cancel' actions.",
+        "Form is only submitted after user confirms."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
+          "operation": "modify",
+          "description": "Add a confirmation dialog (using shadcn/ui AlertDialog or Dialog) that opens when the user clicks the submit button. Display a summary of the sample entry including: patient name, test name, final amount (₹), and payment mode. Include the message: 'Confirm submission? Billing details cannot be edited after saving.' Provide 'Confirm' and 'Cancel' actions. Only proceed with form submission via the useCreateHospitalSample mutation if the user clicks 'Confirm'. Cancel should close the dialog without submitting."
+        }
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "summary": "Redesign the Home Collection Queue page so each task card displays detailed information and action buttons",
+      "acceptanceCriteria": [
+        "Each home collection task card shows all six data fields: Patient Name, Address, Contact Number, Assigned Tests, Payable Amount.",
+        "'Call' button triggers tel: link with the contact number.",
+        "'Start Visit' button updates task status to in-progress.",
+        "'Mark as Collected' button updates task status to collected.",
+        "'Mark as Not Available' button updates task status to not-available.",
+        "Status updates are persisted via existing useUpdateHomeCollectionStatus hook or equivalent."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx",
+          "operation": "modify",
+          "description": "Redesign each home collection task card to display six key fields: Patient Name, Address, Contact Number, Assigned Tests (comma-separated list), and Payable Amount (₹). Add four action buttons per card: 'Call' (triggers tel: link using the contact number), 'Start Visit' (updates status to 'in-progress'), 'Mark as Collected' (updates status to 'collected'), and 'Mark as Not Available' (updates status to 'not-available'). Use the existing useUpdateHomeCollectionStatus hook to persist status changes to the backend. Ensure button states and loading indicators reflect the current operation."
+        }
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "summary": "Add sections to the phlebotomist Profile page: Assigned Hospitals List, Support / Call Admin, App Version, and Logout confirmation popup",
+      "acceptanceCriteria": [
+        "Assigned Hospitals List section fetches and renders admin-assigned hospitals from the backend.",
+        "Support / Call Admin button triggers a tel: link.",
+        "App Version is displayed as a static string (e.g., 'v1.0.0').",
+        "Logout button opens a confirmation dialog; sign-out only proceeds if user confirms.",
+        "Cancelling the logout dialog keeps the user signed in."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/patient/ProfilePage.tsx",
+          "operation": "modify",
+          "description": "Add four new sections to the Profile page: (1) 'Assigned Hospitals List' — fetch the list using useGetAssignedHospitals() and render each hospital name and address in a card or list. (2) 'Support / Call Admin' — add a button that triggers a tel: link (e.g., tel:+919876543210). (3) 'App Version' — display a static version string like 'v1.0.0'. (4) Replace the existing Logout button with one that opens a confirmation dialog (using shadcn/ui AlertDialog) displaying: 'Are you sure you want to log out?' with 'Confirm' and 'Cancel' actions. Only proceed with sign-out (clear Internet Identity session and query cache) if the user confirms."
+        }
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "summary": "Ensure the daily summary is rendered and visible on the Attendance screen before the 'End Shift & Submit Summary' button is enabled",
+      "acceptanceCriteria": [
+        "Today Summary section is always shown when an active shift exists, above the End Shift button.",
+        "End Shift & Submit Summary button is only enabled after the summary section has been rendered/loaded.",
+        "Zero-value summaries are displayed correctly when no samples have been collected."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/phlebotomist/AttendancePage.tsx",
+          "operation": "modify",
+          "description": "Ensure the 'Today Summary' section is always rendered when an active shift exists and is positioned above the 'End Shift & Submit Summary' button. Disable the button until the summary data has been successfully fetched and rendered (check query.isLoading and query.isFetched). Display zero values correctly in the summary if no samples have been collected (e.g., '0 samples', '₹0' for each amount)."
+        },
+        {
+          "path": "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
+          "operation": "modify",
+          "description": "Apply the same logic as AttendancePage: render the Today Summary section above the End Shift button, disable the button until summary data is loaded, and handle zero-value summaries gracefully."
         }
       ]
     }

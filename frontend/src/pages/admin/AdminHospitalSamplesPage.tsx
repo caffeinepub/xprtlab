@@ -1,436 +1,184 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
-  FlaskConical,
-  Search,
-  Edit2,
-  ChevronDown,
-  Loader2,
-  AlertCircle,
-  TrendingUp,
-  DollarSign,
-  X,
-  CheckCircle,
-} from 'lucide-react';
-import MedicalCard from '../../components/shared/MedicalCard';
-import {
-  useGetHospitalSamplesByHospital,
-  useGetHospitalSamplesByPhlebotomist,
+  useGetAllHospitalSamples,
   useUpdateHospitalSampleBilling,
 } from '../../hooks/useQueries';
-import { HospitalSample, AppRole } from '../../backend';
-import { Skeleton } from '@/components/ui/skeleton';
+import { HospitalSample } from '../../types/models';
+import { Search, Loader2, FlaskConical, Edit2, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
-import type { StaffRoute } from '../../StaffApp';
 
 interface AdminHospitalSamplesPageProps {
-  onNavigate?: (route: StaffRoute) => void;
-  userRole?: AppRole;
+  onNavigate?: (route: string) => void;
 }
 
-const PAYMENT_MODES = ['CASH', 'UPI', 'CARD', 'ONLINE', 'CREDIT'];
+export default function AdminHospitalSamplesPage({ onNavigate }: AdminHospitalSamplesPageProps) {
+  const [hospitalFilter, setHospitalFilter] = useState('');
+  const [phlebotomistFilter, setPhlebotomistFilter] = useState('');
+  const [editingSample, setEditingSample] = useState<(HospitalSample & { id?: string }) | null>(null);
+  const [editAmount, setEditAmount] = useState('');
 
-function formatDate(ts: bigint): string {
-  return new Date(Number(ts) / 1_000_000).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+  const { data: samples = [], isLoading } = useGetAllHospitalSamples();
+  const updateBillingMutation = useUpdateHospitalSampleBilling();
+
+  const filtered = samples.filter((s: any) => {
+    const matchHospital = !hospitalFilter || s.hospitalId?.toLowerCase().includes(hospitalFilter.toLowerCase());
+    const matchPhlebotomist = !phlebotomistFilter || s.phlebotomistId?.toLowerCase().includes(phlebotomistFilter.toLowerCase());
+    return matchHospital && matchPhlebotomist;
   });
-}
 
-function SampleRow({
-  sample,
-  sampleId,
-  onEdit,
-}: {
-  sample: HospitalSample;
-  sampleId: string;
-  onEdit: (id: string, sample: HospitalSample) => void;
-}) {
-  const hasPending = sample.pendingAmount > 0;
-  return (
-    <div
-      className={`border rounded-2xl p-4 space-y-3 ${
-        hasPending
-          ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/10'
-          : 'border-border bg-card'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-foreground text-sm truncate">{sample.patientName}</p>
-          <p className="text-xs text-muted-foreground">{sample.phone}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {hasPending && (
-            <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/40 px-2 py-0.5 rounded-full">
-              PENDING
-            </span>
-          )}
-          <span className="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-            {sample.status}
-          </span>
-        </div>
-      </div>
+  const totalRevenue = filtered.reduce((sum: number, s: any) => sum + Number(s.finalAmount || 0), 0);
+  const totalReceived = filtered.reduce((sum: number, s: any) => sum + Number(s.amountReceived || 0), 0);
+  const totalPending = filtered.reduce((sum: number, s: any) => sum + Number(s.pendingAmount || 0), 0);
 
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <div>
-          <p className="text-muted-foreground">MRP</p>
-          <p className="font-semibold">₹{sample.mrp.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Discount</p>
-          <p className="font-semibold text-green-600">₹{sample.discount.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Final</p>
-          <p className="font-semibold text-primary">₹{sample.finalAmount.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Received</p>
-          <p className="font-semibold text-green-700">₹{sample.amountReceived.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Pending</p>
-          <p className={`font-semibold ${hasPending ? 'text-orange-600' : 'text-muted-foreground'}`}>
-            ₹{sample.pendingAmount.toFixed(0)}
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Mode</p>
-          <p className="font-semibold">{sample.paymentMode}</p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>Test: {sample.testId}</span>
-        <span>{formatDate(sample.createdAt)}</span>
-      </div>
-
-      <button
-        onClick={() => onEdit(sampleId, sample)}
-        className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-primary border border-primary/30 rounded-xl py-2 hover:bg-primary/5 transition-colors"
-      >
-        <Edit2 className="w-3.5 h-3.5" />
-        Edit Billing
-      </button>
-    </div>
-  );
-}
-
-interface EditBillingModalProps {
-  open: boolean;
-  onClose: () => void;
-  sampleId: string;
-  sample: HospitalSample;
-}
-
-function EditBillingModal({ open, onClose, sampleId, sample }: EditBillingModalProps) {
-  const [discount, setDiscount] = useState(sample.discount.toString());
-  const [amountReceived, setAmountReceived] = useState(sample.amountReceived.toString());
-  const [paymentMode, setPaymentMode] = useState(sample.paymentMode);
-  const updateBilling = useUpdateHospitalSampleBilling();
-
-  const finalAmount = sample.mrp - parseFloat(discount || '0');
-  const pendingAmount = finalAmount - parseFloat(amountReceived || '0');
-
-  const handleSave = async () => {
-    const discountVal = parseFloat(discount) || 0;
-    const receivedVal = parseFloat(amountReceived) || 0;
-    const finalVal = sample.mrp - discountVal;
-    const pendingVal = Math.max(0, finalVal - receivedVal);
-
-    await updateBilling.mutateAsync({
-      id: sampleId,
-      discount: discountVal,
-      finalAmount: finalVal,
-      amountReceived: receivedVal,
-      pendingAmount: pendingVal,
-      paymentMode,
-    });
-    onClose();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm mx-4">
-        <DialogHeader>
-          <DialogTitle>Edit Billing — {sample.patientName}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">MRP (fixed)</label>
-            <p className="text-sm font-bold text-foreground mt-0.5">₹{sample.mrp.toFixed(2)}</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Discount (₹)</label>
-            <input
-              type="number"
-              value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
-              min={0}
-              max={sample.mrp * 0.2}
-              className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background text-foreground mt-1 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <p className="text-[10px] text-muted-foreground mt-0.5">Max 20% = ₹{(sample.mrp * 0.2).toFixed(2)}</p>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Amount Received (₹)</label>
-            <input
-              type="number"
-              value={amountReceived}
-              onChange={(e) => setAmountReceived(e.target.value)}
-              min={0}
-              className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background text-foreground mt-1 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Payment Mode</label>
-            <select
-              value={paymentMode}
-              onChange={(e) => setPaymentMode(e.target.value)}
-              className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-background text-foreground mt-1 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {PAYMENT_MODES.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </div>
-          <div className="bg-muted/40 rounded-xl p-3 space-y-1 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Final Amount</span>
-              <span className="font-semibold">₹{Math.max(0, finalAmount).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Pending</span>
-              <span className={`font-semibold ${pendingAmount > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                ₹{Math.max(0, pendingAmount).toFixed(2)}
-              </span>
-            </div>
-          </div>
-        </div>
-        <DialogFooter className="gap-2">
-          <DialogClose asChild>
-            <button className="flex-1 border border-border rounded-xl py-2 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors">
-              Cancel
-            </button>
-          </DialogClose>
-          <button
-            onClick={handleSave}
-            disabled={updateBilling.isPending}
-            className="flex-1 gradient-btn rounded-xl py-2 text-sm font-semibold flex items-center justify-center gap-1.5 disabled:opacity-60"
-          >
-            {updateBilling.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <CheckCircle className="w-4 h-4" />
-            )}
-            Save
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-export default function AdminHospitalSamplesPage({
-  onNavigate,
-  userRole,
-}: AdminHospitalSamplesPageProps) {
-  const [hospitalId, setHospitalId] = useState('');
-  const [hospitalInput, setHospitalInput] = useState('');
-  const [phlebotomistId, setPhlebotomistId] = useState('');
-  const [phlebotomistInput, setPhlebotomistInput] = useState('');
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingSample, setEditingSample] = useState<HospitalSample | null>(null);
-
-  const { data: hospitalSamples = [], isLoading: hospitalLoading } =
-    useGetHospitalSamplesByHospital(hospitalId);
-  const { data: phlebotomistSamples = [], isLoading: phlebotomistLoading } =
-    useGetHospitalSamplesByPhlebotomist(phlebotomistId);
-
-  // Merge and deduplicate samples from both filters
-  const allSamples = useMemo(() => {
-    if (hospitalId && phlebotomistId) {
-      // Intersection: samples matching both
-      const phlebIds = new Set(phlebotomistSamples.map((s) => s.phlebotomistId + s.createdAt));
-      return hospitalSamples.filter((s) => phlebIds.has(s.phlebotomistId + s.createdAt));
+  const handleEditSave = async () => {
+    if (!editingSample) return;
+    try {
+      await updateBillingMutation.mutateAsync({
+        ...editingSample,
+        amountReceived: parseFloat(editAmount) || 0,
+      });
+      setEditingSample(null);
+    } catch (err) {
+      console.error('Failed to update billing', err);
     }
-    if (hospitalId) return hospitalSamples;
-    if (phlebotomistId) return phlebotomistSamples;
-    return [];
-  }, [hospitalSamples, phlebotomistSamples, hospitalId, phlebotomistId]);
-
-  const isLoading = hospitalLoading || phlebotomistLoading;
-
-  // Revenue summary
-  const summary = useMemo(() => {
-    return allSamples.reduce(
-      (acc, s) => ({
-        totalMrp: acc.totalMrp + s.mrp,
-        totalFinal: acc.totalFinal + s.finalAmount,
-        totalCollected: acc.totalCollected + s.amountReceived,
-        totalPending: acc.totalPending + s.pendingAmount,
-      }),
-      { totalMrp: 0, totalFinal: 0, totalCollected: 0, totalPending: 0 }
-    );
-  }, [allSamples]);
-
-  const handleHospitalSearch = () => setHospitalId(hospitalInput.trim());
-  const handlePhlebotomistSearch = () => setPhlebotomistId(phlebotomistInput.trim());
-
-  const handleEdit = (id: string, sample: HospitalSample) => {
-    setEditingId(id);
-    setEditingSample(sample);
   };
 
-  const handleCloseEdit = () => {
-    setEditingId(null);
-    setEditingSample(null);
+  const formatTime = (ts: number) => {
+    const ms = ts > 1e12 ? ts / 1_000_000 : ts;
+    return new Date(ms).toLocaleDateString('en-IN');
   };
-
-  // Generate a stable key for each sample (hospitalId:testId:createdAt)
-  const getSampleKey = (s: HospitalSample) =>
-    `${s.hospitalId}:${s.testId}:${s.createdAt}`;
 
   return (
-    <div className="px-4 py-5 space-y-4 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <FlaskConical className="w-5 h-5 text-primary" />
-          Hospital Samples
-        </h1>
-        <p className="text-xs text-muted-foreground">View and manage sample billing records</p>
+    <div className="p-4 space-y-4 max-w-2xl mx-auto">
+      <h2 className="text-lg font-bold text-foreground">Hospital Samples</h2>
+
+      {/* Revenue Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+          <p className="text-xs text-blue-600 font-semibold">Total</p>
+          <p className="text-base font-bold text-blue-700">₹{totalRevenue.toFixed(0)}</p>
+        </div>
+        <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
+          <p className="text-xs text-green-600 font-semibold">Received</p>
+          <p className="text-base font-bold text-green-700">₹{totalReceived.toFixed(0)}</p>
+        </div>
+        <div className="bg-orange-50 rounded-xl p-3 text-center border border-orange-100">
+          <p className="text-xs text-orange-600 font-semibold">Pending</p>
+          <p className="text-base font-bold text-orange-700">₹{totalPending.toFixed(0)}</p>
+        </div>
       </div>
 
       {/* Filters */}
-      <MedicalCard className="p-4 space-y-3">
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Hospital ID</label>
-          <div className="flex gap-2 mt-1">
-            <input
-              type="text"
-              value={hospitalInput}
-              onChange={(e) => setHospitalInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleHospitalSearch()}
-              placeholder="Enter hospital ID..."
-              className="flex-1 border border-border rounded-xl px-3 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <button
-              onClick={handleHospitalSearch}
-              className="gradient-btn px-3 py-2 text-sm font-semibold rounded-xl flex items-center gap-1"
-            >
-              <Search className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-        <div>
-          <label className="text-xs font-medium text-muted-foreground">Phlebotomist ID (optional)</label>
-          <div className="flex gap-2 mt-1">
-            <input
-              type="text"
-              value={phlebotomistInput}
-              onChange={(e) => setPhlebotomistInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handlePhlebotomistSearch()}
-              placeholder="Enter phlebotomist ID..."
-              className="flex-1 border border-border rounded-xl px-3 py-2 text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <button
-              onClick={handlePhlebotomistSearch}
-              className="gradient-btn px-3 py-2 text-sm font-semibold rounded-xl flex items-center gap-1"
-            >
-              <Search className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      </MedicalCard>
-
-      {/* Revenue Summary */}
-      {allSamples.length > 0 && (
-        <MedicalCard className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Revenue Summary</h3>
-            <span className="text-xs text-muted-foreground ml-auto">{allSamples.length} records</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-muted/40 rounded-xl p-2.5 text-center">
-              <p className="text-[10px] text-muted-foreground">Total MRP</p>
-              <p className="text-sm font-bold text-foreground">₹{summary.totalMrp.toFixed(0)}</p>
-            </div>
-            <div className="bg-primary/5 rounded-xl p-2.5 text-center">
-              <p className="text-[10px] text-muted-foreground">Final Amount</p>
-              <p className="text-sm font-bold text-primary">₹{summary.totalFinal.toFixed(0)}</p>
-            </div>
-            <div className="bg-green-50 dark:bg-green-950/20 rounded-xl p-2.5 text-center">
-              <p className="text-[10px] text-muted-foreground">Collected</p>
-              <p className="text-sm font-bold text-green-600">₹{summary.totalCollected.toFixed(0)}</p>
-            </div>
-            <div className="bg-orange-50 dark:bg-orange-950/20 rounded-xl p-2.5 text-center">
-              <p className="text-[10px] text-muted-foreground">Pending</p>
-              <p className="text-sm font-bold text-orange-600">₹{summary.totalPending.toFixed(0)}</p>
-            </div>
-          </div>
-        </MedicalCard>
-      )}
-
-      {/* Loading */}
-      {isLoading && (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}
-        </div>
-      )}
-
-      {/* Empty state — no filter */}
-      {!isLoading && !hospitalId && !phlebotomistId && (
-        <MedicalCard className="text-center py-10">
-          <FlaskConical className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-          <p className="text-sm text-muted-foreground">Enter a Hospital ID to view samples</p>
-        </MedicalCard>
-      )}
-
-      {/* Empty state — filter applied but no results */}
-      {!isLoading && (hospitalId || phlebotomistId) && allSamples.length === 0 && (
-        <MedicalCard className="text-center py-10">
-          <AlertCircle className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
-          <p className="text-sm text-muted-foreground">No samples found for the selected filters</p>
-        </MedicalCard>
-      )}
-
-      {/* Sample cards */}
-      {!isLoading && allSamples.length > 0 && (
-        <div className="space-y-3">
-          {[...allSamples]
-            .sort((a, b) => Number(b.createdAt) - Number(a.createdAt))
-            .map((sample) => {
-              const key = getSampleKey(sample);
-              return (
-                <SampleRow
-                  key={key}
-                  sample={sample}
-                  sampleId={key}
-                  onEdit={handleEdit}
-                />
-              );
-            })}
-        </div>
-      )}
-
-      {/* Edit Billing Modal */}
-      {editingId && editingSample && (
-        <EditBillingModal
-          open={true}
-          onClose={handleCloseEdit}
-          sampleId={editingId}
-          sample={editingSample}
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
+        <input
+          type="text"
+          value={hospitalFilter}
+          onChange={e => setHospitalFilter(e.target.value)}
+          placeholder="Filter by hospital..."
+          className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
+        <input
+          type="text"
+          value={phlebotomistFilter}
+          onChange={e => setPhlebotomistFilter(e.target.value)}
+          placeholder="Filter by phlebotomist..."
+          className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
+          <FlaskConical className="h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm font-semibold text-foreground">No samples found</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((sample: any, i: number) => (
+            <div
+              key={i}
+              className={`bg-white rounded-2xl border shadow-sm p-4 space-y-2 ${
+                Number(sample.pendingAmount) > 0 ? 'border-orange-200' : 'border-border'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-sm text-foreground">{sample.patientName}</p>
+                  <p className="text-xs text-muted-foreground">{sample.phone}</p>
+                </div>
+                <button
+                  onClick={() => { setEditingSample(sample); setEditAmount(String(sample.amountReceived)); }}
+                  className="p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <span className="text-muted-foreground">Hospital: <span className="font-semibold text-foreground">{sample.hospitalId}</span></span>
+                <span className="text-muted-foreground">Test: <span className="font-semibold text-foreground">{sample.testId}</span></span>
+                <span className="text-muted-foreground">Final: <span className="font-bold text-primary">₹{Number(sample.finalAmount).toFixed(0)}</span></span>
+                <span className="text-muted-foreground">Received: <span className="font-bold text-green-600">₹{Number(sample.amountReceived).toFixed(0)}</span></span>
+                {Number(sample.pendingAmount) > 0 && (
+                  <span className="col-span-2 text-orange-600 font-bold">Pending: ₹{Number(sample.pendingAmount).toFixed(0)}</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{sample.paymentMode}</span>
+                <span>{formatTime(Number(sample.createdAt))}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingSample} onOpenChange={open => !open && setEditingSample(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Billing</DialogTitle>
+          </DialogHeader>
+          {editingSample && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-xl p-3 text-sm space-y-1">
+                <p><span className="font-semibold">Patient:</span> {editingSample.patientName}</p>
+                <p><span className="font-semibold">Final Amount:</span> ₹{Number(editingSample.finalAmount).toFixed(2)}</p>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-foreground">Amount Received</label>
+                <input
+                  type="number"
+                  value={editAmount}
+                  onChange={e => setEditAmount(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingSample(null)}
+                  className="flex-1 py-2 rounded-xl border border-border text-sm font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEditSave}
+                  disabled={updateBillingMutation.isPending}
+                  className="flex-1 py-2 rounded-xl bg-primary text-white text-sm font-bold disabled:opacity-50"
+                >
+                  {updateBillingMutation.isPending ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
