@@ -1,111 +1,71 @@
-import React, { useState, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGetCallerUserProfile } from './hooks/useQueries';
-import { AppRole } from './types/models';
-import LoadingScreen from './components/shared/LoadingScreen';
 import StaffLoginScreen from './components/auth/StaffLoginScreen';
+import LoadingScreen from './components/shared/LoadingScreen';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+import { useGetCallerUserProfile } from './hooks/useQueries';
 import ProfileSetupModal from './components/auth/ProfileSetupModal';
-import ShiftGuard from './components/layout/ShiftGuard';
+import StaffAppLayout from './components/layout/StaffAppLayout';
+import { NavItem } from './components/layout/BottomNavigation';
 
-// Lazy-load staff pages
+type AppRole = 'patient' | 'phlebotomist' | 'labAdmin' | 'superAdmin';
+
+// Lazy load all staff pages
 const TaskQueuePage = lazy(() => import('./pages/phlebotomist/TaskQueuePage'));
-const HomeCollectionQueuePage = lazy(() => import('./pages/phlebotomist/HomeCollectionQueuePage'));
-const RecordVitalsPage = lazy(() => import('./pages/phlebotomist/RecordVitalsPage'));
 const ScanCampQRPage = lazy(() => import('./pages/phlebotomist/ScanCampQRPage'));
+const RecordVitalsPage = lazy(() => import('./pages/phlebotomist/RecordVitalsPage'));
+const HomeCollectionQueuePage = lazy(() => import('./pages/phlebotomist/HomeCollectionQueuePage'));
 const PhlebotomistAttendancePage = lazy(() => import('./pages/phlebotomist/PhlebotomistAttendancePage'));
 const AddHospitalSamplePage = lazy(() => import('./pages/phlebotomist/AddHospitalSamplePage'));
+const MyHospitalSamplesPage = lazy(() => import('./pages/phlebotomist/MyHospitalSamplesPage'));
 const AdminBookingsPage = lazy(() => import('./pages/admin/AdminBookingsPage'));
-const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const UploadReportPage = lazy(() => import('./pages/admin/UploadReportPage'));
+const AdminReportsPage = lazy(() => import('./pages/admin/AdminReportsPage'));
 const IncidentsPage = lazy(() => import('./pages/admin/IncidentsPage'));
 const AuditLogsPage = lazy(() => import('./pages/admin/AuditLogsPage'));
 const CreateCampPage = lazy(() => import('./pages/admin/CreateCampPage'));
+const SubmitIncidentPage = lazy(() => import('./pages/staff/SubmitIncidentPage'));
 const AdminHospitalSamplesPage = lazy(() => import('./pages/admin/AdminHospitalSamplesPage'));
 const AdminAttendancePage = lazy(() => import('./pages/admin/AdminAttendancePage'));
 const SecurityLogsPage = lazy(() => import('./pages/admin/SecurityLogsPage'));
-const SubmitIncidentPage = lazy(() => import('./pages/staff/SubmitIncidentPage'));
 const ProfilePage = lazy(() => import('./pages/patient/ProfilePage'));
-const StaffAppLayout = lazy(() => import('./components/layout/StaffAppLayout'));
+const TestManagementPage = lazy(() => import('./pages/admin/TestManagementPage'));
+const HospitalManagementPage = lazy(() => import('./pages/admin/HospitalManagementPage'));
+const HospitalDetailsPage = lazy(() => import('./pages/admin/HospitalDetailsPage'));
 
-export type StaffRoute =
-  | 'tasks'
-  | 'home-collections'
-  | 'record-vitals'
-  | 'scan-qr'
-  | 'phlebotomist-attendance'
-  | 'hospital-sample-entry'
-  | 'admin-bookings'
-  | 'admin-reports'
-  | 'upload-report'
-  | 'incidents'
-  | 'audit-logs'
-  | 'create-camp'
-  | 'hospital-samples'
-  | 'attendance'
-  | 'security-logs'
-  | 'submit-incident'
-  | 'profile';
-
-function getDefaultRouteForRole(role: AppRole): StaffRoute {
-  switch (role) {
-    case 'phlebotomist':
-      return 'phlebotomist-attendance';
-    case 'labAdmin':
-      return 'admin-bookings';
-    case 'superAdmin':
-      return 'audit-logs';
-    default:
-      return 'tasks';
+function getNavItems(role: AppRole): NavItem[] {
+  if (role === 'phlebotomist') {
+    return [
+      { label: 'Home', path: 'phlebotomist-attendance', icon: 'Home' },
+      { label: 'Tasks', path: 'tasks', icon: 'ClipboardList' },
+      { label: 'Visits', path: 'home-collections', icon: 'MapPin' },
+      { label: 'Sample', path: 'hospital-sample-entry', icon: 'FlaskConical' },
+      { label: 'My Samples', path: 'my-hospital-samples', icon: 'Package' },
+    ];
   }
+  if (role === 'labAdmin') {
+    return [
+      { label: 'Bookings', path: 'admin-bookings', icon: 'CalendarDays' },
+      { label: 'Reports', path: 'admin-reports', icon: 'FileText' },
+      { label: 'Samples', path: 'admin-samples', icon: 'FlaskConical' },
+      { label: 'Tests', path: 'test-management', icon: 'TestTube' },
+      { label: 'Hospitals', path: 'hospital-management', icon: 'Building2' },
+    ];
+  }
+  if (role === 'superAdmin') {
+    return [
+      { label: 'Bookings', path: 'admin-bookings', icon: 'CalendarDays' },
+      { label: 'Tests', path: 'test-management', icon: 'TestTube' },
+      { label: 'Hospitals', path: 'hospital-management', icon: 'Building2' },
+      { label: 'Audit', path: 'audit-logs', icon: 'BarChart3' },
+      { label: 'Security', path: 'security-logs', icon: 'Shield' },
+    ];
+  }
+  return [];
 }
 
-/** Routes that are admin-only — phlebotomist should never see these */
-const ADMIN_ONLY_ROUTES: StaffRoute[] = [
-  'admin-bookings',
-  'admin-reports',
-  'upload-report',
-  'incidents',
-  'audit-logs',
-  'create-camp',
-  'hospital-samples',
-  'attendance',
-  'security-logs',
-];
-
-const phlebotomistNavItems = [
-  { label: 'Attendance', path: 'phlebotomist-attendance', icon: '📅' },
-  { label: 'Tasks', path: 'tasks', icon: '📋' },
-  { label: 'Collections', path: 'home-collections', icon: '🏠' },
-  { label: 'Add Sample', path: 'hospital-sample-entry', icon: '🧪' },
-  { label: 'Profile', path: 'profile', icon: '👤' },
-];
-
-const labAdminNavItems = [
-  { label: 'Bookings', path: 'admin-bookings', icon: '📅' },
-  { label: 'Reports', path: 'admin-reports', icon: '📄' },
-  { label: 'Samples', path: 'hospital-samples', icon: '🧪' },
-  { label: 'Attendance', path: 'attendance', icon: '🕐' },
-  { label: 'Profile', path: 'profile', icon: '👤' },
-];
-
-const superAdminNavItems = [
-  { label: 'Bookings', path: 'admin-bookings', icon: '📅' },
-  { label: 'Audit', path: 'audit-logs', icon: '📊' },
-  { label: 'Samples', path: 'hospital-samples', icon: '🧪' },
-  { label: 'Security', path: 'security-logs', icon: '🛡️' },
-  { label: 'Profile', path: 'profile', icon: '👤' },
-];
-
-function getNavItems(role?: AppRole) {
-  switch (role) {
-    case 'labAdmin': return labAdminNavItems;
-    case 'superAdmin': return superAdminNavItems;
-    default: return phlebotomistNavItems;
-  }
-}
-
-function getRoleLabel(role?: AppRole): string {
+function getRoleLabel(role: AppRole): string {
   switch (role) {
     case 'phlebotomist': return 'Phlebotomist';
     case 'labAdmin': return 'Lab Admin';
@@ -114,13 +74,19 @@ function getRoleLabel(role?: AppRole): string {
   }
 }
 
-function StaffAppInner() {
-  const { identity, isInitializing } = useInternetIdentity();
-  const isAuthenticated = !!identity;
-  const queryClient = useQueryClient();
+function getDefaultPage(role: AppRole): string {
+  return role === 'phlebotomist' ? 'phlebotomist-attendance' : 'admin-bookings';
+}
 
-  const [demoRole, setDemoRole] = useState<AppRole | null>(null);
-  const isDemoMode = demoRole !== null;
+export default function StaffApp() {
+  const { identity, isInitializing } = useInternetIdentity();
+  const queryClient = useQueryClient();
+  const isAuthenticated = !!identity;
+
+  const [demoMode, setDemoMode] = useState(false);
+  const [demoRole, setDemoRole] = useState<AppRole>('phlebotomist');
+  const [currentPage, setCurrentPage] = useState<string>('');
+  const [pageParams, setPageParams] = useState<Record<string, string>>({});
 
   const {
     data: userProfile,
@@ -128,155 +94,155 @@ function StaffAppInner() {
     isFetched: profileFetched,
   } = useGetCallerUserProfile();
 
-  const isPatient = userProfile?.appRole === 'patient';
-  const isWrongRole = isAuthenticated && profileFetched && userProfile !== null && isPatient;
-  const showProfileSetup = isAuthenticated && !profileLoading && profileFetched && userProfile === null;
+  const effectiveRole: AppRole = demoMode
+    ? demoRole
+    : ((userProfile?.appRole as AppRole) ?? 'phlebotomist');
 
-  const effectiveRole: AppRole | undefined = isDemoMode
-    ? demoRole!
-    : (userProfile?.appRole as AppRole | undefined);
+  // Set default page based on role once known
+  useEffect(() => {
+    if (currentPage) return;
+    const role = demoMode ? demoRole : (userProfile?.appRole as AppRole | undefined);
+    if (!role) return;
+    setCurrentPage(getDefaultPage(role));
+  }, [userProfile, demoMode, demoRole, currentPage]);
 
-  const defaultRoute = effectiveRole ? getDefaultRouteForRole(effectiveRole) : 'phlebotomist-attendance';
-  const [currentRoute, setCurrentRoute] = useState<StaffRoute | null>(null);
-
-  const activeRoute: StaffRoute = currentRoute ?? defaultRoute;
-
-  const handleEnterDemoMode = (role: AppRole) => {
-    setDemoRole(role);
-    setCurrentRoute(getDefaultRouteForRole(role));
+  const handleNavigate = (page: string, params?: Record<string, string>) => {
+    setCurrentPage(page);
+    setPageParams(params ?? {});
   };
 
-  const handleExitDemoMode = () => {
-    setDemoRole(null);
-    setCurrentRoute(null);
-  };
+  const showProfileSetup =
+    !demoMode &&
+    isAuthenticated &&
+    !profileLoading &&
+    profileFetched &&
+    userProfile === null;
 
-  if (!isDemoMode && (isInitializing || (isAuthenticated && profileLoading))) {
-    return <LoadingScreen message="Loading Staff App..." />;
+  if (!demoMode && isInitializing) {
+    return <LoadingScreen message="Initializing..." />;
   }
 
-  if (!isDemoMode && !isAuthenticated) {
-    return <StaffLoginScreen onDemoMode={handleEnterDemoMode} />;
+  if (!demoMode && !isAuthenticated) {
+    return (
+      <StaffLoginScreen
+        onDemoMode={(role) => {
+          setDemoMode(true);
+          setDemoRole(role as AppRole);
+          setCurrentPage(getDefaultPage(role as AppRole));
+        }}
+      />
+    );
   }
-
-  if (!isDemoMode && isWrongRole) {
-    return <StaffLoginScreen onDemoMode={handleEnterDemoMode} />;
-  }
-
-  // All navigation uses string to avoid contravariance issues
-  const navigate = (route: string) => {
-    const staffRoute = route as StaffRoute;
-    if (effectiveRole === 'phlebotomist' && ADMIN_ONLY_ROUTES.includes(staffRoute)) {
-      setCurrentRoute('phlebotomist-attendance');
-      return;
-    }
-    setCurrentRoute(staffRoute);
-  };
 
   const renderPage = () => {
-    switch (activeRoute) {
+    switch (currentPage) {
       case 'phlebotomist-attendance':
-        return <PhlebotomistAttendancePage />;
-
-      case 'hospital-sample-entry':
-        return (
-          <ShiftGuard onNavigate={navigate} userRole={effectiveRole}>
-            <AddHospitalSamplePage onNavigate={navigate} />
-          </ShiftGuard>
-        );
-
+        return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
       case 'tasks':
-        return (
-          <ShiftGuard onNavigate={navigate} userRole={effectiveRole}>
-            <TaskQueuePage onNavigate={navigate} />
-          </ShiftGuard>
-        );
-
+        return <TaskQueuePage />;
       case 'home-collections':
-        return (
-          <ShiftGuard onNavigate={navigate} userRole={effectiveRole}>
-            <HomeCollectionQueuePage />
-          </ShiftGuard>
-        );
-
-      case 'record-vitals':
-        return (
-          <ShiftGuard onNavigate={navigate} userRole={effectiveRole}>
-            <RecordVitalsPage />
-          </ShiftGuard>
-        );
-
+        return <HomeCollectionQueuePage isDemoMode={demoMode} />;
+      case 'attendance':
+        return <TaskQueuePage />;
+      case 'hospital-sample-entry':
+        return <AddHospitalSamplePage isDemoMode={demoMode} />;
+      case 'my-hospital-samples':
+        return <MyHospitalSamplesPage isDemoMode={demoMode} role={effectiveRole} />;
       case 'scan-qr':
-        return (
-          <ShiftGuard onNavigate={navigate} userRole={effectiveRole}>
-            <ScanCampQRPage />
-          </ShiftGuard>
-        );
-
+        return <ScanCampQRPage />;
+      case 'record-vitals':
+        return <RecordVitalsPage />;
       case 'submit-incident':
-        return (
-          <ShiftGuard onNavigate={navigate} userRole={effectiveRole}>
-            <SubmitIncidentPage onNavigate={navigate} />
-          </ShiftGuard>
-        );
-
+        return <SubmitIncidentPage />;
       case 'admin-bookings':
-        return <AdminBookingsPage onNavigate={navigate} />;
-      case 'admin-reports':
-        return <AdminReportsPage onNavigate={navigate} />;
+        return <AdminBookingsPage onNavigate={handleNavigate} />;
       case 'upload-report':
-        return <UploadReportPage onNavigate={navigate} />;
+        return <UploadReportPage onNavigate={handleNavigate} />;
+      case 'admin-reports':
+        return <AdminReportsPage onNavigate={handleNavigate} />;
       case 'incidents':
-        return <IncidentsPage onNavigate={navigate} />;
+        return <IncidentsPage />;
       case 'audit-logs':
-        return <AuditLogsPage onNavigate={navigate} />;
+        return <AuditLogsPage onNavigate={handleNavigate} />;
       case 'create-camp':
         return <CreateCampPage />;
-      case 'hospital-samples':
-        return <AdminHospitalSamplesPage onNavigate={navigate} />;
-      case 'attendance':
-        return <AdminAttendancePage onNavigate={navigate} />;
+      case 'admin-samples':
+        return <AdminHospitalSamplesPage />;
+      case 'admin-attendance':
+        return <AdminAttendancePage />;
       case 'security-logs':
-        return <SecurityLogsPage onNavigate={navigate} />;
-
+        return <SecurityLogsPage />;
+      case 'test-management':
+        if (effectiveRole === 'superAdmin' || effectiveRole === 'labAdmin') {
+          return <TestManagementPage role={effectiveRole} />;
+        }
+        return <AccessDenied message="You do not have permission to access Test Management." />;
+      case 'hospital-management':
+        if (effectiveRole === 'superAdmin' || effectiveRole === 'labAdmin') {
+          return <HospitalManagementPage role={effectiveRole} onNavigate={handleNavigate} />;
+        }
+        return <AccessDenied message="You do not have permission to access Hospital Management." />;
+      case 'hospital-details':
+        if (effectiveRole === 'superAdmin' || effectiveRole === 'labAdmin') {
+          return (
+            <HospitalDetailsPage
+              hospitalId={pageParams.hospitalId ?? ''}
+              role={effectiveRole}
+              onNavigate={handleNavigate}
+            />
+          );
+        }
+        return <AccessDenied message="You do not have permission to view hospital details." />;
       case 'profile':
-        return <ProfilePage onNavigate={navigate} />;
-
+        return <ProfilePage onNavigate={handleNavigate} currentUserRole={effectiveRole} />;
       default:
         if (effectiveRole === 'phlebotomist') {
-          return <PhlebotomistAttendancePage />;
+          return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
         }
-        return <AdminBookingsPage onNavigate={navigate} />;
+        return <AdminBookingsPage onNavigate={handleNavigate} />;
     }
   };
 
   return (
-    <Suspense fallback={<LoadingScreen message="Loading..." />}>
-      {!isDemoMode && showProfileSetup && (
+    <>
+      {showProfileSetup && (
         <ProfileSetupModal
           open={showProfileSetup}
           appType="staff"
-          onComplete={() => queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] })}
+          onComplete={() => {
+            queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+          }}
         />
       )}
       <StaffAppLayout
-        currentPath={activeRoute}
-        onNavigate={navigate}
+        currentPath={currentPage}
+        onNavigate={handleNavigate}
         navItems={getNavItems(effectiveRole)}
-        userRole={getRoleLabel(effectiveRole)}
-        isDemoMode={isDemoMode}
-        onExitDemoMode={handleExitDemoMode}
+        roleLabel={getRoleLabel(effectiveRole)}
+        isDemoMode={demoMode}
+        onExitDemo={() => {
+          setDemoMode(false);
+          setDemoRole('phlebotomist');
+          setCurrentPage('');
+          setPageParams({});
+          queryClient.clear();
+        }}
       >
-        {renderPage()}
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingScreen message="Loading page..." />}>
+            {renderPage()}
+          </Suspense>
+        </ErrorBoundary>
       </StaffAppLayout>
-    </Suspense>
+    </>
   );
 }
 
-export default function StaffApp() {
+function AccessDenied({ message }: { message: string }) {
   return (
-    <Suspense fallback={<LoadingScreen message="Loading Staff App..." />}>
-      <StaffAppInner />
-    </Suspense>
+    <div className="flex flex-col items-center justify-center h-full py-20 text-center px-4">
+      <p className="text-lg font-semibold text-foreground">Access Denied</p>
+      <p className="text-sm text-muted-foreground mt-1">{message}</p>
+    </div>
   );
 }

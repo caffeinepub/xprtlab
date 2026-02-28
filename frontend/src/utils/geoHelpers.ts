@@ -1,94 +1,113 @@
 /**
- * Geo-based utility functions for attendance validation.
+ * GPS validation utilities for attendance verification.
  */
 
-const EARTH_RADIUS_KM = 6371;
-
-/**
- * Maximum acceptable GPS accuracy in meters.
- * Readings with accuracy above this threshold are rejected.
- */
+/** Maximum acceptable GPS accuracy in meters */
 export const MAX_GPS_ACCURACY_METERS = 150;
 
 /**
- * Compute the haversine distance in meters between two GPS coordinate pairs.
+ * Validates that the GPS accuracy reading is within the acceptable threshold.
+ * Returns true if accuracy is good enough (lower value = more accurate).
+ */
+export function validateGPSAccuracy(accuracyMeters: number): boolean {
+  return accuracyMeters <= MAX_GPS_ACCURACY_METERS;
+}
+
+/**
+ * Alias kept for backward compatibility.
+ */
+export function checkGPSAccuracy(accuracyMeters: number): boolean {
+  return validateGPSAccuracy(accuracyMeters);
+}
+
+/**
+ * Haversine formula — returns distance in meters between two lat/lng points.
  */
 export function haversineDistance(
   lat1: number,
   lon1: number,
   lat2: number,
-  lon2: number,
+  lon2: number
 ): number {
+  const R = 6371000; // Earth radius in metres
   const toRad = (deg: number) => (deg * Math.PI) / 180;
+
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
+
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRad(lat1)) *
       Math.cos(toRad(lat2)) *
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
+
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return EARTH_RADIUS_KM * c * 1000; // meters
+  return R * c;
 }
 
 /**
- * Returns true if GPS accuracy is within MAX_GPS_ACCURACY_METERS (150 meters).
+ * Heuristic mock/spoofed location detection.
+ *
+ * Flags a location as potentially mocked when:
+ * - Coordinates are exactly (0, 0) — the null island
+ * - Accuracy is suspiciously perfect (< 1 m) — common in emulators
+ * - Coordinates are whole numbers (e.g. 37.0, -122.0) — typical fake values
  */
-export function checkGPSAccuracy(position: GeolocationPosition): boolean {
-  return position.coords.accuracy <= MAX_GPS_ACCURACY_METERS;
-}
+export function detectMockLocation(
+  latitude: number,
+  longitude: number,
+  accuracy: number
+): boolean {
+  // Null island
+  if (latitude === 0 && longitude === 0) return true;
 
-/**
- * Detects mock/spoofed location using browser flags.
- */
-export function detectMockLocation(position: GeolocationPosition): boolean {
-  // Check for mocked flag (available in some browsers/environments)
-  const coords = position.coords as GeolocationCoordinates & { mocked?: boolean };
-  if (coords.mocked === true) return true;
+  // Suspiciously perfect accuracy (emulator default)
+  if (accuracy < 1) return true;
+
+  // Whole-number coordinates are a common sign of a mocked location
+  if (Number.isInteger(latitude) && Number.isInteger(longitude)) return true;
+
   return false;
 }
 
 /**
- * Returns true if current position is within radiusMeters of the target.
+ * Checks whether a coordinate is within a circular geofence.
+ *
+ * @param lat         Current latitude
+ * @param lon         Current longitude
+ * @param centerLat   Geofence centre latitude
+ * @param centerLon   Geofence centre longitude
+ * @param radiusMeters Geofence radius in metres
  */
 export function isWithinGeofence(
-  currentLat: number,
-  currentLon: number,
-  targetLat: number,
-  targetLon: number,
-  radiusMeters: number,
+  lat: number,
+  lon: number,
+  centerLat: number,
+  centerLon: number,
+  radiusMeters: number
 ): boolean {
-  const dist = haversineDistance(currentLat, currentLon, targetLat, targetLon);
-  return dist <= radiusMeters;
+  return haversineDistance(lat, lon, centerLat, centerLon) <= radiusMeters;
 }
 
 /**
- * Detects suspicious speed jumps between two GPS readings.
- * Returns { isJump, speed (km/h), distance (km) }
+ * Detects an implausible speed jump between two consecutive GPS readings.
+ * Returns true if the implied speed exceeds maxSpeedKmh (default 200 km/h).
  */
 export function detectSpeedJump(
   prevLat: number,
   prevLon: number,
   prevTimestamp: number,
-  currentLat: number,
-  currentLon: number,
-  currentTimestamp: number,
-  maxSpeedKmh = 120,
-): { isJump: boolean; speed: number; distance: number } {
-  const distanceMeters = haversineDistance(prevLat, prevLon, currentLat, currentLon);
-  const distanceKm = distanceMeters / 1000;
-  const elapsedMs = currentTimestamp - prevTimestamp;
-  const elapsedHours = elapsedMs / (1000 * 60 * 60);
+  currLat: number,
+  currLon: number,
+  currTimestamp: number,
+  maxSpeedKmh = 200
+): boolean {
+  const distanceMeters = haversineDistance(prevLat, prevLon, currLat, currLon);
+  const elapsedSeconds = (currTimestamp - prevTimestamp) / 1000;
 
-  if (elapsedHours <= 0) {
-    return { isJump: false, speed: 0, distance: distanceKm };
-  }
+  if (elapsedSeconds <= 0) return false;
 
-  const speed = distanceKm / elapsedHours;
-  return {
-    isJump: speed > maxSpeedKmh,
-    speed,
-    distance: distanceKm,
-  };
+  const speedKmh = (distanceMeters / elapsedSeconds) * 3.6;
+  return speedKmh > maxSpeedKmh;
 }

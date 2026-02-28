@@ -41,16 +41,12 @@ export default function PatientLoginScreen({ showRoleError = false }: PatientLog
       {/* Header */}
       <header className="flex items-center justify-between px-4 pt-8 pb-4">
         <div className="flex items-center gap-3">
-          <div className="bg-white rounded-xl p-2 shadow-md">
+          <div className="bg-white rounded-xl px-3 py-2 shadow-md">
             <img
-              src="/assets/generated/xprtlab-logo.dim_256x256.png"
-              alt="XpertLab"
-              className="w-10 h-10 object-contain"
+              src="/assets/logo-1.png"
+              alt="Xpertlab"
+              className="h-8 w-auto object-contain"
             />
-          </div>
-          <div>
-            <h1 className="text-white font-bold text-xl leading-tight">XpertLab</h1>
-            <p className="text-white/70 text-xs">Patient Portal</p>
           </div>
         </div>
         <a
@@ -127,7 +123,7 @@ export default function PatientLoginScreen({ showRoleError = false }: PatientLog
 
       {/* Footer */}
       <footer className="text-center py-3 text-white/50 text-xs">
-        © {new Date().getFullYear()} XpertLab · Built with{' '}
+        © {new Date().getFullYear()} Xpertlab · Built with{' '}
         <a
           href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || 'xpertlab')}`}
           target="_blank"

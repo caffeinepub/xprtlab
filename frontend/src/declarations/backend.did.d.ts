@@ -10,7 +10,52 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface Hospital { 'id' : string, 'name' : string, 'address' : string }
+export type AppRole = { 'patient' : null } |
+  { 'superAdmin' : null } |
+  { 'labAdmin' : null } |
+  { 'phlebotomist' : null };
+export interface Hospital {
+  'id' : string,
+  'area' : string,
+  'city' : string,
+  'name' : string,
+  'createdAt' : bigint,
+  'isActive' : boolean,
+  'address' : string,
+  'contactNumber' : string,
+}
+export interface HospitalPhlebotomistAssignment {
+  'assignedAt' : bigint,
+  'assignedBy' : Principal,
+  'isActive' : boolean,
+  'hospitalId' : string,
+  'removedAt' : [] | [bigint],
+  'removalReason' : [] | [string],
+  'phlebotomist' : Principal,
+}
+export type TestError = { 'notFound' : null } |
+  { 'duplicateCode' : null };
+export interface TestInput {
+  'code' : string,
+  'name' : string,
+  'sampleType' : string,
+  'isActive' : boolean,
+  'price' : bigint,
+}
+export interface TestOutput {
+  'id' : string,
+  'code' : string,
+  'name' : string,
+  'sampleType' : string,
+  'isActive' : boolean,
+  'price' : bigint,
+}
+export interface UserProfile {
+  'appRole' : AppRole,
+  'area' : [] | [string],
+  'name' : string,
+  'phone' : string,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
@@ -42,19 +87,56 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'getAssignedHospitals' : ActorMethod<[], Array<Hospital>>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getTodaySummary' : ActorMethod<
-    [],
-    {
-      'cashCollected' : number,
-      'upiCollected' : number,
-      'pendingAmount' : number,
-      'totalSamplesCollected' : bigint,
-    }
+  /**
+   * / HOSPITAL MANAGEMENT
+   */
+  'addHospital' : ActorMethod<
+    [string, string, string, string, string],
+    Hospital
   >,
+  'addTest' : ActorMethod<
+    [TestInput],
+    { 'ok' : TestOutput } |
+      { 'err' : TestError }
+  >,
+  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'assignPhlebotomistToHospital' : ActorMethod<
+    [string, Principal],
+    HospitalPhlebotomistAssignment
+  >,
+  'bulkAddTests' : ActorMethod<[Array<TestInput>], Array<TestOutput>>,
+  'disableHospital' : ActorMethod<[string], Hospital>,
+  'disableTest' : ActorMethod<[string], TestOutput>,
+  'getAllTests' : ActorMethod<[], Array<TestOutput>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
+  'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getHospitalById' : ActorMethod<[string], Hospital>,
+  'getHospitals' : ActorMethod<[[] | [string]], Array<Hospital>>,
+  'getHospitalsByPhlebotomist' : ActorMethod<[Principal], Array<string>>,
+  'getPhlebotomistsByHospital' : ActorMethod<[string], Array<Principal>>,
+  'getTest' : ActorMethod<[string], [] | [TestOutput]>,
+  'getTestByCode' : ActorMethod<[string], [] | [TestOutput]>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'removePhlebotomistFromHospital' : ActorMethod<
+    [string, Principal, string],
+    HospitalPhlebotomistAssignment
+  >,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setTestStatus' : ActorMethod<
+    [string, boolean],
+    { 'ok' : TestOutput } |
+      { 'err' : TestError }
+  >,
+  'updateHospital' : ActorMethod<
+    [string, string, string, string, string, string],
+    Hospital
+  >,
+  'updateTest' : ActorMethod<
+    [string, TestInput],
+    { 'ok' : TestOutput } |
+      { 'err' : TestError }
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

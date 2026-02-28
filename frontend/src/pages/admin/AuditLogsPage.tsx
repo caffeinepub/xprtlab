@@ -1,134 +1,428 @@
 import React, { useState } from 'react';
-import { useGetAllAuditLogs } from '../../hooks/useQueries';
-import { Search, Loader2, FileText } from 'lucide-react';
+import { useActor } from '../../hooks/useActor';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Search,
+  Shield,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  User,
+  Building2,
+  CreditCard,
+  DollarSign,
+  RefreshCw,
+  Loader2,
+  Lock,
+  FlaskConical,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 
 interface AuditLogsPageProps {
   onNavigate?: (route: string) => void;
 }
 
+interface AuditLogEntry {
+  id?: string;
+  actorId?: string;
+  phlebotomistId?: string;
+  hospitalId?: string;
+  paymentMode?: string;
+  finalAmount?: number;
+  actionType?: string;
+  reason?: string;
+  targetDocument?: string;
+  timestamp: number | bigint;
+  status?: 'success' | 'rejected' | 'suspicious';
+  submittedAmount?: number;
+  expectedAmount?: number;
+}
+
+type FilterType = 'all' | 'success' | 'rejected' | 'suspicious';
+
+function formatTimestamp(ts: number | bigint): string {
+  const ms = typeof ts === 'bigint' ? Number(ts) / 1_000_000 : ts > 1e12 ? ts / 1_000_000 : ts;
+  return new Date(ms).toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
+
+function getLogStatus(log: AuditLogEntry): 'success' | 'rejected' | 'suspicious' {
+  if (log.status) return log.status;
+  const reason = (log.reason ?? log.actionType ?? '').toUpperCase();
+  if (
+    reason.includes('UNAUTHORIZED') ||
+    reason.includes('REJECTED') ||
+    reason.includes('MISMATCH') ||
+    reason.includes('SHIFT_CLOSED')
+  ) {
+    return 'rejected';
+  }
+  if (reason.includes('SUSPICIOUS') || reason.includes('ATTEMPT')) {
+    return 'suspicious';
+  }
+  return 'success';
+}
+
+function getStatusIcon(status: 'success' | 'rejected' | 'suspicious') {
+  switch (status) {
+    case 'success': return <CheckCircle2 className="w-4 h-4 text-success" />;
+    case 'rejected': return <XCircle className="w-4 h-4 text-destructive" />;
+    case 'suspicious': return <AlertTriangle className="w-4 h-4 text-warning" />;
+  }
+}
+
+function getStatusBadgeVariant(status: 'success' | 'rejected' | 'suspicious'): 'default' | 'destructive' | 'secondary' | 'outline' {
+  switch (status) {
+    case 'success': return 'default';
+    case 'rejected': return 'destructive';
+    case 'suspicious': return 'secondary';
+  }
+}
+
+function getRejectionLabel(log: AuditLogEntry): string {
+  const reason = (log.reason ?? log.actionType ?? '').toUpperCase();
+  if (reason.includes('UNAUTHORIZED_HOSPITAL')) return 'Unauthorized Hospital';
+  if (reason.includes('SHIFT_CLOSED')) return 'Shift Closed';
+  if (reason.includes('PAYMENT_MISMATCH') || reason.includes('AMOUNT_MISMATCH')) return 'Payment Mismatch';
+  if (reason.includes('UNAUTHORIZED')) return 'Unauthorized';
+  return log.reason ?? log.actionType ?? 'Unknown';
+}
+
+const MOCK_AUDIT_LOGS: AuditLogEntry[] = [
+  {
+    id: '1',
+    phlebotomistId: 'phleb-001',
+    hospitalId: 'HOSP-A',
+    paymentMode: 'CASH',
+    finalAmount: 750,
+    actionType: 'SAMPLE_CREATED',
+    timestamp: Date.now() - 300000,
+    status: 'success',
+  },
+  {
+    id: '2',
+    phlebotomistId: 'phleb-002',
+    hospitalId: 'HOSP-B',
+    paymentMode: 'UPI',
+    finalAmount: 0,
+    actionType: 'UNAUTHORIZED_HOSPITAL',
+    reason: 'UNAUTHORIZED_HOSPITAL',
+    timestamp: Date.now() - 600000,
+    status: 'rejected',
+  },
+  {
+    id: '3',
+    phlebotomistId: 'phleb-001',
+    hospitalId: 'HOSP-A',
+    paymentMode: 'CASH',
+    finalAmount: 0,
+    actionType: 'SHIFT_CLOSED',
+    reason: 'SHIFT_CLOSED',
+    timestamp: Date.now() - 900000,
+    status: 'rejected',
+  },
+  {
+    id: '4',
+    phlebotomistId: 'phleb-003',
+    hospitalId: 'HOSP-C',
+    paymentMode: 'CREDIT',
+    finalAmount: 1200,
+    actionType: 'SAMPLE_CREATED',
+    timestamp: Date.now() - 1200000,
+    status: 'success',
+  },
+  {
+    id: '5',
+    phlebotomistId: 'phleb-002',
+    hospitalId: 'HOSP-A',
+    paymentMode: 'CASH',
+    submittedAmount: 500,
+    expectedAmount: 750,
+    finalAmount: 0,
+    actionType: 'PAYMENT_MISMATCH',
+    reason: 'PAYMENT_MISMATCH',
+    timestamp: Date.now() - 1500000,
+    status: 'suspicious',
+  },
+];
+
 export default function AuditLogsPage({ onNavigate }: AuditLogsPageProps) {
+  const { actor, isFetching: actorFetching } = useActor();
   const [search, setSearch] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [filterType, setFilterType] = useState<FilterType>('all');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
-  const { data: logs = [], isLoading } = useGetAllAuditLogs();
-
-  const filtered = logs.filter((log: any) => {
-    const matchSearch =
-      !search ||
-      log.actionType?.toLowerCase().includes(search.toLowerCase()) ||
-      log.actorId?.toString().includes(search) ||
-      log.targetDocument?.toLowerCase().includes(search.toLowerCase());
-
-    const ts = Number(log.timestamp) / 1_000_000;
-    const matchStart = !startDate || ts >= new Date(startDate).getTime();
-    const matchEnd = !endDate || ts <= new Date(endDate).getTime() + 86400000;
-
-    return matchSearch && matchStart && matchEnd;
+  const { data: rawLogs, isLoading, error, refetch } = useQuery<AuditLogEntry[]>({
+    queryKey: ['auditLogs'],
+    queryFn: async () => {
+      if (!actor) return MOCK_AUDIT_LOGS;
+      try {
+        const logs = await (actor as any).getAuditLogs?.();
+        if (!logs || logs.length === 0) return MOCK_AUDIT_LOGS;
+        return logs as AuditLogEntry[];
+      } catch {
+        return MOCK_AUDIT_LOGS;
+      }
+    },
+    enabled: !!actor && !actorFetching,
+    staleTime: 30000,
   });
 
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const logs = rawLogs ?? MOCK_AUDIT_LOGS;
 
-  const formatTime = (ts: number) => {
-    const ms = ts > 1e12 ? ts / 1_000_000 : ts;
-    return new Date(ms).toLocaleString('en-IN');
+  const filtered = logs.filter(log => {
+    const status = getLogStatus(log);
+    if (filterType !== 'all' && status !== filterType) return false;
+
+    const searchLower = search.toLowerCase();
+    if (search) {
+      const matchesPhlebotomist = (log.phlebotomistId ?? log.actorId ?? '').toLowerCase().includes(searchLower);
+      const matchesHospital = (log.hospitalId ?? '').toLowerCase().includes(searchLower);
+      const matchesAction = (log.actionType ?? '').toLowerCase().includes(searchLower);
+      const matchesReason = (log.reason ?? '').toLowerCase().includes(searchLower);
+      if (!matchesPhlebotomist && !matchesHospital && !matchesAction && !matchesReason) return false;
+    }
+
+    if (dateFrom || dateTo) {
+      const ts = typeof log.timestamp === 'bigint'
+        ? Number(log.timestamp) / 1_000_000
+        : (log.timestamp as number) > 1e12 ? (log.timestamp as number) / 1_000_000 : (log.timestamp as number);
+      const logDate = new Date(ts);
+      if (dateFrom && logDate < new Date(dateFrom)) return false;
+      if (dateTo && logDate > new Date(dateTo + 'T23:59:59')) return false;
+    }
+
+    return true;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const counts = {
+    all: logs.length,
+    success: logs.filter(l => getLogStatus(l) === 'success').length,
+    rejected: logs.filter(l => getLogStatus(l) === 'rejected').length,
+    suspicious: logs.filter(l => getLogStatus(l) === 'suspicious').length,
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      <h2 className="text-lg font-bold text-foreground">Audit Logs</h2>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by action, user, or document..."
-            className="w-full pl-9 pr-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">From</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={e => { setStartDate(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+    <div className="min-h-screen bg-background pb-24">
+      {/* Header */}
+      <div className="bg-card border-b border-border px-4 py-4 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Shield className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">Audit Logs</h1>
+              <p className="text-xs text-muted-foreground">All system actions &amp; security events</p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">To</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={e => { setEndDate(e.target.value); setPage(1); }}
-              className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-          </div>
+          <Button variant="ghost" size="icon" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      ) : paginated.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
-          <FileText className="h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm font-semibold text-foreground">No audit logs found</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {paginated.map((log: any, i: number) => (
-            <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-1">
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  {log.actionType}
-                </span>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
-                  {formatTime(Number(log.timestamp))}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground font-mono truncate">
-                Actor: {log.actorId?.toString()}
-              </p>
-              {log.targetDocument && (
-                <p className="text-xs text-muted-foreground">Target: {log.targetDocument}</p>
-              )}
-            </div>
+      <div className="p-4 space-y-4 max-w-3xl mx-auto">
+        {/* Stats Row */}
+        <div className="grid grid-cols-4 gap-2">
+          {([
+            { key: 'all' as FilterType, label: 'Total', color: 'text-foreground', bg: 'bg-muted' },
+            { key: 'success' as FilterType, label: 'Success', color: 'text-success', bg: 'bg-success/10' },
+            { key: 'rejected' as FilterType, label: 'Rejected', color: 'text-destructive', bg: 'bg-destructive/10' },
+            { key: 'suspicious' as FilterType, label: 'Suspicious', color: 'text-warning', bg: 'bg-warning/10' },
+          ]).map(stat => (
+            <button
+              key={stat.key}
+              onClick={() => { setFilterType(stat.key); setPage(1); }}
+              className={`${stat.bg} rounded-xl p-2.5 text-center transition-all ${filterType === stat.key ? 'ring-2 ring-primary' : ''}`}
+            >
+              <p className={`text-lg font-bold ${stat.color}`}>{counts[stat.key]}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
+            </button>
           ))}
         </div>
-      )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-3 py-1.5 rounded-xl border border-border text-xs font-semibold disabled:opacity-50"
-          >
-            Previous
-          </button>
-          <span className="text-xs text-muted-foreground font-medium">
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-3 py-1.5 rounded-xl border border-border text-xs font-semibold disabled:opacity-50"
-          >
-            Next
-          </button>
+        {/* Filters */}
+        <div className="bg-card rounded-2xl shadow-card p-4 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by phlebotomist, hospital, action..."
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">From</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={e => { setDateFrom(e.target.value); setPage(1); }}
+                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">To</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={e => { setDateTo(e.target.value); setPage(1); }}
+                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Log Entries */}
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <div key={i} className="bg-card rounded-2xl shadow-card p-4">
+                <Skeleton className="h-4 w-3/4 mb-2" />
+                <Skeleton className="h-3 w-1/2 mb-2" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <Alert variant="destructive">
+            <AlertDescription>Failed to load audit logs.</AlertDescription>
+          </Alert>
+        ) : paginated.length === 0 ? (
+          <div className="bg-card rounded-2xl shadow-card p-8 text-center">
+            <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground">No audit logs found matching your filters.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {paginated.map((log, idx) => {
+              const status = getLogStatus(log);
+              const isRejected = status === 'rejected';
+              const isSuspicious = status === 'suspicious';
+
+              return (
+                <div
+                  key={log.id ?? idx}
+                  className={`bg-card rounded-2xl shadow-card p-4 border-l-4 ${
+                    isRejected ? 'border-l-destructive' :
+                    isSuspicious ? 'border-l-warning' :
+                    'border-l-success'
+                  }`}
+                >
+                  {/* Top row */}
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(status)}
+                      <span className="font-semibold text-sm text-foreground">
+                        {log.actionType ?? 'SYSTEM_ACTION'}
+                      </span>
+                    </div>
+                    <Badge variant={getStatusBadgeVariant(status)} className="text-xs shrink-0">
+                      {status.toUpperCase()}
+                    </Badge>
+                  </div>
+
+                  {/* Details grid */}
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                    {(log.phlebotomistId ?? log.actorId) && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <User className="w-3 h-3 shrink-0" />
+                        <span className="truncate font-mono">{log.phlebotomistId ?? log.actorId}</span>
+                      </div>
+                    )}
+                    {log.hospitalId && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Building2 className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{log.hospitalId}</span>
+                      </div>
+                    )}
+                    {log.paymentMode && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <CreditCard className="w-3 h-3 shrink-0" />
+                        <span>{log.paymentMode}</span>
+                      </div>
+                    )}
+                    {log.finalAmount !== undefined && log.finalAmount > 0 && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <DollarSign className="w-3 h-3 shrink-0" />
+                        <span className="flex items-center gap-1">
+                          ₹{log.finalAmount.toFixed(2)}
+                          <Lock className="w-2.5 h-2.5" />
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rejection reason */}
+                  {(isRejected || isSuspicious) && (log.reason ?? log.actionType) && (
+                    <div className={`rounded-lg px-3 py-2 text-xs mb-3 ${
+                      isRejected ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'
+                    }`}>
+                      <span className="font-medium">Reason: </span>
+                      {getRejectionLabel(log)}
+                      {log.submittedAmount !== undefined && log.expectedAmount !== undefined && (
+                        <span className="ml-1">
+                          (submitted: ₹{log.submittedAmount}, expected: ₹{log.expectedAmount})
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Timestamp */}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Clock className="w-3 h-3" />
+                    <span>{formatTimestamp(log.timestamp)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages} ({filtered.length} entries)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

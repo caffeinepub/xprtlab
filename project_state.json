@@ -1,134 +1,70 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "XprtLab Phlebotomist Portal — a mobile-focused medical app for phlebotomists managing hospital and home sample collections. Admin dynamically assigns hospitals; no frontend limits on hospital count. Focused on UI refinement, operational control, and revenue protection without full redesign.",
+  "summary": "Hospital Management System with Super Admin controls, phlebotomist multi-hospital assignment, area-based assignment logic, and permission control",
   "architectural_notes": [
-    "Hospitals are assigned dynamically by admin — never hardcode or limit hospital count in frontend",
-    "Radius and assignment logic are backend/admin-controlled only",
-    "Final Amount on Hospital Sample Screen must be auto-calculated and read-only (locked)",
-    "Shift must be closed before a new shift can be started"
+    "Hospital-Phlebotomist is a many-to-many relationship; assignments must not be deleted, only disabled",
+    "Hospitals can only be soft-disabled, never hard-deleted if they have assignments",
+    "Inactive hospital status must block new sample creation for that hospital"
   ],
-  "known_issues": [],
+  "known_issues": [
+    "Hospital Management full build failed twice; currently attempting incremental build starting with Hospital CRUD"
+  ],
   "isFixRequest": false,
-  "imageRequirements": "## Required Images\n- XprtLab official logo — a clean, modern medical diagnostics brand mark with 'XprtLab' wordmark, teal/navy color scheme, suitable for a white or dark header background (xprtlab-logo.dim_320x80.png)",
   "existing_features": [
     {
-      "id": "feature-remove-the-built-with-using-caffeine-ai-footer-branding-text-from-all-screens-and-layouts",
-      "title": "Remove the 'Built with ❤️ using caffeine.ai' footer/branding text from all screens and layouts.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-the-official-xprtlab-logo-to-the-header-in-staffapplayout-and-patientapplayout-slightly-reduce-the-header-height-for-better-mobile-usability",
-      "title": "Add the official XprtLab logo to the header in StaffAppLayout and PatientAppLayout. Slightly reduce the header height for better mobile usability.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-improve-global-ui-spacing-font-weights-and-contrast-across-all-screens-to-achieve-a-professional-medical-look-increase-font-weight-for-labels-and-headings-ensure-sufficient-contrast-ratios-for-text-on-colored-backgrounds",
-      "title": "Improve global UI spacing, font weights, and contrast across all screens to achieve a professional medical look. Increase font weight for labels and headings; ensure sufficient contrast ratios for text on colored backgrounds.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-on-the-attendance-screen-phlebotomistattendancepage-attendancepage-add-a-today-summary-section-that-displays-total-samples-collected-cash-collected-upi-collected-and-pending-amount-computed-from-the-current-day-s-hospital-sample-records-for-the-logged-in-phlebotomist",
-      "title": "On the Attendance screen (PhlebotomistAttendancePage / AttendancePage), add a 'Today Summary' section that displays: Total Samples Collected, Cash Collected, UPI Collected, and Pending Amount — computed from the current day's hospital sample records for the logged-in phlebotomist.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-on-the-attendance-screen-rename-the-end-shift-button-to-end-shift-submit-summary-when-clicked-show-a-confirmation-popup-with-the-message-are-you-sure-you-want-to-end-shift-after-submission-today-s-entries-cannot-be-edited-only-proceed-with-shift-closure-if-the-user-confirms",
-      "title": "On the Attendance screen, rename the 'End Shift' button to 'End Shift & Submit Summary'. When clicked, show a confirmation popup with the message: 'Are you sure you want to end shift? After submission, today's entries cannot be edited.' Only proceed with shift closure if the user confirms.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-enforce-that-a-phlebotomist-cannot-start-a-new-shift-if-a-previous-shift-is-still-open-the-start-shift-action-must-be-blocked-and-display-an-informative-message-if-an-active-shift-exists",
-      "title": "Enforce that a phlebotomist cannot start a new shift if a previous shift is still open. The 'Start Shift' action must be blocked and display an informative message if an active shift exists.",
+      "id": "feature-add-a-hospital-management-section-under-the-super-admin-navigation-in-staffapp-create-a-hospitalmanagementpage-listing-all-hospitals-with-name-city-area-contact-active-inactive-status-badge-edit-and-disable-action-buttons-search-bar-name-city-area-and-pagination-20-per-page-show-no-hospitals-added-yet-when-the-list-is-empty",
+      "title": "Add a 'Hospital Management' section under the Super Admin navigation in StaffApp. Create a HospitalManagementPage listing all hospitals with: name, city, area, contact, Active/Inactive status badge, Edit and Disable action buttons, search bar (name/city/area), and pagination (20 per page). Show 'No hospitals added yet.' when the list is empty.",
       "reqIds": [
         "REQ-6"
       ],
       "version": 1
     },
     {
-      "id": "feature-on-the-task-queue-page-taskqueuepage-add-a-manual-refresh-button-display-a-last-updated-timestamp-that-updates-on-each-fetch-and-enable-automatic-data-refresh-every-15-seconds-using-react-query-s-refetchinterval-update-the-empty-state-message-to-no-tasks-yet-stay-available-new-assignments-will-appear-automatically",
-      "title": "On the Task Queue page (TaskQueuePage), add a manual 'Refresh' button, display a 'Last Updated' timestamp that updates on each fetch, and enable automatic data refresh every 15 seconds using React Query's refetchInterval. Update the empty state message to: 'No tasks yet. Stay available — new assignments will appear automatically.'",
+      "id": "feature-create-an-add-hospital-modal-form-triggered-from-hospitalmanagementpage-with-fields-hospital-name-required-city-address-area-zone-contact-number-and-active-inactive-toggle-on-save-call-the-addhospital-backend-mutation-and-refresh-the-list",
+      "title": "Create an Add Hospital modal/form (triggered from HospitalManagementPage) with fields: Hospital Name (required), City, Address, Area/Zone, Contact Number, and Active/Inactive toggle. On save, call the addHospital backend mutation and refresh the list.",
       "reqIds": [
         "REQ-7"
       ],
       "version": 1
     },
     {
-      "id": "feature-on-the-hospital-sample-form-addhospitalsamplepage-make-the-hospital-field-a-read-only-dropdown-populated-exclusively-from-the-admin-assigned-hospitals-list-for-the-logged-in-phlebotomist-the-frontend-must-not-hardcode-any-maximum-number-of-hospitals-it-must-render-all-hospitals-returned-by-the-backend",
-      "title": "On the Hospital Sample form (AddHospitalSamplePage), make the Hospital field a read-only dropdown populated exclusively from the admin-assigned hospitals list for the logged-in phlebotomist. The frontend must not hardcode any maximum number of hospitals — it must render all hospitals returned by the backend.",
+      "id": "feature-create-an-edit-hospital-modal-pre-populated-with-existing-hospital-data-allow-editing-all-fields-name-city-address-area-zone-contact-active-toggle-on-save-call-the-updatehospital-backend-mutation",
+      "title": "Create an Edit Hospital modal pre-populated with existing hospital data. Allow editing all fields (name, city, address, area/zone, contact, active toggle). On save, call the updateHospital backend mutation.",
       "reqIds": [
         "REQ-8"
       ],
       "version": 1
     },
     {
-      "id": "feature-on-the-hospital-sample-form-enforce-that-the-patient-mobile-number-field-accepts-exactly-10-numeric-digits-with-inline-validation-display-an-error-message-if-the-input-is-not-exactly-10-digits",
-      "title": "On the Hospital Sample form, enforce that the patient mobile number field accepts exactly 10 numeric digits with inline validation. Display an error message if the input is not exactly 10 digits.",
+      "id": "feature-create-a-hospital-details-page-navigable-from-hospitalmanagementpage-that-includes-an-assigned-phlebotomists-section-the-section-lists-currently-assigned-phlebotomists-with-their-name-and-area-super-admin-sees-an-assign-phlebotomist-button-that-opens-a-multi-select-dropdown-with-search-of-available-phlebotomists-saving-the-selection-calls-assignphlebotomisttohospital-for-each-newly-selected-phlebotomist-show-area-match-suggestion-text-e-g-same-area-as-hospital-next-to-phlebotomists-whose-area-matches-the-hospital-s-area-do-not-auto-assign",
+      "title": "Create a Hospital Details page (navigable from HospitalManagementPage) that includes an 'Assigned Phlebotomists' section. The section lists currently assigned phlebotomists with their name and area. Super Admin sees an 'Assign Phlebotomist' button that opens a multi-select dropdown (with search) of available phlebotomists. Saving the selection calls assignPhlebotomistToHospital for each newly selected phlebotomist. Show area-match suggestion text (e.g., 'Same area as hospital') next to phlebotomists whose area matches the hospital's area — do not auto-assign.",
       "reqIds": [
         "REQ-9"
       ],
       "version": 1
     },
     {
-      "id": "feature-on-the-hospital-sample-form-when-a-test-is-selected-display-the-test-s-mrp-and-offer-price-and-auto-calculate-the-final-amount-the-final-amount-field-must-be-read-only-non-editable-with-a-lock-icon-indicator-price-fields-must-not-be-manipulable-by-the-user",
-      "title": "On the Hospital Sample form, when a test is selected, display the test's MRP and Offer Price, and auto-calculate the Final Amount. The Final Amount field must be read-only (non-editable) with a lock icon indicator. Price fields must not be manipulable by the user.",
+      "id": "feature-add-an-assigned-hospitals-section-to-the-phlebotomist-profile-page-visible-in-the-staff-app-for-super-admin-show-add-remove-controls-to-assign-or-unassign-hospitals-for-phlebotomists-show-the-list-of-assigned-hospitals-in-read-only-mode-for-lab-admin-show-the-assigned-hospitals-list-read-only",
+      "title": "Add an 'Assigned Hospitals' section to the Phlebotomist Profile page (visible in the staff app). For Super Admin, show add/remove controls to assign or unassign hospitals. For phlebotomists, show the list of assigned hospitals in read-only mode. For Lab Admin, show the assigned hospitals list read-only.",
       "reqIds": [
         "REQ-10"
       ],
       "version": 1
     },
     {
-      "id": "feature-on-the-hospital-sample-form-restrict-payment-mode-options-to-cash-collected-upi-received-and-hospital-credit-when-cash-collected-or-upi-received-is-selected-auto-fill-the-amount-received-field-with-the-final-amount-value-and-make-it-non-editable-when-hospital-credit-is-selected-leave-amount-received-as-zero-or-empty",
-      "title": "On the Hospital Sample form, restrict Payment Mode options to: 'Cash Collected', 'UPI Received', and 'Hospital Credit'. When 'Cash Collected' or 'UPI Received' is selected, auto-fill the Amount Received field with the Final Amount value and make it non-editable. When 'Hospital Credit' is selected, leave Amount Received as zero or empty.",
+      "id": "feature-on-the-addhospitalsamplepage-filter-the-hospital-selection-list-to-only-show-hospitals-that-are-active-and-assigned-to-the-currently-logged-in-phlebotomist-if-an-inactive-hospital-is-somehow-selected-show-an-error-message-preventing-submission",
+      "title": "On the AddHospitalSamplePage, filter the hospital selection list to only show hospitals that are active AND assigned to the currently logged-in phlebotomist. If an inactive hospital is somehow selected, show an error message preventing submission.",
       "reqIds": [
         "REQ-11"
       ],
       "version": 1
     },
     {
-      "id": "feature-on-the-hospital-sample-form-add-a-confirmation-dialog-before-final-submission-the-dialog-must-show-a-summary-of-the-sample-entry-patient-name-test-final-amount-payment-mode-and-ask-confirm-submission-billing-details-cannot-be-edited-after-saving",
-      "title": "On the Hospital Sample form, add a confirmation dialog before final submission. The dialog must show a summary of the sample entry (patient name, test, final amount, payment mode) and ask: 'Confirm submission? Billing details cannot be edited after saving.'",
+      "id": "feature-add-react-query-hooks-in-usequeries-ts-for-all-new-hospital-endpoints-usehospitals-paginated-search-usehospitalbyid-useaddhospital-useupdatehospital-usedisablehospital-useassignphlebotomisttohospital-useremovephlebotomistfromhospital-usegetphlebotomistsbyhospital-usegethospitalsbyphlebotomist",
+      "title": "Add React Query hooks in useQueries.ts for all new hospital endpoints: useHospitals (paginated + search), useHospitalById, useAddHospital, useUpdateHospital, useDisableHospital, useAssignPhlebotomistToHospital, useRemovePhlebotomistFromHospital, useGetPhlebotomistsByHospital, useGetHospitalsByPhlebotomist.",
       "reqIds": [
         "REQ-12"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-redesign-the-home-collection-queue-page-homecollectionqueuepage-so-each-task-card-displays-patient-name-address-contact-number-assigned-tests-payable-amount-a-call-button-opens-phone-dialer-a-start-visit-button-a-mark-as-collected-button-and-a-mark-as-not-available-button",
-      "title": "Redesign the Home Collection Queue page (HomeCollectionQueuePage) so each task card displays: Patient Name, Address, Contact Number, Assigned Tests, Payable Amount, a 'Call' button (opens phone dialer), a 'Start Visit' button, a 'Mark as Collected' button, and a 'Mark as Not Available' button.",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-the-following-sections-to-the-phlebotomist-profile-page-1-assigned-hospitals-list-showing-hospitals-assigned-by-admin-2-support-call-admin-a-button-that-opens-a-phone-dialer-to-the-admin-contact-number-3-app-version-static-display-of-the-current-app-version-string-4-logout-confirmation-popup-are-you-sure-you-want-to-log-out-with-confirm-cancel-actions-before-signing-out",
-      "title": "Add the following sections to the phlebotomist Profile page: (1) Assigned Hospitals List — showing hospitals assigned by admin, (2) Support / Call Admin — a button that opens a phone dialer to the admin contact number, (3) App Version — static display of the current app version string, (4) Logout confirmation popup — 'Are you sure you want to log out?' with Confirm/Cancel actions before signing out.",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-the-daily-summary-today-summary-is-rendered-and-visible-on-the-attendance-screen-before-the-end-shift-submit-summary-button-is-enabled-if-no-samples-have-been-recorded-show-the-summary-with-zero-values-but-still-allow-shift-closure",
-      "title": "Ensure the daily summary (Today Summary) is rendered and visible on the Attendance screen before the 'End Shift & Submit Summary' button is enabled. If no samples have been recorded, show the summary with zero values but still allow shift closure.",
-      "reqIds": [
-        "REQ-15"
       ],
       "version": 1
     }
@@ -136,57 +72,77 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "General UI: Remove caffeine.ai branding, add XprtLab logo, reduce header height, improve spacing/font/contrast",
+      "summary": "Hospital Management module under Super Admin: Add/Edit/Disable hospitals with Name, City, Address, Area/Zone, Contact, Active/Inactive toggle, search by Name/City/Area, pagination (20/page), status badges, empty state",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Attendance Screen: Add Today Summary (samples, cash, UPI, pending), rename End Shift button, add confirmation popup, enforce shift closure before new shift",
+      "summary": "Phlebotomist multi-hospital assignment: many-to-many logic, Assigned Phlebotomists section in Hospital Details with multi-select dropdown, Assigned Hospitals section in Phlebotomist Profile with add/remove",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Task Queue: Add manual refresh button, show last updated time, enable 15s auto-refresh, improve empty state message",
+      "summary": "Area/Zone field on Hospital and Phlebotomist; suggestion (not auto-assign) when areas match for assignment",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-4",
-      "summary": "Hospital Sample Screen: Non-editable hospital dropdown (admin-assigned only, no frontend limit), 10-digit mobile validation, test selection shows MRP/offer price/auto-calculated final amount (locked), payment mode auto-fills amount, prevent price manipulation",
+      "summary": "Permission control: Super Admin can assign/remove/edit hospitals; Lab Admin view-only; Phlebotomist sees only assigned hospitals",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-5",
-      "summary": "Home Collection Screen: Task cards show patient name, address, contact, tests, payable amount, call/start visit/mark collected/mark not available actions",
+      "summary": "Data rules: no delete if assigned (disable only), inactive hospital blocks new samples, preserve assignment history",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-6",
-      "summary": "Profile Page: Add assigned hospitals list, support/call admin, app version, logout confirmation popup",
-      "reqIds": [],
+      "summary": "Add a Hospital data model to the backend with fields: id (auto-generated), name (required), city, address, area/zone, contactNumber, isActive (default true), createdAt timestamp. Store hospitals in a stable HashMap in the main actor.",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     },
     {
       "id": "AR-7",
-      "summary": "Revenue Protection: Lock price editing, prevent manual hospital switching, require save confirmation, enforce daily summary visibility before shift closure",
-      "reqIds": [],
+      "summary": "Expose backend endpoints: addHospital, updateHospital, disableHospital (sets isActive=false, does not delete), getHospitals (returns paginated list with optional search filter on name/city/area), getHospitalById. Disabling a hospital that has phlebotomist assignments must still be allowed — only deletion is blocked.",
+      "reqIds": [
+        "REQ-2"
+      ],
       "status": "pending"
     },
     {
-      "id": "AR-23",
-      "summary": "Add or extend backend data model and queries to support: (1) assigning hospitals to a specific phlebotomist (stored as a list per user), (2) querying assigned hospitals for the calling phlebotomist, (3) aggregating today's sample totals (count, cash, UPI, pending/credit) per phlebotomist for the daily summary.",
+      "id": "AR-8",
+      "summary": "Add a many-to-many HospitalPhlebotomistAssignment model in the backend: store a stable list/map of (hospitalId, phlebotomistPrincipal) pairs. Expose endpoints: assignPhlebotomistToHospital, removePhlebotomistFromHospital, getPhlebotomistsByHospital, getHospitalsByPhlebotomist. Assignment history must never be deleted — use a soft-removal flag instead.",
       "reqIds": [
-        "REQ-16"
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Add an 'area' field to the UserProfile/phlebotomist model in the backend so phlebotomists can have an area/zone. When getPhlebotomistsByHospital is called, include each phlebotomist's area in the response so the frontend can compute area-match suggestions.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Block adding new hospital samples for an inactive hospital. In the addHospitalSample backend endpoint, validate that the selected hospital's isActive flag is true before accepting the submission; return an error if inactive.",
+      "reqIds": [
+        "REQ-5"
       ],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "XprtLab Phlebotomist Portal",
+  "projectName": "Hospital Management System",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

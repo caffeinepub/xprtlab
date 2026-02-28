@@ -1,22 +1,12 @@
-import React, { useState, lazy, Suspense } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGetCallerUserProfile } from './hooks/useQueries';
-import LoadingScreen from './components/shared/LoadingScreen';
 import PatientLoginScreen from './components/auth/PatientLoginScreen';
+import LoadingScreen from './components/shared/LoadingScreen';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+import { useGetCallerUserProfile } from './hooks/useQueries';
 import ProfileSetupModal from './components/auth/ProfileSetupModal';
-
-// Lazy-load patient pages
-const PatientHomePage = lazy(() => import('./pages/patient/PatientHomePage'));
-const BookTestPage = lazy(() => import('./pages/patient/BookTestPage'));
-const SlotSelectionPage = lazy(() => import('./pages/patient/SlotSelectionPage'));
-const MyBookingsPage = lazy(() => import('./pages/patient/MyBookingsPage'));
-const HomeCollectionPage = lazy(() => import('./pages/patient/HomeCollectionPage'));
-const MyHomeCollectionsPage = lazy(() => import('./pages/patient/MyHomeCollectionsPage'));
-const ReportsPage = lazy(() => import('./pages/patient/ReportsPage'));
-const MyVitalsPage = lazy(() => import('./pages/patient/MyVitalsPage'));
-const ProfilePage = lazy(() => import('./pages/patient/ProfilePage'));
-const PatientAppLayout = lazy(() => import('./components/layout/PatientAppLayout'));
+import PatientAppLayout from './components/layout/PatientAppLayout';
 
 type PatientRoute =
   | 'home'
@@ -27,16 +17,35 @@ type PatientRoute =
   | 'my-home-collections'
   | 'reports'
   | 'my-vitals'
-  | 'profile';
+  | 'profile'
+  | 'my-hospital-samples';
 
-function PatientAppInner() {
+const PatientHomePage = lazy(() => import('./pages/patient/PatientHomePage'));
+const BookTestPage = lazy(() => import('./pages/patient/BookTestPage'));
+const SlotSelectionPage = lazy(() => import('./pages/patient/SlotSelectionPage'));
+const MyBookingsPage = lazy(() => import('./pages/patient/MyBookingsPage'));
+const MyHomeCollectionsPage = lazy(() => import('./pages/patient/MyHomeCollectionsPage'));
+const HomeCollectionPage = lazy(() => import('./pages/patient/HomeCollectionPage'));
+const ReportsPage = lazy(() => import('./pages/patient/ReportsPage'));
+const MyVitalsPage = lazy(() => import('./pages/patient/MyVitalsPage'));
+const ProfilePage = lazy(() => import('./pages/patient/ProfilePage'));
+const PatientMyHospitalSamplesPage = lazy(() => import('./pages/patient/MyHospitalSamplesPage'));
+
+const NAV_ITEMS = [
+  { label: 'Home', path: 'home', icon: '🏠' },
+  { label: 'Book Test', path: 'book-test', icon: '🧪' },
+  { label: 'Collections', path: 'home-collection', icon: '📍' },
+  { label: 'Reports', path: 'reports', icon: '📄' },
+  { label: 'Profile', path: 'profile', icon: '👤' },
+];
+
+export default function PatientApp() {
   const { identity, isInitializing } = useInternetIdentity();
-  const isAuthenticated = !!identity;
   const queryClient = useQueryClient();
+  const isAuthenticated = !!identity;
 
   const [currentRoute, setCurrentRoute] = useState<PatientRoute>('home');
-  const [bookingContext, setBookingContext] = useState<{ selectedTests?: string[] } | null>(null);
-  const [showProfileSetupModal, setShowProfileSetupModal] = useState(false);
+  const [selectedTests, setSelectedTests] = useState<string[]>([]);
 
   const {
     data: userProfile,
@@ -44,83 +53,73 @@ function PatientAppInner() {
     isFetched: profileFetched,
   } = useGetCallerUserProfile();
 
-  const showProfileSetup = isAuthenticated && !profileLoading && profileFetched && userProfile === null;
-  const isPatient = !userProfile || userProfile?.appRole === 'patient';
-  const isWrongRole = isAuthenticated && profileFetched && userProfile !== null && !isPatient;
+  const showProfileSetup =
+    isAuthenticated && !profileLoading && profileFetched && userProfile === null;
 
-  if (isInitializing || (isAuthenticated && profileLoading)) {
-    return <LoadingScreen message="Loading Patient App..." />;
+  const handleNavigate = (route: string, ctx?: { selectedTests?: string[] }) => {
+    if (route === 'slot-selection' && ctx?.selectedTests) {
+      setSelectedTests(ctx.selectedTests);
+    }
+    setCurrentRoute(route as PatientRoute);
+  };
+
+  if (isInitializing) {
+    return <LoadingScreen message="Initializing..." />;
   }
 
   if (!isAuthenticated) {
     return <PatientLoginScreen />;
   }
 
-  if (isWrongRole) {
-    return <PatientLoginScreen showRoleError />;
-  }
-
-  const navigate = (route: string, ctx?: { selectedTests?: string[] }) => {
-    setCurrentRoute(route as PatientRoute);
-    if (ctx) setBookingContext(ctx);
-  };
-
   const renderPage = () => {
     switch (currentRoute) {
       case 'home':
-        return <PatientHomePage onNavigate={navigate} />;
+        return <PatientHomePage onNavigate={handleNavigate} />;
       case 'book-test':
-        return <BookTestPage onNavigate={navigate} />;
+        return <BookTestPage onNavigate={handleNavigate} />;
       case 'slot-selection':
-        return (
-          <SlotSelectionPage
-            selectedTests={bookingContext?.selectedTests || []}
-            onNavigate={navigate}
-          />
-        );
+        return <SlotSelectionPage onNavigate={handleNavigate} selectedTests={selectedTests} />;
       case 'my-bookings':
-        return <MyBookingsPage onNavigate={navigate} />;
+        return <MyBookingsPage onNavigate={handleNavigate} />;
       case 'home-collection':
-        return <HomeCollectionPage onNavigate={navigate} />;
+        return <HomeCollectionPage onNavigate={handleNavigate} />;
       case 'my-home-collections':
-        return <MyHomeCollectionsPage onNavigate={navigate} />;
+        return <MyHomeCollectionsPage onNavigate={handleNavigate} />;
       case 'reports':
-        return <ReportsPage onNavigate={navigate} />;
+        return <ReportsPage onNavigate={handleNavigate} />;
       case 'my-vitals':
-        return <MyVitalsPage onNavigate={navigate} />;
+        return <MyVitalsPage onNavigate={handleNavigate} />;
       case 'profile':
-        return <ProfilePage onNavigate={navigate} />;
+        return <ProfilePage onNavigate={handleNavigate} />;
+      case 'my-hospital-samples':
+        return <PatientMyHospitalSamplesPage />;
       default:
-        return <PatientHomePage onNavigate={navigate} />;
+        return <PatientHomePage onNavigate={handleNavigate} />;
     }
   };
 
   return (
-    <Suspense fallback={<LoadingScreen message="Loading..." />}>
+    <>
       {showProfileSetup && (
         <ProfileSetupModal
           open={showProfileSetup}
           appType="patient"
-          onComplete={() => queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] })}
+          onComplete={() => {
+            queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+          }}
         />
       )}
-      <PatientAppLayout currentPath={currentRoute} onNavigate={navigate} navItems={[
-        { label: 'Home', path: 'home', icon: '🏠' },
-        { label: 'Book Test', path: 'book-test', icon: '🧪' },
-        { label: 'Collections', path: 'home-collection', icon: '📍' },
-        { label: 'Reports', path: 'reports', icon: '📄' },
-        { label: 'Profile', path: 'profile', icon: '👤' },
-      ]}>
-        {renderPage()}
+      <PatientAppLayout
+        currentPath={currentRoute}
+        onNavigate={handleNavigate}
+        navItems={NAV_ITEMS}
+      >
+        <ErrorBoundary>
+          <Suspense fallback={<LoadingScreen message="Loading page..." />}>
+            {renderPage()}
+          </Suspense>
+        </ErrorBoundary>
       </PatientAppLayout>
-    </Suspense>
-  );
-}
-
-export default function PatientApp() {
-  return (
-    <Suspense fallback={<LoadingScreen message="Loading Patient App..." />}>
-      <PatientAppInner />
-    </Suspense>
+    </>
   );
 }

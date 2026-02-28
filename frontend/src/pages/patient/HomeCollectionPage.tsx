@@ -1,71 +1,49 @@
 import React, { useState } from 'react';
-import { MapPin, Clock, FlaskConical, Navigation, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
+import { MapPin, Clock, FlaskConical, Plus, Minus, Navigation, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import MedicalCard from '../../components/shared/MedicalCard';
-import GradientButton from '../../components/shared/GradientButton';
-import { useGetAllTests, useCreateHomeCollection } from '../../hooks/useQueries';
-import { generateId, formatCurrency } from '../../utils/formatters';
-import type { Test } from '../../types/models';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { useGetAllTests } from '../../hooks/useQueries';
+import { useCreateHomeCollectionRequest } from '../../hooks/useQueries';
+import { TestOutput } from '../../backend';
 import { toast } from 'sonner';
 
-const TIME_SLOTS = ['07:00 AM', '08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'];
-
-type GpsState = 'idle' | 'loading' | 'success' | 'error';
-
-interface NominatimAddress {
-  house_number?: string;
-  road?: string;
-  neighbourhood?: string;
-  suburb?: string;
-  village?: string;
-  town?: string;
-  city?: string;
-  county?: string;
-  state?: string;
-  postcode?: string;
-  country?: string;
-}
-
-interface NominatimResponse {
-  display_name: string;
-  address: NominatimAddress;
-}
-
-function formatNominatimAddress(addr: NominatimAddress): string {
-  const parts: string[] = [];
-  if (addr.house_number) parts.push(addr.house_number);
-  if (addr.road) parts.push(addr.road);
-  if (addr.neighbourhood) parts.push(addr.neighbourhood);
-  else if (addr.suburb) parts.push(addr.suburb);
-  const city = addr.city || addr.town || addr.village || addr.county;
-  if (city) parts.push(city);
-  if (addr.state) parts.push(addr.state);
-  if (addr.postcode) parts.push(addr.postcode);
-  if (addr.country) parts.push(addr.country);
-  return parts.join(', ');
-}
-
-type PatientRoute = 'home' | 'book-test' | 'slot-selection' | 'my-bookings' | 'home-collection' | 'my-home-collections' | 'reports' | 'my-vitals' | 'profile';
-
 interface HomeCollectionPageProps {
-  onNavigate: (route: PatientRoute) => void;
+  onNavigate?: (page: string) => void;
 }
+
+const TIME_SLOTS = [
+  '7:00 AM - 8:00 AM',
+  '8:00 AM - 9:00 AM',
+  '9:00 AM - 10:00 AM',
+  '10:00 AM - 11:00 AM',
+  '11:00 AM - 12:00 PM',
+  '2:00 PM - 3:00 PM',
+  '3:00 PM - 4:00 PM',
+  '4:00 PM - 5:00 PM',
+];
 
 export default function HomeCollectionPage({ onNavigate }: HomeCollectionPageProps) {
-  const { data: tests = [] } = useGetAllTests();
-  const createRequest = useCreateHomeCollection();
+  const { data: tests = [], isLoading } = useGetAllTests();
+  const createRequest = useCreateHomeCollectionRequest();
 
   const [address, setAddress] = useState('');
+  const [selectedTests, setSelectedTests] = useState<TestOutput[]>([]);
   const [selectedSlot, setSelectedSlot] = useState('');
-  const [selectedTests, setSelectedTests] = useState<Test[]>([]);
+  const [search, setSearch] = useState('');
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [step, setStep] = useState<'address' | 'tests' | 'slot' | 'confirm'>('address');
 
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
-  const [gpsState, setGpsState] = useState<GpsState>('idle');
-  const [gpsError, setGpsError] = useState<string>('');
+  const activeTests = tests.filter((t) => t.isActive);
+  const filteredTests = activeTests.filter(
+    (t) =>
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.code.toLowerCase().includes(search.toLowerCase())
+  );
 
-  const toggleTest = (test: Test) => {
+  const toggleTest = (test: TestOutput) => {
     setSelectedTests((prev) =>
       prev.find((t) => t.id === test.id)
         ? prev.filter((t) => t.id !== test.id)
@@ -73,250 +51,186 @@ export default function HomeCollectionPage({ onNavigate }: HomeCollectionPagePro
     );
   };
 
-  const totalPrice = selectedTests.reduce((s, t) => s + Number(t.price), 0);
+  const isSelected = (test: TestOutput) => selectedTests.some((t) => t.id === test.id);
 
-  const handleUseMyLocation = () => {
-    if (!navigator.geolocation) {
-      setGpsState('error');
-      setGpsError('Geolocation is not supported by your browser.');
-      toast.error('Geolocation is not supported by your browser.');
-      return;
-    }
+  const totalPrice = selectedTests.reduce((sum, t) => sum + Number(t.price), 0);
 
-    setGpsState('loading');
-    setGpsError('');
-    setLatitude(null);
-    setLongitude(null);
-
+  const handleGPS = () => {
+    setGpsLoading(true);
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
-            {
-              headers: {
-                'Accept-Language': 'en',
-                'User-Agent': 'XpertLab/1.0',
-              },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error('Reverse geocoding request failed');
-          }
-
-          const data: NominatimResponse = await response.json();
-
-          const formattedAddress = data.address
-            ? formatNominatimAddress(data.address)
-            : data.display_name;
-
-          setAddress(formattedAddress || data.display_name);
-          setLatitude(lat);
-          setLongitude(lon);
-          setGpsState('success');
-        } catch {
-          setLatitude(lat);
-          setLongitude(lon);
-          setGpsState('success');
-          toast.error('Could not fetch address details. Please verify or edit the address manually.');
-        }
+      (pos) => {
+        setLat(pos.coords.latitude);
+        setLng(pos.coords.longitude);
+        setAddress(`GPS: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+        setGpsLoading(false);
       },
-      (error) => {
-        setGpsState('error');
-        let msg = 'Unable to retrieve location. Please enter address manually.';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            msg = 'Location access denied. Please enter address manually.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            msg = 'Location information is unavailable. Please enter address manually.';
-            break;
-          case error.TIMEOUT:
-            msg = 'Location request timed out. Please try again.';
-            break;
-        }
-        setGpsError(msg);
-        toast.error(msg);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      () => {
+        toast.error('Could not get GPS location');
+        setGpsLoading(false);
+      }
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!address.trim() || !selectedSlot || selectedTests.length === 0) return;
-    const id = generateId();
+  const handleSubmit = async () => {
+    if (!address.trim() || selectedTests.length === 0 || !selectedSlot) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
     try {
       await createRequest.mutateAsync({
-        id,
-        address: address.trim(),
-        latitude,
-        longitude,
-        selectedTests,
+        address,
+        latitude: lat ?? undefined,
+        longitude: lng ?? undefined,
+        tests: selectedTests.map((t) => ({
+          id: t.id,
+          name: t.name,
+          testCode: t.code,
+          price: Number(t.price),
+        })),
         slot: selectedSlot,
       });
       toast.success('Home collection request submitted!');
-      onNavigate('my-home-collections');
-    } catch {
-      toast.error('Failed to submit request. Please try again.');
+      onNavigate?.('my-home-collections');
+    } catch (err: any) {
+      toast.error(`Failed to submit: ${err?.message ?? err}`);
     }
   };
 
   return (
-    <div className="px-4 py-5 space-y-5 animate-fade-in">
-      <div className="flex items-center gap-3">
-        <button onClick={() => onNavigate('home')} className="text-muted-foreground hover:text-foreground">
-          ←
-        </button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Home Collection</h1>
-          <p className="text-sm text-muted-foreground">We'll come to you for sample collection</p>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
+        <div className="flex items-center gap-2 mb-1">
+          <MapPin className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-semibold text-foreground">Home Collection</h1>
         </div>
+        <p className="text-xs text-muted-foreground">Book a phlebotomist to collect samples at home</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="flex-1 overflow-auto px-4 py-4 space-y-5">
         {/* Address */}
-        <MedicalCard>
-          <div className="flex items-center gap-2 mb-3">
-            <MapPin className="w-4 h-4 text-brand-blue" />
-            <h2 className="text-sm font-bold text-foreground">Collection Address</h2>
-          </div>
-
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Collection Address *</label>
           <Textarea
-            placeholder="Enter your full address including flat/house number, street, city, pincode..."
+            placeholder="Enter your full address..."
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            required
             rows={3}
-            className="rounded-xl resize-none mb-3"
           />
-
-          {/* GPS Button */}
           <Button
-            type="button"
             variant="outline"
             size="sm"
-            onClick={handleUseMyLocation}
-            disabled={gpsState === 'loading'}
-            className="w-full rounded-xl border-brand-blue/40 text-brand-blue hover:bg-gradient-primary-soft hover:border-brand-blue gap-2"
+            className="gap-2"
+            onClick={handleGPS}
+            disabled={gpsLoading}
           >
-            {gpsState === 'loading' ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Navigation className="w-4 h-4" />
-            )}
-            {gpsState === 'loading' ? 'Fetching Location & Address...' : 'Use My Location (GPS)'}
+            <Navigation className="h-3.5 w-3.5" />
+            {gpsLoading ? 'Getting location...' : 'Use GPS Location'}
           </Button>
+        </div>
 
-          {/* GPS Success */}
-          {gpsState === 'success' && latitude !== null && longitude !== null && (
-            <div className="mt-2 flex items-start gap-2 rounded-xl bg-gradient-primary-soft border border-brand-blue/20 px-3 py-2">
-              <CheckCircle2 className="w-4 h-4 text-brand-blue mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs font-semibold text-brand-blue">GPS Location Captured</p>
-                <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                  Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
-                </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Address auto-filled above — you can edit if needed.</p>
-              </div>
-            </div>
-          )}
-
-          {/* GPS Error */}
-          {gpsState === 'error' && (
-            <div className="mt-2 flex items-start gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-3 py-2">
-              <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-destructive">{gpsError}</p>
-            </div>
-          )}
-        </MedicalCard>
-
-        {/* Select Tests */}
-        <div>
-          <h2 className="text-sm font-bold text-foreground mb-3">Select Tests</h2>
-          <div className="space-y-2">
-            {tests.map((test) => {
-              const selected = !!selectedTests.find((t) => t.id === test.id);
-              return (
-                <button
-                  key={test.id}
-                  type="button"
-                  onClick={() => toggleTest(test)}
-                  className={`w-full text-left rounded-card p-3 border-2 transition-all flex items-center gap-3 ${
-                    selected
-                      ? 'border-brand-blue bg-gradient-primary-soft'
-                      : 'border-border bg-card hover:border-brand-blue/40'
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selected ? 'gradient-primary' : 'bg-muted'}`}>
-                    <FlaskConical className={`w-4 h-4 ${selected ? 'text-white' : 'text-muted-foreground'}`} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-foreground">{test.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatCurrency(test.price)}</p>
-                  </div>
-                  {selected && (
-                    <div className="w-5 h-5 rounded-full gradient-primary flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+        {/* Test Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Select Tests *</label>
+          <div className="relative">
+            <Input
+              placeholder="Search tests..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-3"
+            />
           </div>
+          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            {isLoading ? (
+              <p className="text-xs text-muted-foreground py-2">Loading tests...</p>
+            ) : filteredTests.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-2">No tests found</p>
+            ) : (
+              filteredTests.map((test) => {
+                const selected = isSelected(test);
+                return (
+                  <div
+                    key={test.id}
+                    onClick={() => toggleTest(test)}
+                    className={[
+                      'flex items-center justify-between p-2.5 rounded-lg border cursor-pointer transition-all',
+                      selected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40',
+                    ].join(' ')}
+                  >
+                    <div>
+                      <p className="text-xs font-medium text-foreground">{test.name}</p>
+                      <p className="text-xs text-muted-foreground">{test.sampleType}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold">₹{Number(test.price).toLocaleString('en-IN')}</span>
+                      <div
+                        className={[
+                          'w-6 h-6 rounded-full flex items-center justify-center',
+                          selected ? 'bg-primary text-primary-foreground' : 'bg-muted',
+                        ].join(' ')}
+                      >
+                        {selected ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {selectedTests.length > 0 && (
+            <p className="text-xs text-primary font-medium">
+              {selectedTests.length} test{selectedTests.length > 1 ? 's' : ''} selected — ₹{totalPrice.toLocaleString('en-IN')}
+            </p>
+          )}
         </div>
 
         {/* Time Slot */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-4 h-4 text-brand-blue" />
-            <h2 className="text-sm font-bold text-foreground">Preferred Time</h2>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+            <Clock className="h-4 w-4" />
+            Preferred Time Slot *
+          </label>
+          <div className="grid grid-cols-2 gap-2">
             {TIME_SLOTS.map((slot) => (
               <button
                 key={slot}
-                type="button"
                 onClick={() => setSelectedSlot(slot)}
-                className={`py-2.5 rounded-xl text-xs font-semibold border-2 transition-all ${
+                className={[
+                  'text-xs p-2 rounded-lg border text-left transition-all',
                   selectedSlot === slot
-                    ? 'gradient-primary text-white border-transparent'
-                    : 'border-border text-foreground hover:border-brand-blue/40'
-                }`}
+                    ? 'border-primary bg-primary/5 text-primary font-medium'
+                    : 'border-border text-muted-foreground hover:border-primary/40',
+                ].join(' ')}
               >
                 {slot}
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Summary & Submit */}
-        {selectedTests.length > 0 && selectedSlot && (
-          <MedicalCard className="bg-gradient-primary-soft border-brand-blue/20">
-            <p className="text-xs font-semibold text-brand-blue mb-1">Order Summary</p>
-            <p className="text-sm text-foreground">{selectedTests.map((t) => t.name).join(', ')}</p>
-            <p className="text-sm font-bold gradient-primary-text mt-1">{formatCurrency(totalPrice)}</p>
-          </MedicalCard>
-        )}
-
-        <GradientButton
-          type="submit"
-          loading={createRequest.isPending}
-          disabled={!address.trim() || !selectedSlot || selectedTests.length === 0}
-          className="w-full"
-          size="lg"
+      {/* Submit */}
+      <div className="px-4 py-3 border-t border-border bg-background">
+        <Button
+          className="w-full gap-2"
+          onClick={handleSubmit}
+          disabled={
+            !address.trim() ||
+            selectedTests.length === 0 ||
+            !selectedSlot ||
+            createRequest.isPending
+          }
         >
-          Request Home Collection
-        </GradientButton>
-
-        {createRequest.isError && (
-          <p className="text-destructive text-sm text-center">Failed to submit request. Please try again.</p>
-        )}
-      </form>
+          {createRequest.isPending ? (
+            'Submitting...'
+          ) : (
+            <>
+              Submit Request
+              <ArrowRight className="h-4 w-4" />
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

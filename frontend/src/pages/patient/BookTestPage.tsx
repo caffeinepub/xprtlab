@@ -1,103 +1,133 @@
 import React, { useState } from 'react';
-import { useGetAllTests } from '../../hooks/useQueries';
-import { FlaskConical, Search, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Search, Plus, Minus, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import GradientButton from '../../components/shared/GradientButton';
-import MedicalCard from '../../components/shared/MedicalCard';
-
-type PatientRoute = 'home' | 'book-test' | 'slot-selection' | 'my-bookings' | 'home-collection' | 'my-home-collections' | 'reports' | 'my-vitals' | 'profile';
+import { Badge } from '@/components/ui/badge';
+import { useGetAllTests } from '../../hooks/useQueries';
+import { TestOutput } from '../../backend';
 
 interface BookTestPageProps {
-  onNavigate: (route: PatientRoute, ctx?: { selectedTests?: string[] }) => void;
+  onNavigate?: (page: string, data?: any) => void;
 }
 
 export default function BookTestPage({ onNavigate }: BookTestPageProps) {
   const { data: tests = [], isLoading } = useGetAllTests();
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selectedTests, setSelectedTests] = useState<TestOutput[]>([]);
 
-  const filtered = tests.filter(
+  const filteredTests = tests.filter(
     (t) =>
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.description.toLowerCase().includes(search.toLowerCase()),
+      t.isActive &&
+      (t.name.toLowerCase().includes(search.toLowerCase()) ||
+        t.code.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const toggle = (id: string) => {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggleTest = (test: TestOutput) => {
+    setSelectedTests((prev) =>
+      prev.find((t) => t.id === test.id)
+        ? prev.filter((t) => t.id !== test.id)
+        : [...prev, test]
+    );
   };
 
-  const totalPrice = tests
-    .filter((t) => selected.includes(t.id))
-    .reduce((sum, t) => sum + Number(t.price), 0);
+  const isSelected = (test: TestOutput) =>
+    selectedTests.some((t) => t.id === test.id);
+
+  const totalPrice = selectedTests.reduce((sum, t) => sum + Number(t.price), 0);
+
+  const handleProceed = () => {
+    if (selectedTests.length === 0) return;
+    onNavigate?.('slot-selection', { selectedTests });
+  };
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center gap-3">
-        <button onClick={() => onNavigate('home')} className="text-muted-foreground hover:text-foreground">
-          ←
-        </button>
-        <h1 className="text-lg font-bold text-foreground">Book a Test</h1>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
+        <h1 className="text-lg font-semibold text-foreground mb-3">Book a Test</h1>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            className="pl-9"
+            placeholder="Search tests..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search tests..."
-          className="pl-9"
-        />
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground">
-          <FlaskConical className="w-10 h-10 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">No tests found</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((test) => {
-            const isSelected = selected.includes(test.id);
+      {/* Test List */}
+      <div className="flex-1 overflow-auto px-4 py-3 space-y-2">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : filteredTests.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <Search className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm font-medium text-foreground">No tests found</p>
+            <p className="text-xs text-muted-foreground mt-1">Try a different search term.</p>
+          </div>
+        ) : (
+          filteredTests.map((test) => {
+            const selected = isSelected(test);
             return (
-              <MedicalCard
+              <div
                 key={test.id}
-                onClick={() => toggle(test.id)}
-                className={`p-4 cursor-pointer transition-all ${isSelected ? 'border-primary/50 bg-primary/5' : ''}`}
+                onClick={() => toggleTest(test)}
+                className={[
+                  'flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all duration-200',
+                  selected
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-card hover:border-primary/40',
+                ].join(' ')}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-foreground">{test.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{test.description}</p>
-                    <p className="text-sm font-bold text-primary mt-1">₹{Number(test.price)}</p>
-                  </div>
-                  <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center border-2 transition-colors ${isSelected ? 'border-primary bg-primary' : 'border-border'}`}>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
+                <div className="flex-1 min-w-0 mr-3">
+                  <p className="text-sm font-medium text-foreground truncate">{test.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                      {test.code}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{test.sampleType}</span>
                   </div>
                 </div>
-              </MedicalCard>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm font-semibold text-foreground">
+                    ₹{Number(test.price).toLocaleString('en-IN')}
+                  </span>
+                  <div
+                    className={[
+                      'w-7 h-7 rounded-full flex items-center justify-center transition-colors',
+                      selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                    ].join(' ')}
+                  >
+                    {selected ? <Minus className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                  </div>
+                </div>
+              </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
 
-      {selected.length > 0 && (
-        <div className="fixed bottom-20 left-0 right-0 px-4">
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-xl max-w-lg mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-foreground">{selected.length} test(s) selected</span>
-              <span className="text-sm font-bold text-primary">₹{totalPrice}</span>
+      {/* Cart Footer */}
+      {selectedTests.length > 0 && (
+        <div className="px-4 py-3 border-t border-border bg-background">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">
+                {selectedTests.length} test{selectedTests.length > 1 ? 's' : ''} selected
+              </span>
             </div>
-            <GradientButton
-              onClick={() => onNavigate('slot-selection', { selectedTests: selected })}
-              className="w-full"
-            >
-              Select Time Slot <ArrowRight className="w-4 h-4 ml-1" />
-            </GradientButton>
+            <span className="text-sm font-semibold text-foreground">
+              ₹{totalPrice.toLocaleString('en-IN')}
+            </span>
           </div>
+          <Button className="w-full gap-2" onClick={handleProceed}>
+            Proceed to Slot Selection
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
       )}
     </div>

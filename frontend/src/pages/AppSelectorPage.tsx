@@ -1,131 +1,118 @@
-import React from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { FlaskConical, Users, Shield, ArrowRight, Heart } from 'lucide-react';
 
 export default function AppSelectorPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary/80 to-accent flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-center pt-10 pb-6 px-4">
-        <div className="flex flex-col items-center gap-3">
-          <div className="bg-white rounded-2xl p-3 shadow-lg">
-            <img
-              src="/assets/generated/xprtlab-logo.dim_256x256.png"
-              alt="XpertLab Logo"
-              className="w-16 h-16 object-contain"
-            />
-          </div>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-white tracking-tight">XpertLab</h1>
-            <p className="text-white/80 text-sm mt-1">Advanced Diagnostic Solutions</p>
-          </div>
-        </div>
+      <header className="bg-card shadow-sm px-4 py-4 flex items-center justify-center">
+        <img
+          src="/assets/logo-1.png"
+          alt="XpertLab"
+          className="h-10 object-contain"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              const fallback = document.createElement('span');
+              fallback.className = 'text-xl font-bold text-primary';
+              fallback.textContent = 'XpertLab';
+              parent.appendChild(fallback);
+            }
+          }}
+        />
       </header>
 
       {/* Hero Banner */}
-      <div className="px-4 mb-8">
-        <div className="max-w-2xl mx-auto rounded-2xl overflow-hidden shadow-xl">
-          <img
-            src="/assets/generated/hero-banner.dim_1200x400.png"
-            alt="XpertLab Hero"
-            className="w-full h-40 object-cover"
-          />
+      <div className="relative overflow-hidden">
+        <img
+          src="/assets/generated/hero-banner.dim_1200x400.png"
+          alt="XpertLab Hero"
+          className="w-full h-40 object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        <div className="absolute inset-0 bg-primary/60 flex items-center justify-center">
+          <div className="text-center text-white px-4">
+            <h1 className="text-2xl font-bold mb-1">Welcome to XpertLab</h1>
+            <p className="text-sm opacity-90">Your trusted diagnostic partner</p>
+          </div>
         </div>
       </div>
 
-      {/* App Selection Cards */}
-      <main className="flex-1 flex flex-col items-center justify-start px-4 pb-10">
-        <div className="w-full max-w-2xl">
-          <h2 className="text-white text-center text-xl font-semibold mb-6">
-            Choose your portal to get started
-          </h2>
+      {/* Portal Selection */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 gap-6">
+        <div className="text-center mb-2">
+          <h2 className="text-xl font-bold text-foreground mb-1">Select Your Portal</h2>
+          <p className="text-muted-foreground text-sm">Choose the app that matches your role</p>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Patient App Card */}
-            <button
-              onClick={() => navigate({ to: '/patient-app' })}
-              className="group bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left border-2 border-transparent hover:border-accent/30 focus:outline-none focus:ring-4 focus:ring-white/40"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
-                  <Heart className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground">Patient App</h3>
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">For Patients</span>
-                </div>
+        <div className="w-full max-w-sm flex flex-col gap-4">
+          {/* Patient App Card */}
+          <button
+            onClick={() => navigate({ to: '/patient-app' })}
+            className="w-full bg-card rounded-2xl shadow-card p-6 text-left hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] border border-border"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
               </div>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                Book diagnostic tests, manage your appointments, view lab reports, and track your health vitals — all in one place.
-              </p>
-              <ul className="space-y-1.5 mb-5">
-                {['Book Tests & Slots', 'Home Collection Requests', 'View Lab Reports', 'Track Health Vitals'].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-primary">Enter Patient Portal</span>
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                  <ArrowRight className="w-4 h-4 text-primary group-hover:text-white transition-colors" />
-                </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-foreground mb-0.5">Patient App</h3>
+                <p className="text-xs text-muted-foreground">Book tests, view reports & track health</p>
               </div>
-            </button>
+              <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
 
-            {/* Staff App Card */}
-            <button
-              onClick={() => navigate({ to: '/staff-app' })}
-              className="group bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-left border-2 border-transparent hover:border-primary/30 focus:outline-none focus:ring-4 focus:ring-white/40"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary to-primary flex items-center justify-center shadow-md">
-                  <Shield className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-foreground">Staff App</h3>
-                  <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">For Staff & Admins</span>
-                </div>
+          {/* Staff App Card */}
+          <button
+            onClick={() => navigate({ to: '/staff-app' })}
+            className="w-full bg-card rounded-2xl shadow-card p-6 text-left hover:shadow-lg transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] border border-border"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-secondary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-7 h-7 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
               </div>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-                Manage tasks, process home collections, upload reports, review incidents, and access audit logs.
-              </p>
-              <ul className="space-y-1.5 mb-5">
-                {['Phlebotomist Task Queue', 'Upload Lab Reports', 'Manage Incidents', 'Audit Logs & Analytics'].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-primary">Enter Staff Portal</span>
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                  <ArrowRight className="w-4 h-4 text-primary group-hover:text-white transition-colors" />
-                </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-foreground mb-0.5">Staff App</h3>
+                <p className="text-xs text-muted-foreground">Manage samples, attendance & reports</p>
               </div>
-            </button>
-          </div>
+              <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </button>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="text-center py-4 text-white/60 text-xs">
-        <p>
-          Built with <Heart className="inline w-3 h-3 text-red-300 mx-0.5" /> using{' '}
+      <footer className="py-4 px-4 text-center">
+        <p className="text-xs text-muted-foreground">
+          Built with{' '}
+          <span className="text-destructive">♥</span>{' '}
+          using{' '}
           <a
             href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || 'xpertlab')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-white transition-colors"
+            className="text-primary hover:underline font-medium"
           >
             caffeine.ai
           </a>
         </p>
-        <p className="mt-1">© {new Date().getFullYear()} XpertLab. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          © {new Date().getFullYear()} XpertLab. All rights reserved.
+        </p>
       </footer>
     </div>
   );

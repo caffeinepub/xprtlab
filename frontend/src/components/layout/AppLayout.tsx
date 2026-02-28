@@ -23,14 +23,13 @@ export default function AppLayout({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-primary to-primary/80 shadow-md">
+      <header className="sticky top-0 z-40 bg-white shadow-md border-b border-border">
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <img
-              src="/assets/generated/xprtlab-logo.dim_256x256.png"
-              alt="XprtLab"
-              className="h-9 w-auto object-contain"
-              style={{ filter: 'brightness(0) invert(1)' }}
+              src="/assets/logo-1.png"
+              alt="Xpertlab"
+              className="h-10 w-auto object-contain"
             />
           </div>
         </div>

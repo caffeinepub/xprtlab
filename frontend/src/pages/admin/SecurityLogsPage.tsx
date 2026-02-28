@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useGetSecurityLogs, useResetDeviceBinding } from '../../hooks/useQueries';
-import { SecurityLog } from '../../types/models';
 import { Loader2, Shield, MapPin } from 'lucide-react';
 import {
   AlertDialog,
@@ -12,6 +11,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+// Local type definition — not imported from models to avoid coupling
+interface SecurityLogEntry {
+  userId: string;
+  eventType: string;
+  deviceId: string;
+  latitude?: number;
+  longitude?: number;
+  timestamp: number;
+  reason: string;
+}
 
 const EVENT_TYPES = ['all', 'login', 'logout', 'device_bound', 'suspicious', 'failed_auth'];
 
@@ -32,10 +42,10 @@ export default function SecurityLogsPage({ onNavigate }: SecurityLogsPageProps) 
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [resetTarget, setResetTarget] = useState<string | null>(null);
 
-  const { data: logs = [], isLoading, refetch } = useGetSecurityLogs();
+  const { data: logs = [], isLoading } = useGetSecurityLogs();
   const resetMutation = useResetDeviceBinding();
 
-  const filtered = (logs as SecurityLog[]).filter((log) => {
+  const filtered = (logs as SecurityLogEntry[]).filter((log) => {
     const matchUser = !userIdFilter || log.userId?.includes(userIdFilter);
     const matchEvent = selectedEventTypes.length === 0 || selectedEventTypes.includes(log.eventType);
     return matchUser && matchEvent;
@@ -146,7 +156,10 @@ export default function SecurityLogsPage({ onNavigate }: SecurityLogsPageProps) 
               onClick={handleResetConfirm}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              {resetMutation.isPending ? 'Resetting...' : 'Reset'}
+              {resetMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : null}
+              Reset Binding
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

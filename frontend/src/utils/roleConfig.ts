@@ -1,10 +1,10 @@
 import { AppRole } from '../types/models';
-import React from 'react';
 
 export interface NavItem {
   label: string;
   path: string;
   icon: string;
+  badgeCount?: number;
 }
 
 export const roleNavConfig: Record<AppRole, NavItem[]> = {
@@ -26,14 +26,14 @@ export const roleNavConfig: Record<AppRole, NavItem[]> = {
     { label: 'Bookings', path: 'admin-bookings', icon: 'Calendar' },
     { label: 'Samples', path: 'admin-hospital-samples', icon: 'FlaskConical' },
     { label: 'Reports', path: 'admin-reports', icon: 'FileText' },
-    { label: 'Attendance', path: 'admin-attendance', icon: 'CalendarCheck' },
-    { label: 'Profile', path: 'profile', icon: 'User' },
+    { label: 'Tests', path: 'test-management', icon: 'TestTube' },
+    { label: 'Hospitals', path: 'hospital-management', icon: 'Building2' },
   ],
   superAdmin: [
     { label: 'Bookings', path: 'admin-bookings', icon: 'Calendar' },
+    { label: 'Tests', path: 'test-management', icon: 'TestTube' },
+    { label: 'Hospitals', path: 'hospital-management', icon: 'Building2' },
     { label: 'Incidents', path: 'incidents', icon: 'ShieldAlert' },
     { label: 'Audit', path: 'audit-logs', icon: 'BarChart3' },
-    { label: 'Security', path: 'security-logs', icon: 'Shield' },
-    { label: 'Profile', path: 'profile', icon: 'User' },
   ],
 };

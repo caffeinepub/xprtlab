@@ -3,7 +3,7 @@ import { FileText, Eye, Download, Calendar, Search, Upload } from 'lucide-react'
 import { Input } from '@/components/ui/input';
 import MedicalCard from '../../components/shared/MedicalCard';
 import { useGetAllReports } from '../../hooks/useQueries';
-import { formatDateTime } from '../../utils/formatters';
+import { formatDate } from '../../utils/formatters';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type StaffRoute = 'tasks' | 'home-collections' | 'record-vitals' | 'scan-qr' | 'admin-bookings' | 'admin-reports' | 'upload-report' | 'incidents' | 'audit-logs' | 'create-camp' | 'submit-incident' | 'profile';
@@ -95,7 +95,7 @@ export default function AdminReportsPage({ onNavigate }: AdminReportsPageProps) 
                     </p>
                     <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
                       <Calendar className="w-3 h-3" />
-                      <span>{formatDateTime(report.timestamp)}</span>
+                      <span>{formatDate(report.timestamp)}</span>
                     </div>
                   </div>
                 </div>

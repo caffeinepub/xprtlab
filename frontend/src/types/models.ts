@@ -1,7 +1,17 @@
-// Local type definitions since the backend interface only exposes minimal types
-// These mirror the Motoko backend types but are defined locally for frontend use
+// Local TypeScript type definitions for the XpertLab application
 
 export type AppRole = 'patient' | 'phlebotomist' | 'labAdmin' | 'superAdmin';
+
+export interface Test {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  testCode: string;
+  mrp: number;
+  sampleType: string;
+  isActive: boolean;
+}
 
 export interface UserProfile {
   name: string;
@@ -9,130 +19,81 @@ export interface UserProfile {
   phone: string;
 }
 
-export interface Test {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  offerPrice?: number;
-}
-
-export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'canceled';
-
-export interface Booking {
-  id: string;
-  patient: string;
-  tests: Test[];
-  slot: string;
-  status: BookingStatus | { pending: null } | { confirmed: null } | { completed: null } | { canceled: null };
-  timestamp: number;
-  patientName?: string;
-  phone?: string;
-}
-
-export type HomeCollectionStatus = 'requested' | 'assigned' | 'completed' | 'canceled' | 'in-progress' | 'not-available';
+export type HomeCollectionStatus =
+  | 'ASSIGNED'
+  | 'EN_ROUTE'
+  | 'SAMPLE_COLLECTED'
+  | 'COMPLETED';
 
 export interface HomeCollectionRequest {
   id: string;
   patient: string;
   address: string;
-  latitude?: number;
-  longitude?: number;
+  lat?: number;
+  lng?: number;
   tests: Test[];
   slot: string;
   assignedPhlebotomist?: string;
-  status: HomeCollectionStatus | { requested: null } | { assigned: null } | { completed: null } | { canceled: null };
-  timestamp: number;
-  patientName?: string;
-  phone?: string;
-  contactNumber?: string;
-  payableAmount?: number;
-  finalAmount?: number;
-}
-
-export interface Report {
-  id: string;
-  patient: string;
-  bookingId: string;
-  file: any;
-  uploadedBy: string;
+  status: HomeCollectionStatus;
   timestamp: number;
 }
 
-export type IncidentSeverity = 'low' | 'medium' | 'high';
+// Sample workflow status — defined locally since backend.d.ts no longer exports it
+export type SampleStatus =
+  | 'SAMPLE_COLLECTED'
+  | 'DISPATCHED'
+  | 'RECEIVED_AT_LAB'
+  | 'PROCESSING'
+  | 'REPORT_READY'
+  | 'REPORT_DELIVERED';
 
-export interface Incident {
-  id: string;
-  reporter: string;
-  description: string;
-  severity: IncidentSeverity | { low: null } | { medium: null } | { high: null };
-  photo?: any;
-  timestamp: number;
+// Delivery method — defined locally since backend.d.ts no longer exports it
+export type DeliveryMethod =
+  | 'WHATSAPP'
+  | 'PHYSICAL'
+  | 'EMAIL'
+  | 'HOSPITAL_PICKUP';
+
+// Hospital sample test reference — defined locally
+export interface HospitalSampleTestRef {
+  testId: string;
+  testName: string;
+  testCode: string;
+  price: bigint;
 }
 
-export interface AuditLog {
-  actorId: string;
-  actionType: string;
-  targetDocument: string;
-  timestamp: number;
-}
-
-export interface BPReading {
-  systolic: number;
-  diastolic: number;
-  pulse: number;
-  timestamp: number;
-}
-
-export interface RBSTest {
-  glucoseLevel: number;
-  timestamp: number;
+// Test search result — defined locally
+export interface TestSearchResult {
+  testId: string;
+  testName: string;
+  testCode: string;
+  mrp: number;
+  sampleType: string;
 }
 
 export interface HospitalSample {
+  id?: string;
   patientName: string;
   phone: string;
   hospitalId: string;
   phlebotomistId: string;
-  testId: string;
-  mrp: number;
-  discount: number;
-  finalAmount: number;
-  amountReceived: number;
-  pendingAmount: number;
+  tests: HospitalSampleTestRef[];
+  totalMrp: bigint;
+  discountAmount: bigint;
+  maxAllowedDiscount: bigint;
+  finalAmount: bigint;
+  amountReceived: bigint;
+  pendingAmount: bigint;
   paymentMode: string;
-  status: string;
-  createdAt: number;
-}
-
-export interface Attendance {
-  phlebotomistId: string;
-  hospitalId: string;
-  checkInTime: number;
-  checkOutTime?: number;
-  checkInLat: number;
-  checkInLong: number;
-  checkOutLat?: number;
-  checkOutLong?: number;
-  checkInSelfieUrl: string;
-  totalWorkingMinutes?: number;
-  status: string;
-}
-
-export interface SecurityLog {
-  userId: string;
-  eventType: string;
-  deviceId: string;
-  latitude?: number;
-  longitude?: number;
-  timestamp: number;
-  reason: string;
-}
-
-export interface DeviceBinding {
-  userId: string;
-  deviceId: string;
-  deviceModel: string;
-  osVersion: string;
-  boundAt: number;
+  billingLocked: boolean;
+  createdByRole: string;
+  updatedByAdmin: boolean;
+  createdAt: bigint;
+  status: SampleStatus;
+  statusHistory: Array<[SampleStatus, bigint, string, string]>;
+  deliveryMethod?: DeliveryMethod;
+  deliveredAt?: bigint;
+  deliveredByRole?: string;
+  deliveredById?: string;
+  reportUrl?: string;
 }

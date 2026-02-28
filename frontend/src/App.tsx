@@ -1,65 +1,74 @@
-import { RouterProvider, createRouter, createRoute, createRootRoute, Outlet, redirect } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from 'next-themes';
-import AppSelectorPage from './pages/AppSelectorPage';
-import PatientApp from './PatientApp';
-import StaffApp from './StaffApp';
+import {
+  createRouter,
+  RouterProvider,
+  createRoute,
+  createRootRoute,
+  Outlet,
+} from '@tanstack/react-router';
+import { Suspense, lazy } from 'react';
+import ErrorBoundary from './components/shared/ErrorBoundary';
+import LoadingScreen from './components/shared/LoadingScreen';
+
+const AppSelectorPage = lazy(() => import('./pages/AppSelectorPage'));
+const PatientApp = lazy(() => import('./PatientApp'));
+const StaffApp = lazy(() => import('./StaffApp'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30_000 },
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+    },
   },
 });
 
 const rootRoute = createRootRoute({
   component: () => (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light">
-        <Outlet />
-        <Toaster richColors position="top-center" />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <Suspense fallback={<LoadingScreen message="Loading..." />}>
+      <Outlet />
+    </Suspense>
   ),
 });
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: AppSelectorPage,
+  component: () => (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingScreen message="Loading..." />}>
+        <AppSelectorPage />
+      </Suspense>
+    </ErrorBoundary>
+  ),
 });
 
 const patientAppRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/patient-app',
-  component: PatientApp,
-});
-
-const patientAppWildcardRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/patient-app/$',
-  component: PatientApp,
+  component: () => (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingScreen message="Loading Patient App..." />}>
+        <PatientApp />
+      </Suspense>
+    </ErrorBoundary>
+  ),
 });
 
 const staffAppRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/staff-app',
-  component: StaffApp,
+  component: () => (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingScreen message="Loading Staff App..." />}>
+        <StaffApp />
+      </Suspense>
+    </ErrorBoundary>
+  ),
 });
 
-const staffAppWildcardRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/staff-app/$',
-  component: StaffApp,
-});
-
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  patientAppRoute,
-  patientAppWildcardRoute,
-  staffAppRoute,
-  staffAppWildcardRoute,
-]);
+const routeTree = rootRoute.addChildren([indexRoute, patientAppRoute, staffAppRoute]);
 
 const router = createRouter({ routeTree });
 
@@ -70,5 +79,13 @@ declare module '@tanstack/react-router' {
 }
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <ErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
 }

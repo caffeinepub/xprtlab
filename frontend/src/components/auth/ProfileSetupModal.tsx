@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AppRole } from '../../types/models';
+import { AppRole as LocalAppRole } from '../../types/models';
+import { AppRole as BackendAppRole, UserProfile } from '../../backend';
 import { useSaveCallerUserProfile } from '../../hooks/useQueries';
 import { Loader2 } from 'lucide-react';
 import {
@@ -16,24 +17,40 @@ interface ProfileSetupModalProps {
   onComplete?: () => void;
 }
 
+// Map local AppRole string to backend AppRole enum
+function toBackendAppRole(role: LocalAppRole): BackendAppRole {
+  switch (role) {
+    case 'patient': return BackendAppRole.patient;
+    case 'phlebotomist': return BackendAppRole.phlebotomist;
+    case 'labAdmin': return BackendAppRole.labAdmin;
+    case 'superAdmin': return BackendAppRole.superAdmin;
+    default: return BackendAppRole.patient;
+  }
+}
+
 export default function ProfileSetupModal({ open, appType = 'patient', onComplete }: ProfileSetupModalProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<AppRole>('patient');
+  const [role, setRole] = useState<LocalAppRole>('patient');
   const saveMutation = useSaveCallerUserProfile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     try {
-      await saveMutation.mutateAsync({ name, phone, appRole: role });
+      const profile: UserProfile = {
+        name,
+        phone,
+        appRole: toBackendAppRole(role),
+      };
+      await saveMutation.mutateAsync(profile);
       onComplete?.();
     } catch (err) {
       console.error('Failed to save profile', err);
     }
   };
 
-  const staffRoles: { value: AppRole; label: string }[] = [
+  const staffRoles: { value: LocalAppRole; label: string }[] = [
     { value: 'phlebotomist', label: 'Phlebotomist' },
     { value: 'labAdmin', label: 'Lab Admin' },
     { value: 'superAdmin', label: 'Super Admin' },
@@ -75,7 +92,7 @@ export default function ProfileSetupModal({ open, appType = 'patient', onComplet
               <label className="text-xs font-semibold text-foreground">Role *</label>
               <select
                 value={role}
-                onChange={e => setRole(e.target.value as AppRole)}
+                onChange={e => setRole(e.target.value as LocalAppRole)}
                 className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
               >
                 {staffRoles.map(r => (

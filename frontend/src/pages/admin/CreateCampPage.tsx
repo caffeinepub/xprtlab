@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { MapPin, Calendar, Tag, QrCode, Copy, CheckCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MedicalCard from '../../components/shared/MedicalCard';
 import GradientButton from '../../components/shared/GradientButton';
-import { generateId } from '../../utils/formatters';
 import { toast } from 'sonner';
+
+function generateId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 interface CampData {
   id: string;
@@ -16,7 +18,6 @@ interface CampData {
 }
 
 export default function CreateCampPage() {
-  const navigate = useNavigate();
   const [campName, setCampName] = useState('');
   const [campDate, setCampDate] = useState('');
   const [campLocation, setCampLocation] = useState('');
@@ -34,17 +35,12 @@ export default function CreateCampPage() {
       location: campLocation.trim(),
     };
 
-    // Store in localStorage for demo (backend doesn't have camp storage)
     const existing = JSON.parse(localStorage.getItem('xprtlab_camps') || '[]');
     localStorage.setItem('xprtlab_camps', JSON.stringify([...existing, camp]));
 
     setCreatedCamp(camp);
     toast.success('Camp created successfully!');
   };
-
-  const qrData = createdCamp
-    ? JSON.stringify({ campId: createdCamp.id, name: createdCamp.name, date: createdCamp.date })
-    : '';
 
   const handleCopyId = () => {
     if (createdCamp) {
@@ -68,7 +64,6 @@ export default function CreateCampPage() {
 
         <MedicalCard className="text-center">
           <p className="text-xs font-semibold text-muted-foreground mb-3">QR Code for Check-in</p>
-          {/* QR Code display using a simple visual representation */}
           <div className="w-48 h-48 mx-auto bg-white border-2 border-border rounded-xl flex items-center justify-center mb-3 p-4">
             <div className="text-center">
               <QrCode className="w-16 h-16 text-brand-blue mx-auto mb-2" />

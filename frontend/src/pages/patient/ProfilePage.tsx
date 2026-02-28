@@ -1,8 +1,25 @@
 import React, { useState } from 'react';
-import { LogOut, User, Shield, Phone, Building2, Info, Loader2, ChevronRight } from 'lucide-react';
+import {
+  LogOut,
+  User,
+  Shield,
+  Phone,
+  Building2,
+  Info,
+  Loader2,
+  ChevronRight,
+  X,
+  Plus,
+} from 'lucide-react';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { useGetCallerUserProfile, useGetAssignedHospitals } from '../../hooks/useQueries';
+import {
+  useGetCallerUserProfile,
+  useGetAssignedHospitals,
+  useHospitals,
+  useGetHospitalsByPhlebotomist,
+  useRemovePhlebotomistFromHospital,
+} from '../../hooks/useQueries';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,29 +30,86 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Principal } from '@dfinity/principal';
+import { toast } from 'sonner';
 
 const APP_VERSION = 'v1.0.0';
 const ADMIN_PHONE = '+919876543210';
 
 interface ProfilePageProps {
   onNavigate?: (route: string) => void;
+  viewingPrincipal?: string; // if superAdmin is viewing a phlebotomist profile
+  viewingRole?: string;
+  currentUserRole?: string;
 }
 
-export default function ProfilePage({ onNavigate }: ProfilePageProps) {
+export default function ProfilePage({
+  onNavigate,
+  viewingPrincipal,
+  viewingRole,
+  currentUserRole,
+}: ProfilePageProps) {
   const { identity, clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [removeHospitalTarget, setRemoveHospitalTarget] = useState<string | null>(null);
+  const [removalReason, setRemovalReason] = useState('');
 
   const { data: userProfile, isLoading: profileLoading } = useGetCallerUserProfile();
-  const { data: assignedHospitals = [], isLoading: hospitalsLoading } = useGetAssignedHospitals();
+  const { data: assignedHospitalsLegacy = [], isLoading: hospitalsLegacyLoading } = useGetAssignedHospitals();
 
   const isAuthenticated = !!identity;
   const principalId = identity?.getPrincipal().toString();
+
+  // Determine if we're showing phlebotomist's assigned hospitals via new system
+  const effectiveRole = viewingRole ?? (userProfile?.appRole as string) ?? '';
+  const isPhlebotomistView = effectiveRole === 'phlebotomist';
+  const isSuperAdminViewer = currentUserRole === 'superAdmin';
+
+  const phlebotomistPrincipal = viewingPrincipal
+    ? Principal.fromText(viewingPrincipal)
+    : principalId
+    ? Principal.fromText(principalId)
+    : undefined;
+
+  const { data: assignedHospitalIds = [], isLoading: hospitalIdsLoading } =
+    useGetHospitalsByPhlebotomist(isPhlebotomistView ? phlebotomistPrincipal : undefined);
+
+  const { data: allHospitals = [], isLoading: allHospitalsLoading } = useHospitals();
+
+  const removeMutation = useRemovePhlebotomistFromHospital();
+
+  // Map hospital IDs to full hospital objects
+  const assignedHospitals = allHospitals.filter((h) => assignedHospitalIds.includes(h.id));
+
+  const hospitalsLoading = isPhlebotomistView
+    ? hospitalIdsLoading || allHospitalsLoading
+    : hospitalsLegacyLoading;
 
   const handleLogoutConfirm = async () => {
     await clear();
     queryClient.clear();
     setShowLogoutDialog(false);
+  };
+
+  const handleRemoveHospital = async () => {
+    if (!removeHospitalTarget || !phlebotomistPrincipal) return;
+    try {
+      await removeMutation.mutateAsync({
+        hospitalId: removeHospitalTarget,
+        phlebotomist: phlebotomistPrincipal,
+        removalReason: removalReason.trim() || 'Removed by admin',
+      });
+      toast.success('Hospital removed from phlebotomist profile.');
+    } catch (err: any) {
+      toast.error(`Failed to remove: ${err?.message ?? err}`);
+    } finally {
+      setRemoveHospitalTarget(null);
+      setRemovalReason('');
+    }
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -73,6 +147,9 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               {userProfile?.phone && (
                 <p className="text-xs text-muted-foreground mt-1">{userProfile.phone}</p>
               )}
+              {userProfile?.area && (
+                <p className="text-xs text-muted-foreground">Zone: {userProfile.area}</p>
+              )}
             </>
           )}
         </div>
@@ -91,30 +168,71 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
 
       {/* Assigned Hospitals */}
       <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-bold text-foreground">Assigned Hospitals</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground">Assigned Hospitals</h3>
+          </div>
         </div>
+
         {hospitalsLoading ? (
           <div className="space-y-2">
-            {[1, 2].map(i => (
+            {[1, 2].map((i) => (
               <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
             ))}
           </div>
-        ) : assignedHospitals.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No hospitals assigned yet. Contact admin.</p>
-        ) : (
-          <div className="space-y-2">
-            {assignedHospitals.map((h: any) => (
-              <div key={h.id} className="flex items-start gap-3 p-3 bg-muted/40 rounded-xl">
-                <Building2 className="h-4 w-4 text-primary/60 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{h.name}</p>
-                  {h.address && <p className="text-xs text-muted-foreground">{h.address}</p>}
+        ) : isPhlebotomistView ? (
+          assignedHospitals.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No hospitals assigned yet. Contact admin.</p>
+          ) : (
+            <div className="space-y-2">
+              {assignedHospitals.map((h) => (
+                <div key={h.id} className="flex items-start justify-between gap-2 p-3 bg-muted/40 rounded-xl">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <Building2 className="h-4 w-4 text-primary/60 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{h.name}</p>
+                      {h.city && <p className="text-xs text-muted-foreground">{h.city}</p>}
+                      {h.area && <p className="text-xs text-muted-foreground">Zone: {h.area}</p>}
+                      <Badge
+                        variant={h.isActive ? 'default' : 'secondary'}
+                        className={`text-xs mt-0.5 ${h.isActive ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}
+                      >
+                        {h.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
+                  </div>
+                  {isSuperAdminViewer && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:bg-destructive/10 flex-shrink-0"
+                      onClick={() => setRemoveHospitalTarget(h.id)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
+        ) : (
+          // Legacy assigned hospitals (non-phlebotomist roles)
+          assignedHospitalsLegacy.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No hospitals assigned yet. Contact admin.</p>
+          ) : (
+            <div className="space-y-2">
+              {assignedHospitalsLegacy.map((h: any) => (
+                <div key={h.id} className="flex items-start gap-3 p-3 bg-muted/40 rounded-xl">
+                  <Building2 className="h-4 w-4 text-primary/60 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{h.name}</p>
+                    {h.address && <p className="text-xs text-muted-foreground">{h.address}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 
@@ -177,6 +295,39 @@ export default function ProfilePage({ onNavigate }: ProfilePageProps) {
               className="bg-red-600 hover:bg-red-700 text-white"
             >
               Sign Out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Hospital Confirmation */}
+      <AlertDialog
+        open={!!removeHospitalTarget}
+        onOpenChange={(open) => { if (!open) { setRemoveHospitalTarget(null); setRemovalReason(''); } }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Hospital Assignment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Remove this hospital from the phlebotomist's assigned list? The assignment history will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6 pb-2">
+            <Input
+              placeholder="Reason for removal (optional)"
+              value={removalReason}
+              onChange={(e) => setRemovalReason(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveHospital}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              disabled={removeMutation.isPending}
+            >
+              {removeMutation.isPending ? 'Removing...' : 'Remove'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

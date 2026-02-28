@@ -1,65 +1,94 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
-import { AppRole } from '../../types/models';
-import {
-  Home, FlaskConical, MapPin, FileText, User, ClipboardList,
-  CalendarCheck, Shield, BarChart3, Calendar, ShieldAlert
-} from 'lucide-react';
+import type { LucideProps } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
-const iconMap: Record<string, React.ReactNode> = {
-  Home: <Home className="h-4 w-4" />,
-  FlaskConical: <FlaskConical className="h-4 w-4" />,
-  MapPin: <MapPin className="h-4 w-4" />,
-  FileText: <FileText className="h-4 w-4" />,
-  User: <User className="h-4 w-4" />,
-  ClipboardList: <ClipboardList className="h-4 w-4" />,
-  CalendarCheck: <CalendarCheck className="h-4 w-4" />,
-  Shield: <Shield className="h-4 w-4" />,
-  BarChart3: <BarChart3 className="h-4 w-4" />,
-  Calendar: <Calendar className="h-4 w-4" />,
-  ShieldAlert: <ShieldAlert className="h-4 w-4" />,
-};
-
-interface NavItem {
+export interface NavItem {
   label: string;
   path: string;
   icon: string;
+  badgeCount?: number;
 }
 
 interface BottomNavigationProps {
-  navItems: NavItem[];
+  items: NavItem[];
   currentPath: string;
   onNavigate: (path: string) => void;
-  userRole?: AppRole | string;
 }
 
-export default function BottomNavigation({ navItems, currentPath, onNavigate }: BottomNavigationProps) {
+type LucideIconComponent = React.ForwardRefExoticComponent<
+  Omit<LucideProps, 'ref'> & React.RefAttributes<SVGSVGElement>
+>;
+
+const BottomNavigation: React.FC<BottomNavigationProps> = ({
+  items,
+  currentPath,
+  onNavigate,
+}) => {
   return (
-    <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md">
-      <div
-        className="flex items-center justify-around rounded-2xl px-2 py-2"
-        style={{
-          background: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          boxShadow: '0 6px 14px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
-        }}
-      >
-        {navItems.map((item) => {
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50"
+      style={{
+        background: 'rgba(255, 255, 255, 0.95)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        boxShadow: '0 -4px 24px rgba(13, 71, 161, 0.10), 0 -1px 0 rgba(0,0,0,0.06)',
+        borderTop: '1px solid rgba(255,255,255,0.6)',
+      }}
+    >
+      <div className="flex items-center justify-around px-2 py-2 max-w-lg mx-auto">
+        {items.map((item) => {
           const isActive = currentPath === item.path;
+          const IconComponent = (LucideIcons as unknown as Record<string, LucideIconComponent>)[item.icon];
+
           return (
             <button
               key={item.path}
               onClick={() => onNavigate(item.path)}
-              className={cn(
-                'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-0',
-                isActive
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
+              className="relative flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-[56px]"
+              style={{
+                background: isActive
+                  ? 'linear-gradient(135deg, rgba(13,71,161,0.10) 0%, rgba(38,198,218,0.10) 100%)'
+                  : 'transparent',
+              }}
             >
-              <span className="text-base">{iconMap[item.icon] || <User className="h-4 w-4" />}</span>
-              <span className="text-[10px] font-semibold leading-tight truncate max-w-[56px]">
+              {/* Icon with optional badge */}
+              <div className="relative">
+                <span
+                  className="transition-all duration-200"
+                  style={{
+                    color: isActive ? '#0D47A1' : '#9CA3AF',
+                    filter: isActive
+                      ? 'drop-shadow(0 0 4px rgba(38,198,218,0.4))'
+                      : 'none',
+                    transform: isActive ? 'scale(1.12)' : 'scale(1)',
+                    display: 'block',
+                  }}
+                >
+                  {IconComponent ? (
+                    <IconComponent className="w-5 h-5" />
+                  ) : (
+                    <span className="w-5 h-5 block text-center text-base leading-5">{item.icon}</span>
+                  )}
+                </span>
+
+                {/* Badge indicator */}
+                {item.badgeCount !== undefined && item.badgeCount > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white flex items-center justify-center leading-none font-bold"
+                    style={{ fontSize: '9px' }}
+                  >
+                    {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                  </span>
+                )}
+              </div>
+
+              <span
+                className="text-xs font-semibold transition-all duration-200"
+                style={{
+                  color: isActive ? '#0D47A1' : '#9CA3AF',
+                  fontFamily: "'Poppins', 'Inter', sans-serif",
+                }}
+              >
                 {item.label}
               </span>
             </button>
@@ -68,4 +97,6 @@ export default function BottomNavigation({ navItems, currentPath, onNavigate }: 
       </div>
     </nav>
   );
-}
+};
+
+export default BottomNavigation;

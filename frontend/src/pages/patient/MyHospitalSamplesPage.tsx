@@ -1,88 +1,160 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { SampleStatus } from '../../types/models';
 import { useGetHospitalSamplesByPhone } from '../../hooks/useQueries';
-import { Loader2, FlaskConical, IndianRupee } from 'lucide-react';
+import { getDemoSamples, isDemoMode as checkDemoMode } from '../../utils/demoData';
+import { getSampleStatusColor, getStatusDescription } from '../../utils/deliveryHelpers';
+import { Badge } from '@/components/ui/badge';
+import { ChevronDown, ChevronUp, FlaskConical, Package } from 'lucide-react';
+import SampleWorkflowTimeline from '../../components/shared/SampleWorkflowTimeline';
 
-export default function MyHospitalSamplesPage() {
-  const { data: samples = [], isLoading } = useGetHospitalSamplesByPhone();
+interface MyHospitalSamplesPageProps {
+  isDemoMode?: boolean;
+}
 
-  const totalAmount = samples.reduce((sum: number, s: any) => sum + Number(s.finalAmount || 0), 0);
-  const totalReceived = samples.reduce((sum: number, s: any) => sum + Number(s.amountReceived || 0), 0);
-  const totalPending = samples.reduce((sum: number, s: any) => sum + Number(s.pendingAmount || 0), 0);
-  const totalDiscount = samples.reduce((sum: number, s: any) => sum + Number(s.discount || 0), 0);
-  const count = samples.length;
+export default function MyHospitalSamplesPage({ isDemoMode = false }: MyHospitalSamplesPageProps) {
+  const { data: backendSamples = [], isLoading } = useGetHospitalSamplesByPhone();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const formatTime = (ts: number) => {
-    const ms = ts > 1e12 ? ts / 1_000_000 : ts;
-    return new Date(ms).toLocaleDateString('en-IN');
+  const demoSamples = isDemoMode ? getDemoSamples() : [];
+
+  const allSamples = isDemoMode
+    ? [
+        ...demoSamples.map((s) => ({ ...s, id: s.id ?? 'demo' })),
+        ...backendSamples,
+      ]
+    : backendSamples;
+
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  if (isLoading) {
+  if (isLoading && !isDemoMode) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (allSamples.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+        <Package className="h-12 w-12 text-muted-foreground mb-3" />
+        <p className="text-sm font-medium text-foreground">No lab samples yet</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Your hospital sample records will appear here.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-lg mx-auto">
-      <h2 className="text-lg font-bold text-foreground">My Lab Samples</h2>
+    <div className="px-4 py-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <FlaskConical className="h-5 w-5 text-primary" />
+        <h2 className="text-base font-semibold text-foreground">My Lab Samples</h2>
+        <Badge variant="secondary" className="text-xs">{allSamples.length}</Badge>
+      </div>
 
-      {/* Summary */}
-      {count > 0 && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
-            <p className="text-xs text-blue-600 font-semibold">Total Samples</p>
-            <p className="text-2xl font-bold text-blue-700">{count}</p>
-          </div>
-          <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
-            <p className="text-xs text-green-600 font-semibold">Total Amount</p>
-            <p className="text-xl font-bold text-green-700">₹{totalAmount.toFixed(0)}</p>
-          </div>
-          <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
-            <p className="text-xs text-purple-600 font-semibold">Received</p>
-            <p className="text-xl font-bold text-purple-700">₹{totalReceived.toFixed(0)}</p>
-          </div>
-          <div className="bg-orange-50 rounded-xl p-3 text-center border border-orange-100">
-            <p className="text-xs text-orange-600 font-semibold">Pending</p>
-            <p className="text-xl font-bold text-orange-700">₹{totalPending.toFixed(0)}</p>
-          </div>
-        </div>
-      )}
+      {allSamples.map((sample: any) => {
+        const sampleId = sample.id ?? sample.patientName;
+        const isExpanded = expandedId === sampleId;
+        const status: SampleStatus = sample.status ?? 'SAMPLE_COLLECTED';
 
-      {samples.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
-          <FlaskConical className="h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm font-semibold text-foreground">No samples found</p>
-          <p className="text-xs text-muted-foreground">Your lab sample records will appear here.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {samples.map((sample: any, i: number) => (
-            <div key={i} className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
-              <div className="flex items-start justify-between">
+        return (
+          <div
+            key={sampleId}
+            className="rounded-xl border border-border bg-card overflow-hidden"
+          >
+            {/* Summary row */}
+            <button
+              className="w-full flex items-center justify-between p-3 text-left"
+              onClick={() => toggleExpand(sampleId)}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{sample.patientName}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {sample.phone} · {new Date(Number(sample.createdAt)).toLocaleDateString('en-IN')}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 ml-2 shrink-0">
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full border font-medium ${getSampleStatusColor(status)}`}
+                >
+                  {status.replace(/_/g, ' ')}
+                </span>
+                {isExpanded ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+            </button>
+
+            {/* Expanded details */}
+            {isExpanded && (
+              <div className="border-t border-border px-3 py-3 space-y-3">
+                {/* Summary grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-muted/50 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">MRP</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      ₹{Number(sample.totalMrp).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Discount</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      ₹{Number(sample.discountAmount).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Final</p>
+                    <p className="text-sm font-semibold text-foreground">
+                      ₹{Number(sample.finalAmount).toLocaleString('en-IN')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tests */}
+                {sample.tests && sample.tests.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Tests</p>
+                    <div className="space-y-1">
+                      {sample.tests.map((t: any, i: number) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-foreground">{t.testName}</span>
+                          <span className="text-muted-foreground">₹{Number(t.price).toLocaleString('en-IN')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Delivery info */}
+                {sample.deliveryMethod && (
+                  <div className="bg-emerald-50 rounded-lg p-2">
+                    <p className="text-xs text-emerald-700 font-medium">
+                      Delivered via {String(sample.deliveryMethod).replace(/_/g, ' ')}
+                    </p>
+                    {sample.deliveredAt && (
+                      <p className="text-xs text-emerald-600 mt-0.5">
+                        {new Date(Number(sample.deliveredAt)).toLocaleString('en-IN')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Timeline */}
                 <div>
-                  <p className="font-bold text-sm text-foreground">{sample.patientName}</p>
-                  <p className="text-xs text-muted-foreground">{sample.phone}</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Status Timeline</p>
+                  <SampleWorkflowTimeline currentStatus={status} />
                 </div>
-                <span className="text-xs text-muted-foreground">{formatTime(Number(sample.createdAt))}</span>
               </div>
-              <div className="grid grid-cols-2 gap-1 text-xs">
-                <span className="text-muted-foreground">Hospital: <span className="font-semibold text-foreground">{sample.hospitalId}</span></span>
-                <span className="text-muted-foreground">Test: <span className="font-semibold text-foreground">{sample.testId}</span></span>
-                <span className="text-muted-foreground">Final: <span className="font-bold text-primary">₹{Number(sample.finalAmount).toFixed(0)}</span></span>
-                <span className="text-muted-foreground">Mode: <span className="font-semibold text-foreground">{sample.paymentMode}</span></span>
-              </div>
-              {Number(sample.pendingAmount) > 0 && (
-                <div className="flex items-center gap-1 text-xs font-bold text-orange-600">
-                  <IndianRupee className="h-3 w-3" />
-                  Pending: ₹{Number(sample.pendingAmount).toFixed(0)}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

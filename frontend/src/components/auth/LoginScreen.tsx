@@ -12,18 +12,13 @@ export default function LoginScreen() {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col items-center justify-center p-4">
       {/* Logo Card */}
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm space-y-6">
-        <div className="flex flex-col items-center gap-3">
-          <div className="bg-primary/10 rounded-2xl p-3">
-            <img
-              src="/assets/generated/xprtlab-logo.dim_256x256.png"
-              alt="XprtLab"
-              className="h-16 w-16 object-contain"
-            />
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">XprtLab</h1>
-            <p className="text-sm text-muted-foreground font-medium">Phlebotomist Portal</p>
-          </div>
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src="/assets/logo-1.png"
+            alt="Xpertlab"
+            className="h-14 w-auto object-contain"
+          />
+          <p className="text-sm text-muted-foreground font-medium">Phlebotomist Portal</p>
         </div>
 
         {/* Features */}

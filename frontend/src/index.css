@@ -1,175 +1,214 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
-
 @layer base {
   :root {
-    --background: oklch(0.98 0.005 240);
+    --background: oklch(0.99 0.002 240);
     --foreground: oklch(0.15 0.02 240);
-
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.15 0.02 240);
-
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.15 0.02 240);
-
-    --primary: oklch(0.45 0.18 240);
-    --primary-foreground: oklch(0.98 0.005 240);
-
-    --secondary: oklch(0.92 0.01 240);
-    --secondary-foreground: oklch(0.25 0.02 240);
-
-    --muted: oklch(0.94 0.008 240);
-    --muted-foreground: oklch(0.50 0.02 240);
-
-    --accent: oklch(0.90 0.04 240);
-    --accent-foreground: oklch(0.25 0.02 240);
-
+    --primary: oklch(0.38 0.18 250);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.96 0.01 240);
+    --secondary-foreground: oklch(0.25 0.03 240);
+    --muted: oklch(0.96 0.01 240);
+    --muted-foreground: oklch(0.55 0.02 240);
+    --accent: oklch(0.75 0.14 200);
+    --accent-foreground: oklch(0.15 0.02 240);
     --destructive: oklch(0.55 0.22 25);
-    --destructive-foreground: oklch(0.98 0.005 240);
-
-    --border: oklch(0.88 0.01 240);
-    --input: oklch(0.88 0.01 240);
-    --ring: oklch(0.45 0.18 240);
-
-    --success: oklch(0.55 0.18 145);
-    --warning: oklch(0.70 0.18 75);
-
+    --destructive-foreground: oklch(1 0 0);
+    --border: oklch(0.90 0.01 240);
+    --input: oklch(0.90 0.01 240);
+    --ring: oklch(0.38 0.18 250);
     --radius: 0.75rem;
-
-    /* Floating nav */
-    --nav-blur: 12px;
-    --nav-bg-fallback: rgba(255, 255, 255, 0.95);
-    --nav-shadow: 0 6px 14px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
+    --success: oklch(0.60 0.18 145);
+    --warning: oklch(0.75 0.18 75);
   }
 
   .dark {
     --background: oklch(0.12 0.02 240);
-    --foreground: oklch(0.95 0.005 240);
-
+    --foreground: oklch(0.95 0.01 240);
     --card: oklch(0.17 0.02 240);
-    --card-foreground: oklch(0.95 0.005 240);
-
+    --card-foreground: oklch(0.95 0.01 240);
     --popover: oklch(0.17 0.02 240);
-    --popover-foreground: oklch(0.95 0.005 240);
-
-    --primary: oklch(0.60 0.18 240);
-    --primary-foreground: oklch(0.12 0.02 240);
-
+    --popover-foreground: oklch(0.95 0.01 240);
+    --primary: oklch(0.65 0.18 250);
+    --primary-foreground: oklch(0.10 0.02 240);
     --secondary: oklch(0.22 0.02 240);
-    --secondary-foreground: oklch(0.90 0.005 240);
-
+    --secondary-foreground: oklch(0.90 0.01 240);
     --muted: oklch(0.22 0.02 240);
     --muted-foreground: oklch(0.65 0.02 240);
-
-    --accent: oklch(0.25 0.04 240);
-    --accent-foreground: oklch(0.90 0.005 240);
-
+    --accent: oklch(0.65 0.14 200);
+    --accent-foreground: oklch(0.95 0.01 240);
     --destructive: oklch(0.55 0.22 25);
-    --destructive-foreground: oklch(0.98 0.005 240);
-
+    --destructive-foreground: oklch(1 0 0);
     --border: oklch(0.28 0.02 240);
     --input: oklch(0.28 0.02 240);
-    --ring: oklch(0.60 0.18 240);
+    --ring: oklch(0.65 0.18 250);
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 400;
+    font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', system-ui, sans-serif;
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
     font-weight: 700;
-    color: oklch(0.15 0.02 240);
+    letter-spacing: -0.01em;
   }
 
-  label {
-    font-weight: 600;
-  }
-
-  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-    color: oklch(0.95 0.005 240);
+  p, span, label, input, textarea, button {
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
   }
 }
 
 @layer components {
-  .floating-bottom-nav {
-    background: var(--nav-bg-fallback);
-    backdrop-filter: blur(var(--nav-blur));
-    -webkit-backdrop-filter: blur(var(--nav-blur));
-    box-shadow: var(--nav-shadow);
+  /* Floating nav utility */
+  .floating-nav {
+    @apply fixed bottom-0 left-0 right-0 z-50;
   }
 
-  .floating-nav-item {
-    @apply flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200;
+  /* Premium card */
+  .premium-card {
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
 
-  .floating-nav-item.active {
-    @apply bg-primary text-primary-foreground shadow-sm;
+  .premium-card:hover {
+    box-shadow: 0 8px 32px rgba(13, 71, 161, 0.12);
   }
 
-  .floating-nav-item:not(.active) {
-    @apply text-muted-foreground hover:text-foreground;
+  /* Step card */
+  .step-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
 
-  .gradient-primary {
-    background: linear-gradient(135deg, oklch(0.45 0.18 240), oklch(0.38 0.20 260));
+  .step-card:hover {
+    box-shadow: 0 8px 28px rgba(13, 71, 161, 0.12);
   }
 
-  .gradient-card {
-    background: linear-gradient(135deg, oklch(0.97 0.01 240), oklch(0.94 0.02 240));
+  .step-card:active {
+    transform: scale(1.03);
   }
 
-  .medical-card {
-    @apply bg-card rounded-2xl border border-border shadow-sm p-4;
+  /* Gradient button */
+  .btn-gradient {
+    background: linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%);
+    color: white;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
   }
 
-  .section-label {
-    @apply text-xs font-bold text-muted-foreground uppercase tracking-wider;
+  .btn-gradient:hover {
+    box-shadow: 0 4px 16px rgba(13, 71, 161, 0.35);
+    transform: translateY(-1px);
   }
 
-  .field-label {
-    @apply text-xs font-semibold text-foreground;
+  .btn-gradient:active {
+    transform: scale(1.03);
   }
 
-  .locked-field {
-    @apply bg-muted border-border text-muted-foreground cursor-not-allowed;
+  .btn-gradient:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Frosted glass nav */
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 -4px 24px rgba(13, 71, 161, 0.10), 0 -1px 0 rgba(0, 0, 0, 0.06);
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  /* Page fade-in */
+  .page-fade-in {
+    animation: pageFadeIn 0.3s ease forwards;
+  }
+
+  /* Gradient header */
+  .gradient-header {
+    background: linear-gradient(135deg, #0D47A1 0%, #26C6DA 100%);
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  /* Medical typography */
+  .text-medical-heading {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .text-medical-label {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+  }
+
+  .text-medical-body {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
   }
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+@keyframes stepSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
 }
 
-.animate-pulse-soft {
-  animation: pulse-soft 2s ease-in-out infinite;
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }

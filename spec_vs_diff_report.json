@@ -1,163 +1,99 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-25T09:46:04.154Z",
-  "summary": "The diff implements many of the required changes, but several requirements are partially or fully missing. Key gaps include: the explicit removal of caffeine.ai branding is not evidenced, the Task Queue page enhancements (REQ-7) are not shown, the Hospital Sample form changes (REQ-8 through REQ-12) are not shown, the Home Collection Queue redesign (REQ-13) is not shown, the Profile page additions (REQ-14) are not fully shown, and the Attendance page Today Summary / End Shift confirmation details (REQ-4, REQ-5, REQ-6, REQ-15) are not directly evidenced. The backend changes in main.mo and migration.mo partially address REQ-16. The layouts show the logo added and header height reduced (REQ-2). Global UI improvements appear in index.css and component files (REQ-3). However, due to truncation, some implementations may exist but are not visible in the diff.",
+  "generatedAt": "2026-02-28T22:21:35.108Z",
+  "summary": "The diff implements the majority of the Hospital Management Module requirements across backend and frontend. Most REQs are addressed, but several acceptance criteria have gaps or are unverifiable due to truncation. Key concerns: REQ-6 RoleGuard enforcement is not evidenced, REQ-9 multi-select dropdown for phlebotomist assignment relies on an unimplemented 'getAllPhlebotomists' backend endpoint, REQ-10 Lab Admin read-only view of assigned hospitals needs verification, and REQ-12 useHospitalById hook presence is unclear from truncated useQueries.ts.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Remove the 'Built with using caffeine.ai' footer/branding text from all screens and layouts.",
-      "reason": "No evidence in the diff that caffeine.ai branding was explicitly removed from any layout file. The layout files are shown but no before/after evidence of removal is present.",
+      "id": "REQ-2",
+      "requirement": "getHospitals supports pagination (page size 20) and optional search term filtering name, city, and area fields at the backend level.",
+      "reason": "The HospitalManagementPage implements client-side pagination and the useHospitals hook appears to accept a searchTerm, but from the truncated backend/main.mo it is unclear whether server-side pagination and search filtering are implemented in the getHospitals endpoint itself.",
       "evidence": [
-        "frontend/src/components/layout/StaffAppLayout.tsx",
-        "frontend/src/components/layout/PatientAppLayout.tsx",
-        "frontend/src/components/layout/AppLayout.tsx"
+        "backend/main.mo",
+        "frontend/src/pages/admin/HospitalManagementPage.tsx"
       ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "On the Attendance screen, add a Today Summary section displaying Total Samples Collected, Cash Collected, UPI Collected, and Pending Amount.",
-      "reason": "No PhlebotomistAttendancePage or AttendancePage file is shown in the diff. The Today Summary section implementation cannot be confirmed.",
-      "evidence": []
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Rename End Shift button to End Shift & Submit Summary with a confirmation popup containing the exact specified message.",
-      "reason": "No attendance page file is shown in the diff to confirm this change was made.",
-      "evidence": []
     },
     {
       "id": "REQ-6",
-      "requirement": "Enforce that a phlebotomist cannot start a new shift if a previous shift is still open, with an informative message.",
-      "reason": "ShiftGuard.tsx only handles redirecting when no active shift exists. No evidence that blocking start-shift when one is already active is implemented with the required message.",
+      "requirement": "HospitalManagementPage is accessible only to superAdmin role (guarded by RoleGuard).",
+      "reason": "The HospitalManagementPage file does not show a RoleGuard wrapping, and StaffApp.tsx shows the 'Hospitals' nav item is added for both labAdmin and superAdmin roles, suggesting the page is accessible to labAdmin as well without a guard.",
       "evidence": [
-        "frontend/src/components/layout/ShiftGuard.tsx"
+        "frontend/src/pages/admin/HospitalManagementPage.tsx",
+        "frontend/src/StaffApp.tsx",
+        "frontend/src/utils/roleConfig.ts"
       ]
     },
     {
-      "id": "REQ-7",
-      "requirement": "On TaskQueuePage, add a Refresh button, Last Updated timestamp, 15-second refetchInterval, and updated empty state message.",
-      "reason": "No TaskQueuePage file is shown in the diff. These changes cannot be confirmed.",
-      "evidence": []
-    },
-    {
-      "id": "REQ-8",
-      "requirement": "On Hospital Sample form, make the Hospital field a read-only dropdown populated from admin-assigned hospitals list.",
-      "reason": "No AddHospitalSamplePage file is shown in the diff. The implementation cannot be confirmed.",
-      "evidence": []
-    },
-    {
       "id": "REQ-9",
-      "requirement": "On Hospital Sample form, enforce exactly 10 numeric digits for mobile number with inline validation.",
-      "reason": "No AddHospitalSamplePage file is shown in the diff.",
-      "evidence": []
+      "requirement": "Multi-select dropdown with search of available phlebotomists relies on a backend getAllPhlebotomists endpoint.",
+      "reason": "HospitalDetailsPage.tsx calls actor.getAllPhlebotomists() but there is no evidence this endpoint is implemented in backend/main.mo. The code falls back to an empty list, meaning the assign phlebotomist feature may be non-functional.",
+      "evidence": [
+        "frontend/src/pages/admin/HospitalDetailsPage.tsx",
+        "backend/main.mo"
+      ]
     },
     {
       "id": "REQ-10",
-      "requirement": "On Hospital Sample form, display MRP and Offer Price after test selection, auto-calculate Final Amount as read-only with lock icon.",
-      "reason": "No AddHospitalSamplePage file is shown in the diff.",
-      "evidence": []
-    },
-    {
-      "id": "REQ-11",
-      "requirement": "On Hospital Sample form, restrict Payment Mode to three options and auto-fill Amount Received for Cash/UPI modes.",
-      "reason": "No AddHospitalSamplePage file is shown in the diff.",
-      "evidence": []
+      "requirement": "For Lab Admin role, show the assigned hospitals list in read-only mode on the Phlebotomist Profile page.",
+      "reason": "ProfilePage.tsx checks for isSuperAdminViewer to show remove controls and shows phlebotomist view based on effectiveRole, but there is no explicit handling for labAdmin role to render the read-only assigned hospitals section.",
+      "evidence": [
+        "frontend/src/pages/patient/ProfilePage.tsx"
+      ]
     },
     {
       "id": "REQ-12",
-      "requirement": "On Hospital Sample form, add a confirmation dialog before submission showing sample summary.",
-      "reason": "No AddHospitalSamplePage file is shown in the diff.",
-      "evidence": []
-    },
-    {
-      "id": "REQ-13",
-      "requirement": "Redesign HomeCollectionQueuePage with specified card fields and action buttons.",
-      "reason": "No HomeCollectionQueuePage file is shown in the diff.",
-      "evidence": []
-    },
-    {
-      "id": "REQ-14",
-      "requirement": "Add Assigned Hospitals List, Support/Call Admin, App Version, and Logout confirmation popup to the phlebotomist Profile page.",
-      "reason": "No Profile page file is shown in the diff.",
-      "evidence": []
-    },
-    {
-      "id": "REQ-15",
-      "requirement": "Ensure Today Summary is rendered and visible before End Shift & Submit Summary button is enabled; show zero values if no samples.",
-      "reason": "No attendance page file is shown in the diff to confirm this logic.",
-      "evidence": []
-    },
-    {
-      "id": "REQ-16",
-      "requirement": "Admin can update/set assigned hospitals for a phlebotomist.",
-      "reason": "The migration.mo and truncated main.mo show the data structure for assignedHospitals, but there is no explicit evidence of an admin-callable update function for assigning hospitals in the visible portions of the diff.",
+      "requirement": "useHospitalById hook must be present in useQueries.ts.",
+      "reason": "The useQueries.ts file is truncated and useHospitalById is not visible in the shown portion, making it unverifiable whether this hook is implemented.",
       "evidence": [
-        "backend/main.mo",
-        "backend/migration.mo"
+        "frontend/src/hooks/useQueries.ts"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "A separate backend/migration.mo module file was added outside of main.mo",
-      "reason": "The build request constraint states to keep all Motoko logic within the single main actor (backend/main.mo). Adding a separate migration.mo file may violate this constraint.",
+      "description": "Migration module (backend/migration.mo) with explicit old-to-new schema migration logic including OldHospital, OldUserProfile, and NewActor types.",
+      "reason": "The build request did not request a formal migration module or explicit schema migration code. It only required stable storage persistence across upgrades. A full migration.mo module was added beyond what was specified.",
       "evidence": [
         "backend/migration.mo"
       ]
     },
     {
-      "description": "Demo mode role-selection buttons in StaffLoginScreen for Phlebotomist, Lab Admin, and Super Admin",
-      "reason": "The build request does not request adding or modifying demo mode login functionality. This feature is not listed in any requirement.",
+      "description": "Hospital Management navigation item added for labAdmin role in addition to superAdmin.",
+      "reason": "REQ-6 specifies the Hospital Management section should be under Super Admin navigation only. The diff adds a Hospitals nav item to labAdmin in both StaffApp.tsx and roleConfig.ts, which was not requested.",
       "evidence": [
-        "frontend/src/components/auth/StaffLoginScreen.tsx"
+        "frontend/src/StaffApp.tsx",
+        "frontend/src/utils/roleConfig.ts"
+      ]
+    },
+    {
+      "description": "useGetAssignedHospitals legacy hook used alongside the new useGetHospitalsByPhlebotomist in ProfilePage.",
+      "reason": "The build request only specifies using the new assignment system via useGetHospitalsByPhlebotomist. A legacy useGetAssignedHospitals hook is imported and used as a fallback, which was not part of the specification.",
+      "evidence": [
+        "frontend/src/pages/patient/ProfilePage.tsx"
+      ]
+    },
+    {
+      "description": "removalReason field included in the removePhlebotomistFromHospital mutation UI in ProfilePage and HospitalDetailsPage.",
+      "reason": "The build request specifies soft-removal via an inactive flag but does not request a removalReason field in the removal flow or UI.",
+      "evidence": [
+        "frontend/src/pages/patient/ProfilePage.tsx",
+        "frontend/src/pages/admin/HospitalDetailsPage.tsx"
       ]
     }
   ],
-  "confidence": 0.52,
+  "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
-    "frontend-file-summaries.txt",
-    "frontend/src/PatientApp.tsx",
     "frontend/src/StaffApp.tsx",
-    "frontend/src/components/auth/LoginScreen.tsx",
-    "frontend/src/components/auth/ProfileSetupModal.tsx",
-    "frontend/src/components/auth/StaffLoginScreen.tsx",
-    "frontend/src/components/demo/MockBottomNav.tsx",
-    "frontend/src/components/demo/RolePermissionsTable.tsx",
-    "frontend/src/components/layout/AppLayout.tsx",
-    "frontend/src/components/layout/BottomNavigation.tsx",
-    "frontend/src/components/layout/PatientAppLayout.tsx",
-    "frontend/src/components/layout/RoleGuard.tsx",
-    "frontend/src/components/layout/ShiftGuard.tsx",
-    "frontend/src/components/layout/StaffAppLayout.tsx",
-    "frontend/src/components/shared/SearchableTestSelector.tsx",
-    "frontend/src/hooks/useAuth.ts",
-    "frontend/src/hooks/useNotifications.ts",
+    "frontend/src/components/admin/AddHospitalModal.tsx",
+    "frontend/src/components/admin/EditHospitalModal.tsx",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/pages/admin/AdminAttendancePage.tsx",
-    "frontend/src/pages/admin/AdminBookingsPage.tsx",
-    "frontend/src/pages/admin/AdminHospitalSamplesPage.tsx",
-    "frontend/src/pages/admin/AuditLogsPage.tsx",
-    "frontend/src/pages/admin/IncidentsPage.tsx",
-    "frontend/src/pages/admin/SecurityLogsPage.tsx",
-    "frontend/src/pages/demo/RBACDemoPage.tsx",
-    "frontend/src/pages/patient/MyHospitalSamplesPage.tsx",
+    "frontend/src/pages/admin/HospitalDetailsPage.tsx",
+    "frontend/src/pages/admin/HospitalManagementPage.tsx",
     "frontend/src/pages/patient/ProfilePage.tsx",
     "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
-    "frontend/src/pages/phlebotomist/AttendancePage.tsx",
-    "frontend/src/pages/phlebotomist/HomeCollectionQueuePage.tsx",
-    "frontend/src/pages/phlebotomist/MyHospitalSamplesPage.tsx",
-    "frontend/src/pages/phlebotomist/PhlebotomistAttendancePage.tsx",
-    "frontend/src/pages/phlebotomist/RecordVitalsPage.tsx",
-    "frontend/src/pages/phlebotomist/TaskQueuePage.tsx",
-    "frontend/src/pages/staff/SubmitIncidentPage.tsx",
-    "frontend/src/types/models.ts",
     "frontend/src/utils/roleConfig.ts",
-    "frontend/src/utils/roleHelpers.ts",
-    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

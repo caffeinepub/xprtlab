@@ -1,405 +1,463 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Loader2, AlertCircle, CheckCircle, ChevronDown } from 'lucide-react';
-import { useGetAllTests, useCreateHospitalSample, useGetAssignedHospitals } from '../../hooks/useQueries';
+import { FlaskConical, Plus, Minus, Search, Building2, User, Phone, CreditCard, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { useGetAllTests, useCreateHospitalSample, useHospitals, useGetHospitalsByPhlebotomist } from '../../hooks/useQueries';
+import { useActor } from '../../hooks/useActor';
+import { useInternetIdentity } from '../../hooks/useInternetIdentity';
+import { TestOutput } from '../../backend';
+import { Principal } from '@dfinity/principal';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  getDemoPhlebotomistHospitals,
+  getDemoSampleId,
+  addDemoHospitalSample,
+  DEMO_HOSPITAL_ID,
+} from '../../utils/demoData';
+import { toast } from 'sonner';
 
-interface AddHospitalSamplePageProps {
-  onNavigate?: (route: string) => void;
+interface Hospital {
+  id: string;
+  name: string;
+  address: string;
+  city?: string;
+  area?: string;
+  isActive?: boolean;
 }
 
-const PAYMENT_MODES = [
-  { value: 'CASH', label: 'Cash Collected' },
-  { value: 'UPI', label: 'UPI Received' },
-  { value: 'CREDIT', label: 'Hospital Credit' },
-];
+interface SelectedTest {
+  test: TestOutput;
+  quantity: number;
+}
 
-export default function AddHospitalSamplePage({ onNavigate }: AddHospitalSamplePageProps) {
+interface AddHospitalSamplePageProps {
+  isDemoMode?: boolean;
+}
+
+export default function AddHospitalSamplePage({ isDemoMode = false }: AddHospitalSamplePageProps) {
+  const { actor } = useActor();
+  const { identity } = useInternetIdentity();
+  const userId = identity?.getPrincipal().toString() ?? 'demo-user';
+
+  const { data: allTests = [], isLoading: testsLoading } = useGetAllTests();
+  const createSample = useCreateHospitalSample();
+
+  // Fetch assigned hospital IDs for this phlebotomist
+  const phlebotomistPrincipal = identity?.getPrincipal();
+  const { data: assignedHospitalIds = [], isLoading: assignedIdsLoading } =
+    useGetHospitalsByPhlebotomist(!isDemoMode ? phlebotomistPrincipal : undefined);
+
+  // Fetch all hospitals to get full details
+  const { data: allHospitals = [], isLoading: allHospitalsLoading } = useHospitals();
+
+  const [selectedHospital, setSelectedHospital] = useState<Hospital | null>(null);
   const [patientName, setPatientName] = useState('');
   const [phone, setPhone] = useState('');
-  const [phoneError, setPhoneError] = useState('');
-  const [selectedHospitalId, setSelectedHospitalId] = useState('');
-  const [selectedTestId, setSelectedTestId] = useState('');
+  const [selectedTests, setSelectedTests] = useState<SelectedTest[]>([]);
+  const [testSearch, setTestSearch] = useState('');
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [amountReceived, setAmountReceived] = useState(0);
   const [paymentMode, setPaymentMode] = useState('CASH');
-  const [notes, setNotes] = useState('');
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [submitError, setSubmitError] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-  const { data: tests = [], isLoading: testsLoading } = useGetAllTests();
-  const { data: assignedHospitals = [], isLoading: hospitalsLoading } = useGetAssignedHospitals();
-  const createSampleMutation = useCreateHospitalSample();
+  // Demo mode hospitals
+  const [demoHospitals, setDemoHospitals] = useState<Hospital[]>([]);
 
-  const selectedTest = tests.find((t: any) => t.id === selectedTestId);
-  const mrp: number = selectedTest ? Number(selectedTest.price) : 0;
-  const offerPrice: number = selectedTest ? Number(selectedTest.offerPrice ?? selectedTest.price) : 0;
-  const finalAmount: number = offerPrice;
-  const amountReceived: number = (paymentMode === 'CASH' || paymentMode === 'UPI') ? finalAmount : 0;
-  const pendingAmount: number = finalAmount - amountReceived;
-
-  const selectedHospital = assignedHospitals.find((h: any) => h.id === selectedHospitalId);
-
-  const validatePhone = (value: string) => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length !== 10) {
-      setPhoneError('Enter a valid 10-digit mobile number');
-    } else {
-      setPhoneError('');
+  useEffect(() => {
+    if (isDemoMode) {
+      const h = getDemoPhlebotomistHospitals();
+      setDemoHospitals(h);
+      if (h.length === 1) setSelectedHospital(h[0]);
     }
-    return digits.length === 10;
+  }, [isDemoMode]);
+
+  // Filter hospitals: only active + assigned to this phlebotomist
+  const hospitals: Hospital[] = isDemoMode
+    ? demoHospitals
+    : allHospitals.filter(
+        (h) => h.isActive && assignedHospitalIds.includes(h.id)
+      );
+
+  // Auto-select if only one
+  useEffect(() => {
+    if (!isDemoMode && hospitals.length === 1 && !selectedHospital) {
+      setSelectedHospital(hospitals[0]);
+    }
+  }, [hospitals, isDemoMode, selectedHospital]);
+
+  const hospitalsLoading = !isDemoMode && (assignedIdsLoading || allHospitalsLoading);
+
+  const activeTests = allTests.filter((t) => t.isActive);
+  const filteredTests = activeTests.filter(
+    (t) =>
+      t.name.toLowerCase().includes(testSearch.toLowerCase()) ||
+      t.code.toLowerCase().includes(testSearch.toLowerCase())
+  );
+
+  const addTest = (test: TestOutput) => {
+    setSelectedTests((prev) => {
+      const existing = prev.find((st) => st.test.id === test.id);
+      if (existing) return prev;
+      return [...prev, { test, quantity: 1 }];
+    });
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
-    setPhone(digits);
-    if (digits.length > 0) validatePhone(digits);
-    else setPhoneError('');
+  const removeTest = (testId: string) => {
+    setSelectedTests((prev) => prev.filter((st) => st.test.id !== testId));
   };
 
-  const handleSubmitClick = () => {
-    setSubmitError('');
-    if (!patientName.trim()) { setSubmitError('Patient name is required.'); return; }
-    if (!validatePhone(phone)) return;
-    if (!selectedHospitalId) { setSubmitError('Please select a hospital.'); return; }
-    if (!selectedTestId) { setSubmitError('Please select a test.'); return; }
-    setShowConfirmDialog(true);
-  };
+  const totalMrp = selectedTests.reduce((sum, st) => sum + Number(st.test.price) * st.quantity, 0);
+  const maxAllowedDiscount = Math.floor(totalMrp / 1000) * 50;
+  const finalAmount = Math.max(0, totalMrp - Math.min(discountAmount, maxAllowedDiscount));
+  const pendingAmount = Math.max(0, finalAmount - amountReceived);
 
-  const handleConfirmSubmit = async () => {
-    try {
-      await createSampleMutation.mutateAsync({
-        patientName,
-        phone,
-        hospitalId: selectedHospitalId,
-        testId: selectedTestId,
-        mrp,
-        discount: mrp - offerPrice,
+  const handleSubmit = async () => {
+    if (!selectedHospital || !patientName.trim() || !phone.trim() || selectedTests.length === 0) {
+      toast.error('Please fill in all required fields and select at least one test');
+      return;
+    }
+
+    if (isDemoMode) {
+      const sampleId = getDemoSampleId();
+      addDemoHospitalSample({
+        id: sampleId,
+        patientName: patientName.trim(),
+        phone: phone.trim(),
+        hospitalId: selectedHospital.id,
+        phlebotomistId: userId,
+        tests: selectedTests.map((st) => ({
+          testId: st.test.id,
+          testName: st.test.name,
+          testCode: st.test.code,
+          price: BigInt(Math.round(Number(st.test.price))),
+        })),
+        totalMrp,
+        discountAmount: Math.min(discountAmount, maxAllowedDiscount),
+        maxAllowedDiscount,
         finalAmount,
         amountReceived,
         pendingAmount,
         paymentMode,
-        notes,
+        billingLocked: false,
+        createdByRole: 'phlebotomist',
+        updatedByAdmin: false,
+        createdAt: Date.now(),
+        status: 'SAMPLE_COLLECTED',
+        statusHistory: [['SAMPLE_COLLECTED', Date.now(), 'phlebotomist', 'Initial collection']],
       });
-      setShowConfirmDialog(false);
-      // Reset form
-      setPatientName('');
-      setPhone('');
-      setSelectedHospitalId('');
-      setSelectedTestId('');
-      setPaymentMode('CASH');
-      setNotes('');
-      if (onNavigate) onNavigate('task-queue');
+      toast.success('Sample recorded successfully (Demo Mode)');
+      setSubmitted(true);
+      return;
+    }
+
+    try {
+      await createSample.mutateAsync({
+        patientName: patientName.trim(),
+        phone: phone.trim(),
+        hospitalId: selectedHospital.id,
+        phlebotomistId: userId,
+        tests: selectedTests.map((st) => ({
+          testId: st.test.id,
+          testName: st.test.name,
+          testCode: st.test.code,
+          mrp: Number(st.test.price),
+        })),
+        totalMrp,
+        discountAmount: Math.min(discountAmount, maxAllowedDiscount),
+        amountReceived,
+        paymentMode,
+        createdByRole: 'phlebotomist',
+      });
+      toast.success('Sample recorded successfully');
+      setSubmitted(true);
     } catch (err: any) {
-      setShowConfirmDialog(false);
-      setSubmitError(err?.message || 'Failed to save sample. Please try again.');
+      toast.error(`Failed to record sample: ${err?.message ?? err}`);
     }
   };
 
+  if (submitted) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-16 text-center px-4">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+          <FlaskConical className="h-8 w-8 text-emerald-600" />
+        </div>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Sample Recorded!</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          The hospital sample has been successfully recorded.
+        </p>
+        <Button
+          onClick={() => {
+            setSubmitted(false);
+            setPatientName('');
+            setPhone('');
+            setSelectedTests([]);
+            setDiscountAmount(0);
+            setAmountReceived(0);
+            setPaymentMode('CASH');
+            setSelectedHospital(null);
+          }}
+        >
+          Record Another Sample
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 space-y-4 max-w-lg mx-auto">
-      <h2 className="text-lg font-bold text-foreground">Add Hospital Sample</h2>
-
-      {/* Patient Details */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Patient Details</h3>
-
-        {/* Patient Name */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground">Patient Name *</label>
-          <input
-            type="text"
-            value={patientName}
-            onChange={e => setPatientName(e.target.value)}
-            placeholder="Enter patient name"
-            className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
-
-        {/* Phone */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground">Mobile Number *</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={handlePhoneChange}
-            placeholder="10-digit mobile number"
-            maxLength={10}
-            inputMode="numeric"
-            className={`w-full px-3 py-2 rounded-xl border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 ${phoneError ? 'border-red-400 bg-red-50' : 'border-border'}`}
-          />
-          {phoneError && (
-            <p className="text-xs text-red-500 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> {phoneError}
-            </p>
-          )}
-        </div>
-
-        {/* Hospital — read-only dropdown */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground">Hospital *</label>
-          {hospitalsLoading ? (
-            <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading hospitals...
-            </div>
-          ) : assignedHospitals.length === 0 ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 font-medium">
-              No hospitals assigned. Contact admin.
-            </div>
-          ) : (
-            <Select value={selectedHospitalId} onValueChange={setSelectedHospitalId}>
-              <SelectTrigger className="w-full rounded-xl border-border text-sm font-medium">
-                <SelectValue placeholder="Select hospital" />
-              </SelectTrigger>
-              <SelectContent>
-                {assignedHospitals.map((h: any) => (
-                  <SelectItem key={h.id} value={h.id}>
-                    <div>
-                      <p className="font-semibold">{h.name}</p>
-                      {h.address && <p className="text-xs text-muted-foreground">{h.address}</p>}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+    <div className="flex flex-col h-full">
+      <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
+        <div className="flex items-center gap-2">
+          <FlaskConical className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-semibold text-foreground">Add Hospital Sample</h1>
         </div>
       </div>
 
-      {/* Test Selection */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Test & Billing</h3>
-
-        {/* Test */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground">Select Test *</label>
-          {testsLoading ? (
-            <div className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading tests...
-            </div>
-          ) : (
-            <Select value={selectedTestId} onValueChange={setSelectedTestId}>
-              <SelectTrigger className="w-full rounded-xl border-border text-sm font-medium">
-                <SelectValue placeholder="Select test" />
-              </SelectTrigger>
-              <SelectContent>
-                {tests.map((t: any) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    <div>
-                      <p className="font-semibold">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">₹{t.price}</p>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {/* Price Fields — shown after test selection */}
-        {selectedTest && (
-          <div className="space-y-2 pt-1">
-            {/* MRP */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                MRP <Lock className="h-3 w-3 text-muted-foreground" />
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={`₹${mrp.toFixed(2)}`}
-                  disabled
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-muted text-sm font-medium text-muted-foreground cursor-not-allowed"
-                />
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-              </div>
-            </div>
-
-            {/* Offer Price */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                Offer Price <Lock className="h-3 w-3 text-muted-foreground" />
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={`₹${offerPrice.toFixed(2)}`}
-                  disabled
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-muted text-sm font-medium text-muted-foreground cursor-not-allowed"
-                />
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-              </div>
-            </div>
-
-            {/* Final Amount */}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-                Final Amount <Lock className="h-3 w-3 text-muted-foreground" />
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={`₹${finalAmount.toFixed(2)}`}
-                  disabled
-                  className="w-full px-3 py-2 rounded-xl border border-primary/30 bg-primary/5 text-sm font-bold text-primary cursor-not-allowed"
-                />
-                <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary/60" />
-              </div>
+      <div className="flex-1 overflow-auto px-4 py-4 space-y-5">
+        {/* Hospital Selection */}
+        {hospitalsLoading ? (
+          <div className="h-16 bg-muted rounded-xl animate-pulse" />
+        ) : hospitals.length === 0 ? (
+          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">No active hospitals assigned</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                No active hospitals are assigned to you. Please contact your administrator.
+              </p>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Payment */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-3">
-        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Payment</h3>
-
-        {/* Payment Mode */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground">Payment Mode *</label>
-          <Select value={paymentMode} onValueChange={setPaymentMode}>
-            <SelectTrigger className="w-full rounded-xl border-border text-sm font-medium">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAYMENT_MODES.map(pm => (
-                <SelectItem key={pm.value} value={pm.value}>
-                  {pm.label}
-                </SelectItem>
+        ) : hospitals.length > 1 ? (
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Building2 className="h-4 w-4" />
+              Select Hospital *
+            </Label>
+            <div className="space-y-1.5">
+              {hospitals.map((h) => (
+                <button
+                  key={h.id}
+                  onClick={() => setSelectedHospital(h)}
+                  className={[
+                    'w-full text-left p-3 rounded-lg border transition-all',
+                    selectedHospital?.id === h.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/40',
+                  ].join(' ')}
+                >
+                  <p className="text-sm font-medium text-foreground">{h.name}</p>
+                  {(h.city || h.address) && (
+                    <p className="text-xs text-muted-foreground">{h.city || h.address}</p>
+                  )}
+                </button>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Amount Received — auto-filled, read-only */}
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-            Amount Received <Lock className="h-3 w-3 text-muted-foreground" />
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={`₹${amountReceived.toFixed(2)}`}
-              disabled
-              className="w-full px-3 py-2 rounded-xl border border-border bg-muted text-sm font-medium text-muted-foreground cursor-not-allowed"
-            />
-            <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+            </div>
           </div>
-          {(paymentMode === 'CASH' || paymentMode === 'UPI') && selectedTest && (
-            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" /> Auto-filled from Final Amount
-            </p>
-          )}
-        </div>
+        ) : null}
 
-        {/* Pending Amount */}
-        {selectedTest && (
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground flex items-center gap-1">
-              Pending Amount <Lock className="h-3 w-3 text-muted-foreground" />
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={`₹${pendingAmount.toFixed(2)}`}
-                disabled
-                className={`w-full px-3 py-2 rounded-xl border bg-muted text-sm font-bold cursor-not-allowed ${pendingAmount > 0 ? 'border-orange-300 text-orange-600' : 'border-border text-muted-foreground'}`}
-              />
-              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+        {selectedHospital && (
+          <div className="flex items-center gap-2 p-2 bg-primary/5 rounded-lg border border-primary/20">
+            <Building2 className="h-4 w-4 text-primary shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-primary">{selectedHospital.name}</p>
+              {(selectedHospital.city || selectedHospital.address) && (
+                <p className="text-xs text-muted-foreground">{selectedHospital.city || selectedHospital.address}</p>
+              )}
             </div>
           </div>
         )}
-      </div>
 
-      {/* Notes */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
-        <label className="text-xs font-semibold text-foreground">Notes (Optional)</label>
-        <textarea
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          placeholder="Any additional notes..."
-          rows={3}
-          className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-        />
-      </div>
+        {/* Block form if no hospital available */}
+        {hospitals.length === 0 ? null : (
+          <>
+            {/* Patient Info */}
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="flex items-center gap-1.5">
+                  <User className="h-4 w-4" />
+                  Patient Name *
+                </Label>
+                <Input
+                  placeholder="Enter patient name"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="flex items-center gap-1.5">
+                  <Phone className="h-4 w-4" />
+                  Phone Number *
+                </Label>
+                <Input
+                  type="tel"
+                  placeholder="Enter phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            </div>
 
-      {/* Error */}
-      {submitError && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-red-600 font-medium">{submitError}</p>
-        </div>
-      )}
+            {/* Test Selection */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <FlaskConical className="h-4 w-4" />
+                Select Tests *
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  className="pl-9"
+                  placeholder="Search tests..."
+                  value={testSearch}
+                  onChange={(e) => setTestSearch(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {testsLoading ? (
+                  <p className="text-xs text-muted-foreground py-2">Loading tests...</p>
+                ) : filteredTests.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">No tests found</p>
+                ) : (
+                  filteredTests.map((test) => {
+                    const isAdded = selectedTests.some((st) => st.test.id === test.id);
+                    return (
+                      <div
+                        key={test.id}
+                        className={[
+                          'flex items-center justify-between p-2.5 rounded-lg border transition-all',
+                          isAdded ? 'border-primary bg-primary/5' : 'border-border',
+                        ].join(' ')}
+                      >
+                        <div>
+                          <p className="text-xs font-medium text-foreground">{test.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {test.code} · ₹{Number(test.price)}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={isAdded ? 'destructive' : 'outline'}
+                          className="h-7 text-xs"
+                          onClick={() => (isAdded ? removeTest(test.id) : addTest(test))}
+                        >
+                          {isAdded ? <Minus className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                        </Button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
 
-      {/* Submit */}
-      <button
-        onClick={handleSubmitClick}
-        disabled={createSampleMutation.isPending}
-        className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-      >
-        {createSampleMutation.isPending ? (
-          <><Loader2 className="h-4 w-4 animate-spin" /> Saving...</>
-        ) : (
-          'Save Sample Entry'
-        )}
-      </button>
-
-      {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Sample Entry</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p>Confirm submission? Billing details cannot be edited after saving.</p>
-                <div className="bg-muted rounded-xl p-3 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground font-medium">Patient:</span>
-                    <span className="font-bold text-foreground">{patientName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground font-medium">Hospital:</span>
-                    <span className="font-bold text-foreground">{selectedHospital?.name || selectedHospitalId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground font-medium">Test:</span>
-                    <span className="font-bold text-foreground">{selectedTest?.name || selectedTestId}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground font-medium">Final Amount:</span>
-                    <span className="font-bold text-primary">₹{finalAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground font-medium">Payment Mode:</span>
-                    <span className="font-bold text-foreground">{PAYMENT_MODES.find(p => p.value === paymentMode)?.label}</span>
-                  </div>
+            {/* Selected Tests Summary */}
+            {selectedTests.length > 0 && (
+              <div className="space-y-2">
+                <Label>Selected Tests</Label>
+                <div className="space-y-1">
+                  {selectedTests.map((st) => (
+                    <div key={st.test.id} className="flex items-center justify-between text-xs p-2 bg-muted/40 rounded-lg">
+                      <span className="font-medium text-foreground">{st.test.name}</span>
+                      <span className="text-muted-foreground">₹{Number(st.test.price)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSubmit} disabled={createSampleMutation.isPending}>
-              {createSampleMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Saving...</>
-              ) : 'Confirm & Save'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            )}
+
+            {/* Billing */}
+            {selectedTests.length > 0 && (
+              <div className="space-y-3 p-3 bg-muted/30 rounded-xl border border-border">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <CreditCard className="h-4 w-4" /> Billing
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Discount (max ₹{maxAllowedDiscount})</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={maxAllowedDiscount}
+                      value={discountAmount}
+                      onChange={(e) => setDiscountAmount(Math.min(Number(e.target.value), maxAllowedDiscount))}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Amount Received</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={amountReceived}
+                      onChange={(e) => setAmountReceived(Number(e.target.value))}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Payment Mode</Label>
+                  <div className="flex gap-2">
+                    {['CASH', 'UPI', 'CARD'].map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => setPaymentMode(mode)}
+                        className={[
+                          'flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                          paymentMode === mode
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border text-muted-foreground hover:border-primary/40',
+                        ].join(' ')}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">MRP Total</span>
+                    <span className="font-medium">₹{totalMrp}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span>-₹{Math.min(discountAmount, maxAllowedDiscount)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-foreground border-t border-border pt-1">
+                    <span>Final Amount</span>
+                    <span>₹{finalAmount}</span>
+                  </div>
+                  {pendingAmount > 0 && (
+                    <div className="flex justify-between text-amber-600">
+                      <span>Pending</span>
+                      <span>₹{pendingAmount}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Submit */}
+            <Button
+              className="w-full"
+              onClick={handleSubmit}
+              disabled={
+                createSample.isPending ||
+                !selectedHospital ||
+                !patientName.trim() ||
+                !phone.trim() ||
+                selectedTests.length === 0
+              }
+            >
+              {createSample.isPending ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span> Recording...
+                </>
+              ) : (
+                'Record Sample'
+              )}
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

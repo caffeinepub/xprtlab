@@ -1,39 +1,56 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
-
-interface NavItem {
-  label: string;
-  path: string;
-  icon: string;
-}
+import BottomNavigation, { NavItem } from './BottomNavigation';
+import { getDemoHomeCollections } from '../../utils/demoData';
 
 interface StaffAppLayoutProps {
   children: React.ReactNode;
-  onNavigate: (route: string) => void;
   currentPath: string;
   navItems: NavItem[];
-  userRole?: string;
+  onNavigate: (path: string) => void;
+  roleLabel?: string;
   isDemoMode?: boolean;
-  onExitDemoMode?: () => void;
+  onExitDemo?: () => void;
 }
 
-export default function StaffAppLayout({
+const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
   children,
-  onNavigate,
   currentPath,
   navItems,
-  userRole,
-  isDemoMode,
-  onExitDemoMode,
-}: StaffAppLayoutProps) {
+  onNavigate,
+  roleLabel,
+  isDemoMode = false,
+  onExitDemo,
+}) => {
+  // Calculate pending home collection count for badge — recomputes on path change
+  const pendingCount = React.useMemo(() => {
+    const collections = getDemoHomeCollections();
+    return collections.filter((c) => c.status !== 'COMPLETED').length;
+  }, [currentPath]);
+
+  // Inject badge count into the Home Visits nav item for phlebotomist
+  const navItemsWithBadge: NavItem[] = navItems.map((item) => {
+    if (
+      (item.path === 'home-collection-queue' || item.path === '/home-collection-queue') &&
+      pendingCount > 0
+    ) {
+      return { ...item, badgeCount: pendingCount };
+    }
+    return item;
+  });
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Demo Mode Banner */}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Demo mode banner */}
       {isDemoMode && (
-        <div className="bg-amber-500 text-white text-center py-1.5 px-4 text-xs font-semibold flex items-center justify-between">
-          <span>🎭 Demo Mode — {userRole}</span>
-          {onExitDemoMode && (
-            <button onClick={onExitDemoMode} className="underline text-xs font-bold ml-2">
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
+          <span className="text-xs text-amber-700 font-medium">
+            🎭 Demo Mode — data is not saved to the blockchain
+          </span>
+          {onExitDemo && (
+            <button
+              onClick={onExitDemo}
+              className="text-xs text-amber-600 underline hover:text-amber-800 transition-colors"
+            >
               Exit Demo
             </button>
           )}
@@ -41,62 +58,32 @@ export default function StaffAppLayout({
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-gradient-to-r from-primary to-primary/80 shadow-md">
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-2">
-            <img
-              src="/assets/generated/xprtlab-logo.dim_256x256.png"
-              alt="XprtLab"
-              className="h-9 w-auto object-contain"
-              style={{ filter: 'brightness(0) invert(1)' }}
-            />
-          </div>
-          {userRole && (
-            <span className="text-xs font-semibold text-white/90 bg-white/20 px-2 py-0.5 rounded-full">
-              {userRole}
-            </span>
-          )}
+      <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
+        <div className="flex items-center gap-3">
+          <img
+            src="/assets/logo-1.png"
+            alt="XpertLab"
+            className="h-8 object-contain"
+          />
         </div>
+        {roleLabel && (
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+            {roleLabel}
+          </span>
+        )}
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 pb-24">
-        {children}
-      </main>
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto pb-20">{children}</main>
 
-      {/* Floating Bottom Navigation */}
-      <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md">
-        <div
-          className="flex items-center justify-around rounded-2xl px-2 py-2"
-          style={{
-            background: 'rgba(255,255,255,0.95)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            boxShadow: '0 6px 14px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
-          }}
-        >
-          {navItems.map((item) => {
-            const isActive = currentPath === item.path;
-            return (
-              <button
-                key={item.path}
-                onClick={() => onNavigate(item.path)}
-                className={cn(
-                  'flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-0',
-                  isActive
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <span className="text-base leading-none">{item.icon}</span>
-                <span className="text-[10px] font-semibold leading-tight truncate max-w-[56px]">
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      {/* Bottom navigation */}
+      <BottomNavigation
+        items={navItemsWithBadge}
+        currentPath={currentPath}
+        onNavigate={onNavigate}
+      />
     </div>
   );
-}
+};
+
+export default StaffAppLayout;

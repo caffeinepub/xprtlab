@@ -1,7 +1,7 @@
 import React from 'react';
 import { AppRole } from '../../types/models';
 import { useInternetIdentity } from '../../hooks/useInternetIdentity';
-import { Loader2, Shield, FlaskConical, BarChart3, Users } from 'lucide-react';
+import { Loader2, Shield, FlaskConical, BarChart3 } from 'lucide-react';
 
 interface StaffLoginScreenProps {
   onDemoMode?: (role: AppRole) => void;
@@ -24,17 +24,12 @@ export default function StaffLoginScreen({ onDemoMode }: StaffLoginScreenProps) 
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm space-y-6">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="bg-primary/10 rounded-2xl p-3">
-            <img
-              src="/assets/generated/xprtlab-logo.dim_256x256.png"
-              alt="XprtLab"
-              className="h-16 w-16 object-contain"
-            />
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">XprtLab Staff</h1>
-            <p className="text-sm text-muted-foreground font-medium">Staff Portal</p>
-          </div>
+          <img
+            src="/assets/logo-1.png"
+            alt="Xpertlab"
+            className="h-14 w-auto object-contain"
+          />
+          <p className="text-sm text-muted-foreground font-medium text-center">Staff Portal</p>
         </div>
 
         {/* Role Info */}

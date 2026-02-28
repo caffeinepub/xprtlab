@@ -19,15 +19,60 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
+export const Hospital = IDL.Record({
+  'id' : IDL.Text,
+  'area' : IDL.Text,
+  'city' : IDL.Text,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'isActive' : IDL.Bool,
+  'address' : IDL.Text,
+  'contactNumber' : IDL.Text,
+});
+export const TestInput = IDL.Record({
+  'code' : IDL.Text,
+  'name' : IDL.Text,
+  'sampleType' : IDL.Text,
+  'isActive' : IDL.Bool,
+  'price' : IDL.Nat,
+});
+export const TestOutput = IDL.Record({
+  'id' : IDL.Text,
+  'code' : IDL.Text,
+  'name' : IDL.Text,
+  'sampleType' : IDL.Text,
+  'isActive' : IDL.Bool,
+  'price' : IDL.Nat,
+});
+export const TestError = IDL.Variant({
+  'notFound' : IDL.Null,
+  'duplicateCode' : IDL.Null,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
-export const Hospital = IDL.Record({
-  'id' : IDL.Text,
+export const HospitalPhlebotomistAssignment = IDL.Record({
+  'assignedAt' : IDL.Int,
+  'assignedBy' : IDL.Principal,
+  'isActive' : IDL.Bool,
+  'hospitalId' : IDL.Text,
+  'removedAt' : IDL.Opt(IDL.Int),
+  'removalReason' : IDL.Opt(IDL.Text),
+  'phlebotomist' : IDL.Principal,
+});
+export const AppRole = IDL.Variant({
+  'patient' : IDL.Null,
+  'superAdmin' : IDL.Null,
+  'labAdmin' : IDL.Null,
+  'phlebotomist' : IDL.Null,
+});
+export const UserProfile = IDL.Record({
+  'appRole' : AppRole,
+  'area' : IDL.Opt(IDL.Text),
   'name' : IDL.Text,
-  'address' : IDL.Text,
+  'phone' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
@@ -58,22 +103,73 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'getAssignedHospitals' : IDL.Func([], [IDL.Vec(Hospital)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getTodaySummary' : IDL.Func(
+  'addHospital' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [Hospital],
       [],
-      [
-        IDL.Record({
-          'cashCollected' : IDL.Float64,
-          'upiCollected' : IDL.Float64,
-          'pendingAmount' : IDL.Float64,
-          'totalSamplesCollected' : IDL.Nat,
-        }),
-      ],
+    ),
+  'addTest' : IDL.Func(
+      [TestInput],
+      [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
+      [],
+    ),
+  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'assignPhlebotomistToHospital' : IDL.Func(
+      [IDL.Text, IDL.Principal],
+      [HospitalPhlebotomistAssignment],
+      [],
+    ),
+  'bulkAddTests' : IDL.Func([IDL.Vec(TestInput)], [IDL.Vec(TestOutput)], []),
+  'disableHospital' : IDL.Func([IDL.Text], [Hospital], []),
+  'disableTest' : IDL.Func([IDL.Text], [TestOutput], []),
+  'getAllTests' : IDL.Func([], [IDL.Vec(TestOutput)], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getHospitalById' : IDL.Func([IDL.Text], [Hospital], ['query']),
+  'getHospitals' : IDL.Func(
+      [IDL.Opt(IDL.Text)],
+      [IDL.Vec(Hospital)],
+      ['query'],
+    ),
+  'getHospitalsByPhlebotomist' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Vec(IDL.Text)],
+      ['query'],
+    ),
+  'getPhlebotomistsByHospital' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(IDL.Principal)],
+      ['query'],
+    ),
+  'getTest' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
+  'getTestByCode' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
+  'getUserProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserProfile)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'removePhlebotomistFromHospital' : IDL.Func(
+      [IDL.Text, IDL.Principal, IDL.Text],
+      [HospitalPhlebotomistAssignment],
+      [],
+    ),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setTestStatus' : IDL.Func(
+      [IDL.Text, IDL.Bool],
+      [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
+      [],
+    ),
+  'updateHospital' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [Hospital],
+      [],
+    ),
+  'updateTest' : IDL.Func(
+      [IDL.Text, TestInput],
+      [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -90,15 +186,60 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
+  const Hospital = IDL.Record({
+    'id' : IDL.Text,
+    'area' : IDL.Text,
+    'city' : IDL.Text,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'isActive' : IDL.Bool,
+    'address' : IDL.Text,
+    'contactNumber' : IDL.Text,
+  });
+  const TestInput = IDL.Record({
+    'code' : IDL.Text,
+    'name' : IDL.Text,
+    'sampleType' : IDL.Text,
+    'isActive' : IDL.Bool,
+    'price' : IDL.Nat,
+  });
+  const TestOutput = IDL.Record({
+    'id' : IDL.Text,
+    'code' : IDL.Text,
+    'name' : IDL.Text,
+    'sampleType' : IDL.Text,
+    'isActive' : IDL.Bool,
+    'price' : IDL.Nat,
+  });
+  const TestError = IDL.Variant({
+    'notFound' : IDL.Null,
+    'duplicateCode' : IDL.Null,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
-  const Hospital = IDL.Record({
-    'id' : IDL.Text,
+  const HospitalPhlebotomistAssignment = IDL.Record({
+    'assignedAt' : IDL.Int,
+    'assignedBy' : IDL.Principal,
+    'isActive' : IDL.Bool,
+    'hospitalId' : IDL.Text,
+    'removedAt' : IDL.Opt(IDL.Int),
+    'removalReason' : IDL.Opt(IDL.Text),
+    'phlebotomist' : IDL.Principal,
+  });
+  const AppRole = IDL.Variant({
+    'patient' : IDL.Null,
+    'superAdmin' : IDL.Null,
+    'labAdmin' : IDL.Null,
+    'phlebotomist' : IDL.Null,
+  });
+  const UserProfile = IDL.Record({
+    'appRole' : AppRole,
+    'area' : IDL.Opt(IDL.Text),
     'name' : IDL.Text,
-    'address' : IDL.Text,
+    'phone' : IDL.Text,
   });
   
   return IDL.Service({
@@ -129,22 +270,73 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'getAssignedHospitals' : IDL.Func([], [IDL.Vec(Hospital)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getTodaySummary' : IDL.Func(
+    'addHospital' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [Hospital],
         [],
-        [
-          IDL.Record({
-            'cashCollected' : IDL.Float64,
-            'upiCollected' : IDL.Float64,
-            'pendingAmount' : IDL.Float64,
-            'totalSamplesCollected' : IDL.Nat,
-          }),
-        ],
+      ),
+    'addTest' : IDL.Func(
+        [TestInput],
+        [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
+        [],
+      ),
+    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'assignPhlebotomistToHospital' : IDL.Func(
+        [IDL.Text, IDL.Principal],
+        [HospitalPhlebotomistAssignment],
+        [],
+      ),
+    'bulkAddTests' : IDL.Func([IDL.Vec(TestInput)], [IDL.Vec(TestOutput)], []),
+    'disableHospital' : IDL.Func([IDL.Text], [Hospital], []),
+    'disableTest' : IDL.Func([IDL.Text], [TestOutput], []),
+    'getAllTests' : IDL.Func([], [IDL.Vec(TestOutput)], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getHospitalById' : IDL.Func([IDL.Text], [Hospital], ['query']),
+    'getHospitals' : IDL.Func(
+        [IDL.Opt(IDL.Text)],
+        [IDL.Vec(Hospital)],
+        ['query'],
+      ),
+    'getHospitalsByPhlebotomist' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Vec(IDL.Text)],
+        ['query'],
+      ),
+    'getPhlebotomistsByHospital' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(IDL.Principal)],
+        ['query'],
+      ),
+    'getTest' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
+    'getTestByCode' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
+    'getUserProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserProfile)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'removePhlebotomistFromHospital' : IDL.Func(
+        [IDL.Text, IDL.Principal, IDL.Text],
+        [HospitalPhlebotomistAssignment],
+        [],
+      ),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setTestStatus' : IDL.Func(
+        [IDL.Text, IDL.Bool],
+        [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
+        [],
+      ),
+    'updateHospital' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [Hospital],
+        [],
+      ),
+    'updateTest' : IDL.Func(
+        [IDL.Text, TestInput],
+        [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
+        [],
+      ),
   });
 };
 

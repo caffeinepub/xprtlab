@@ -1,57 +1,41 @@
-import React, { useEffect } from 'react';
-import { useGetActiveShift } from '../../hooks/useQueries';
-import { Loader2 } from 'lucide-react';
+import React from 'react';
+import { useActor } from '../../hooks/useActor';
+import { useInternetIdentity } from '../../hooks/useInternetIdentity';
+import { Loader2, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ShiftGuardProps {
   children: React.ReactNode;
-  userRole?: string;
-  onNavigate?: (route: string) => void;
+  onNavigate?: (page: string) => void;
 }
 
-export default function ShiftGuard({ children, userRole, onNavigate }: ShiftGuardProps) {
-  const isPhlebotomist = userRole === 'phlebotomist';
-  const isAdmin = userRole === 'labAdmin' || userRole === 'superAdmin';
+/**
+ * ShiftGuard wraps phlebotomist routes that require an active shift.
+ * Since shift state is managed locally in PhlebotomistAttendancePage,
+ * this guard simply ensures auth + actor are ready before rendering children.
+ * It no longer blocks on "no active shift" since the backend has no getActiveShift method.
+ */
+export default function ShiftGuard({ children, onNavigate }: ShiftGuardProps) {
+  const { isFetching: actorFetching } = useActor();
+  const { isInitializing, identity } = useInternetIdentity();
 
-  // Admins bypass the shift guard
-  if (isAdmin) {
-    return <>{children}</>;
-  }
-
-  return (
-    <ShiftGuardInner onNavigate={onNavigate} isPhlebotomist={isPhlebotomist}>
-      {children}
-    </ShiftGuardInner>
-  );
-}
-
-interface ShiftGuardInnerProps {
-  children: React.ReactNode;
-  onNavigate?: (route: string) => void;
-  isPhlebotomist: boolean;
-}
-
-function ShiftGuardInner({ children, onNavigate, isPhlebotomist }: ShiftGuardInnerProps) {
-  const { data: activeShift, isLoading } = useGetActiveShift();
-
-  useEffect(() => {
-    if (!isLoading && isPhlebotomist && !activeShift && onNavigate) {
-      onNavigate('phlebotomist-attendance');
-    }
-  }, [isLoading, activeShift, isPhlebotomist, onNavigate]);
+  const isLoading = isInitializing || actorFetching;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-muted-foreground text-sm">Loading...</p>
       </div>
     );
   }
 
-  if (isPhlebotomist && !activeShift) {
+  if (!identity) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-3">
-        <p className="text-base font-semibold text-foreground">No active shift</p>
-        <p className="text-sm text-muted-foreground">Please start your shift from the Attendance page.</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-6 text-center">
+        <Clock className="w-12 h-12 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">Authentication Required</h2>
+        <p className="text-muted-foreground text-sm">Please log in to access this page.</p>
       </div>
     );
   }

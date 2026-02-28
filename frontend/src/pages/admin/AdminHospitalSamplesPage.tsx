@@ -1,182 +1,357 @@
 import React, { useState } from 'react';
-import {
-  useGetAllHospitalSamples,
-  useUpdateHospitalSampleBilling,
-} from '../../hooks/useQueries';
-import { HospitalSample } from '../../types/models';
-import { Search, Loader2, FlaskConical, Edit2, X } from 'lucide-react';
+import { Search, Filter, FlaskConical, ChevronDown, ChevronUp, Edit2, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { DeliveryMethod, SampleStatus } from '../../types/models';
+import { getSampleStatusColor } from '../../utils/deliveryHelpers';
+import {
+  useGetAllHospitalSamples,
+  useUpdateHospitalSampleBilling,
+  useMarkAsDispatched,
+  useMarkSampleDelivered,
+  useConfirmWhatsAppDelivery,
+} from '../../hooks/useQueries';
+import SampleWorkflowTimeline from '../../components/shared/SampleWorkflowTimeline';
+import SampleActionControls from '../../components/shared/SampleActionControls';
+import DeliveryMethodSelectionDialog from '../../components/shared/DeliveryMethodSelectionDialog';
+import WhatsAppShareConfirmDialog from '../../components/shared/WhatsAppShareConfirmDialog';
+import { useInternetIdentity } from '../../hooks/useInternetIdentity';
+import { toast } from 'sonner';
 
-interface AdminHospitalSamplesPageProps {
-  onNavigate?: (route: string) => void;
+const DELIVERY_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'WHATSAPP', label: 'WhatsApp' },
+  { value: 'PHYSICAL', label: 'Physical' },
+  { value: 'EMAIL', label: 'Email' },
+  { value: 'HOSPITAL_PICKUP', label: 'Hospital Pickup' },
+  { value: 'pending', label: 'Pending Delivery' },
+];
+
+interface BillingEditState {
+  sampleId: string;
+  discountAmount: number;
+  amountReceived: number;
+  paymentMode: string;
+  totalMrp: number;
+  maxAllowedDiscount: number;
 }
 
-export default function AdminHospitalSamplesPage({ onNavigate }: AdminHospitalSamplesPageProps) {
-  const [hospitalFilter, setHospitalFilter] = useState('');
-  const [phlebotomistFilter, setPhlebotomistFilter] = useState('');
-  const [editingSample, setEditingSample] = useState<(HospitalSample & { id?: string }) | null>(null);
-  const [editAmount, setEditAmount] = useState('');
+export default function AdminHospitalSamplesPage() {
+  const { identity } = useInternetIdentity();
+  const userId = identity?.getPrincipal().toString() ?? '';
 
   const { data: samples = [], isLoading } = useGetAllHospitalSamples();
-  const updateBillingMutation = useUpdateHospitalSampleBilling();
+  const updateBilling = useUpdateHospitalSampleBilling();
+  const markDispatched = useMarkAsDispatched();
+  const markDelivered = useMarkSampleDelivered();
+  const confirmWhatsApp = useConfirmWhatsAppDelivery();
 
-  const filtered = samples.filter((s: any) => {
-    const matchHospital = !hospitalFilter || s.hospitalId?.toLowerCase().includes(hospitalFilter.toLowerCase());
-    const matchPhlebotomist = !phlebotomistFilter || s.phlebotomistId?.toLowerCase().includes(phlebotomistFilter.toLowerCase());
-    return matchHospital && matchPhlebotomist;
+  const [search, setSearch] = useState('');
+  const [deliveryFilter, setDeliveryFilter] = useState('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [billingEdit, setBillingEdit] = useState<BillingEditState | null>(null);
+  const [deliveryDialogSampleId, setDeliveryDialogSampleId] = useState<string | null>(null);
+  const [whatsAppDialogSampleId, setWhatsAppDialogSampleId] = useState<string | null>(null);
+
+  const filteredSamples = samples.filter((s: any) => {
+    const matchesSearch =
+      !search ||
+      s.patientName?.toLowerCase().includes(search.toLowerCase()) ||
+      s.phone?.includes(search);
+
+    const matchesDelivery =
+      deliveryFilter === 'all' ||
+      (deliveryFilter === 'pending' && !s.deliveryMethod) ||
+      s.deliveryMethod === deliveryFilter;
+
+    return matchesSearch && matchesDelivery;
   });
 
-  const totalRevenue = filtered.reduce((sum: number, s: any) => sum + Number(s.finalAmount || 0), 0);
-  const totalReceived = filtered.reduce((sum: number, s: any) => sum + Number(s.amountReceived || 0), 0);
-  const totalPending = filtered.reduce((sum: number, s: any) => sum + Number(s.pendingAmount || 0), 0);
+  const toggleExpand = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id));
+  };
 
-  const handleEditSave = async () => {
-    if (!editingSample) return;
+  const handleMarkDispatched = async (sampleId: string) => {
     try {
-      await updateBillingMutation.mutateAsync({
-        ...editingSample,
-        amountReceived: parseFloat(editAmount) || 0,
-      });
-      setEditingSample(null);
-    } catch (err) {
-      console.error('Failed to update billing', err);
+      await markDispatched.mutateAsync(sampleId);
+      toast.success('Sample marked as dispatched');
+    } catch (err: any) {
+      toast.error(`Failed: ${err?.message ?? err}`);
     }
   };
 
-  const formatTime = (ts: number) => {
-    const ms = ts > 1e12 ? ts / 1_000_000 : ts;
-    return new Date(ms).toLocaleDateString('en-IN');
+  const handleMarkDelivered = async (
+    sampleId: string,
+    method: DeliveryMethod,
+    deliveredByRole: string,
+    deliveredById: string
+  ) => {
+    try {
+      await markDelivered.mutateAsync({ sampleId, deliveryMethod: method, deliveredByRole, deliveredById, action: 'deliver' });
+      toast.success('Report marked as delivered');
+    } catch (err: any) {
+      toast.error(`Failed: ${err?.message ?? err}`);
+    }
+  };
+
+  const handleConfirmWhatsApp = async (sampleId: string) => {
+    try {
+      await confirmWhatsApp.mutateAsync(sampleId);
+      toast.success('WhatsApp delivery confirmed');
+    } catch (err: any) {
+      toast.error(`Failed: ${err?.message ?? err}`);
+    }
+  };
+
+  const handleBillingSave = async () => {
+    if (!billingEdit) return;
+    try {
+      await updateBilling.mutateAsync({
+        sampleId: billingEdit.sampleId,
+        newDiscountAmount: billingEdit.discountAmount,
+        newAmountReceived: billingEdit.amountReceived,
+        paymentMode: billingEdit.paymentMode,
+      });
+      toast.success('Billing updated');
+      setBillingEdit(null);
+    } catch (err: any) {
+      toast.error(`Failed: ${err?.message ?? err}`);
+    }
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      <h2 className="text-lg font-bold text-foreground">Hospital Samples</h2>
-
-      {/* Revenue Summary */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
-          <p className="text-xs text-blue-600 font-semibold">Total</p>
-          <p className="text-base font-bold text-blue-700">₹{totalRevenue.toFixed(0)}</p>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
+        <div className="flex items-center gap-2 mb-3">
+          <FlaskConical className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-semibold text-foreground">Hospital Samples</h1>
         </div>
-        <div className="bg-green-50 rounded-xl p-3 text-center border border-green-100">
-          <p className="text-xs text-green-600 font-semibold">Received</p>
-          <p className="text-base font-bold text-green-700">₹{totalReceived.toFixed(0)}</p>
-        </div>
-        <div className="bg-orange-50 rounded-xl p-3 text-center border border-orange-100">
-          <p className="text-xs text-orange-600 font-semibold">Pending</p>
-          <p className="text-base font-bold text-orange-700">₹{totalPending.toFixed(0)}</p>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            className="pl-9"
+            placeholder="Search by patient name or phone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-border shadow-sm p-4 space-y-2">
-        <input
-          type="text"
-          value={hospitalFilter}
-          onChange={e => setHospitalFilter(e.target.value)}
-          placeholder="Filter by hospital..."
-          className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
-        <input
-          type="text"
-          value={phlebotomistFilter}
-          onChange={e => setPhlebotomistFilter(e.target.value)}
-          placeholder="Filter by phlebotomist..."
-          className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
+      {/* Delivery filter chips */}
+      <div className="px-4 py-2 flex gap-2 overflow-x-auto border-b border-border bg-background">
+        {DELIVERY_FILTER_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => setDeliveryFilter(opt.value)}
+            className={[
+              'shrink-0 text-xs px-3 py-1 rounded-full border transition-colors',
+              deliveryFilter === opt.value
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border text-muted-foreground hover:border-primary/40',
+            ].join(' ')}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
-          <FlaskConical className="h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm font-semibold text-foreground">No samples found</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((sample: any, i: number) => (
-            <div
-              key={i}
-              className={`bg-white rounded-2xl border shadow-sm p-4 space-y-2 ${
-                Number(sample.pendingAmount) > 0 ? 'border-orange-200' : 'border-border'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-bold text-sm text-foreground">{sample.patientName}</p>
-                  <p className="text-xs text-muted-foreground">{sample.phone}</p>
-                </div>
+      {/* Sample list */}
+      <div className="flex-1 overflow-auto px-4 py-3 space-y-2">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : filteredSamples.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <FlaskConical className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm font-medium text-foreground">No samples found</p>
+          </div>
+        ) : (
+          filteredSamples.map((sample: any) => {
+            const sampleId = sample.id ?? sample.patientName;
+            const isExpanded = expandedId === sampleId;
+            const status: SampleStatus = sample.status ?? 'SAMPLE_COLLECTED';
+
+            return (
+              <div key={sampleId} className="rounded-xl border border-border bg-card overflow-hidden">
                 <button
-                  onClick={() => { setEditingSample(sample); setEditAmount(String(sample.amountReceived)); }}
-                  className="p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                  className="w-full flex items-center justify-between p-3 text-left"
+                  onClick={() => toggleExpand(sampleId)}
                 >
-                  <Edit2 className="h-3.5 w-3.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{sample.patientName}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {sample.phone} · ₹{Number(sample.finalAmount).toLocaleString('en-IN')} · {sample.paymentMode}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2 shrink-0">
+                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${getSampleStatusColor(status)}`}>
+                      {status.replace(/_/g, ' ')}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                 </button>
-              </div>
-              <div className="grid grid-cols-2 gap-1 text-xs">
-                <span className="text-muted-foreground">Hospital: <span className="font-semibold text-foreground">{sample.hospitalId}</span></span>
-                <span className="text-muted-foreground">Test: <span className="font-semibold text-foreground">{sample.testId}</span></span>
-                <span className="text-muted-foreground">Final: <span className="font-bold text-primary">₹{Number(sample.finalAmount).toFixed(0)}</span></span>
-                <span className="text-muted-foreground">Received: <span className="font-bold text-green-600">₹{Number(sample.amountReceived).toFixed(0)}</span></span>
-                {Number(sample.pendingAmount) > 0 && (
-                  <span className="col-span-2 text-orange-600 font-bold">Pending: ₹{Number(sample.pendingAmount).toFixed(0)}</span>
+
+                {isExpanded && (
+                  <div className="border-t border-border px-3 py-3 space-y-3">
+                    {/* Billing summary */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-muted/50 rounded-lg p-2 text-center">
+                        <p className="text-xs text-muted-foreground">MRP</p>
+                        <p className="text-sm font-semibold">₹{Number(sample.totalMrp).toLocaleString('en-IN')}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center">
+                        <p className="text-xs text-muted-foreground">Discount</p>
+                        <p className="text-sm font-semibold">₹{Number(sample.discountAmount).toLocaleString('en-IN')}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center">
+                        <p className="text-xs text-muted-foreground">Final</p>
+                        <p className="text-sm font-semibold">₹{Number(sample.finalAmount).toLocaleString('en-IN')}</p>
+                      </div>
+                    </div>
+
+                    {/* Tests */}
+                    {sample.tests?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Tests</p>
+                        <div className="space-y-1">
+                          {sample.tests.map((t: any, i: number) => (
+                            <div key={i} className="flex justify-between text-xs">
+                              <span>{t.testName}</span>
+                              <span className="text-muted-foreground">₹{Number(t.price).toLocaleString('en-IN')}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Edit billing button */}
+                    {!sample.billingLocked && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1.5 text-xs"
+                        onClick={() =>
+                          setBillingEdit({
+                            sampleId,
+                            discountAmount: Number(sample.discountAmount),
+                            amountReceived: Number(sample.amountReceived),
+                            paymentMode: sample.paymentMode,
+                            totalMrp: Number(sample.totalMrp),
+                            maxAllowedDiscount: Number(sample.maxAllowedDiscount),
+                          })
+                        }
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                        Edit Billing
+                      </Button>
+                    )}
+
+                    {/* Action controls */}
+                    <SampleActionControls
+                      sampleId={sampleId}
+                      status={status}
+                      reportUrl={sample.reportUrl}
+                      userRole="labAdmin"
+                      userId={userId}
+                      phlebotomistId={sample.phlebotomistId}
+                      onMarkDispatched={handleMarkDispatched}
+                      onMarkDelivered={handleMarkDelivered}
+                      onConfirmWhatsApp={handleConfirmWhatsApp}
+                    />
+
+                    {/* Timeline */}
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Status Timeline</p>
+                      <SampleWorkflowTimeline currentStatus={status} />
+                    </div>
+                  </div>
                 )}
               </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{sample.paymentMode}</span>
-                <span>{formatTime(Number(sample.createdAt))}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            );
+          })
+        )}
+      </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editingSample} onOpenChange={open => !open && setEditingSample(null)}>
-        <DialogContent className="max-w-sm">
+      {/* Billing Edit Dialog */}
+      <Dialog open={!!billingEdit} onOpenChange={(o) => { if (!o) setBillingEdit(null); }}>
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Edit Billing</DialogTitle>
+            <DialogDescription>Update discount and payment details for this sample.</DialogDescription>
           </DialogHeader>
-          {editingSample && (
-            <div className="space-y-4">
-              <div className="bg-muted/50 rounded-xl p-3 text-sm space-y-1">
-                <p><span className="font-semibold">Patient:</span> {editingSample.patientName}</p>
-                <p><span className="font-semibold">Final Amount:</span> ₹{Number(editingSample.finalAmount).toFixed(2)}</p>
+          {billingEdit && (
+            <div className="space-y-3 py-2">
+              <div className="space-y-1">
+                <Label>Discount Amount (₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={billingEdit.maxAllowedDiscount}
+                  value={billingEdit.discountAmount}
+                  onChange={(e) =>
+                    setBillingEdit((prev) =>
+                      prev ? { ...prev, discountAmount: Number(e.target.value) } : prev
+                    )
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Max allowed: ₹{billingEdit.maxAllowedDiscount.toLocaleString('en-IN')}
+                </p>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-foreground">Amount Received</label>
-                <input
+                <Label>Amount Received (₹)</Label>
+                <Input
                   type="number"
-                  value={editAmount}
-                  onChange={e => setEditAmount(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  min={0}
+                  value={billingEdit.amountReceived}
+                  onChange={(e) =>
+                    setBillingEdit((prev) =>
+                      prev ? { ...prev, amountReceived: Number(e.target.value) } : prev
+                    )
+                  }
                 />
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditingSample(null)}
-                  className="flex-1 py-2 rounded-xl border border-border text-sm font-semibold"
+              <div className="space-y-1">
+                <Label>Payment Mode</Label>
+                <select
+                  className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background"
+                  value={billingEdit.paymentMode}
+                  onChange={(e) =>
+                    setBillingEdit((prev) =>
+                      prev ? { ...prev, paymentMode: e.target.value } : prev
+                    )
+                  }
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleEditSave}
-                  disabled={updateBillingMutation.isPending}
-                  className="flex-1 py-2 rounded-xl bg-primary text-white text-sm font-bold disabled:opacity-50"
-                >
-                  {updateBillingMutation.isPending ? 'Saving...' : 'Save'}
-                </button>
+                  <option value="CASH">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="CARD">Card</option>
+                  <option value="CREDIT">Credit</option>
+                </select>
               </div>
             </div>
           )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBillingEdit(null)}>Cancel</Button>
+            <Button onClick={handleBillingSave} disabled={updateBilling.isPending}>
+              {updateBilling.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
