@@ -1,148 +1,46 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Hospital Management System with Super Admin controls, phlebotomist multi-hospital assignment, area-based assignment logic, and permission control",
-  "architectural_notes": [
-    "Hospital-Phlebotomist is a many-to-many relationship; assignments must not be deleted, only disabled",
-    "Hospitals can only be soft-disabled, never hard-deleted if they have assignments",
-    "Inactive hospital status must block new sample creation for that hospital"
-  ],
-  "known_issues": [
-    "Hospital Management full build failed twice; currently attempting incremental build starting with Hospital CRUD"
-  ],
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [],
   "isFixRequest": false,
-  "existing_features": [
-    {
-      "id": "feature-add-a-hospital-management-section-under-the-super-admin-navigation-in-staffapp-create-a-hospitalmanagementpage-listing-all-hospitals-with-name-city-area-contact-active-inactive-status-badge-edit-and-disable-action-buttons-search-bar-name-city-area-and-pagination-20-per-page-show-no-hospitals-added-yet-when-the-list-is-empty",
-      "title": "Add a 'Hospital Management' section under the Super Admin navigation in StaffApp. Create a HospitalManagementPage listing all hospitals with: name, city, area, contact, Active/Inactive status badge, Edit and Disable action buttons, search bar (name/city/area), and pagination (20 per page). Show 'No hospitals added yet.' when the list is empty.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-an-add-hospital-modal-form-triggered-from-hospitalmanagementpage-with-fields-hospital-name-required-city-address-area-zone-contact-number-and-active-inactive-toggle-on-save-call-the-addhospital-backend-mutation-and-refresh-the-list",
-      "title": "Create an Add Hospital modal/form (triggered from HospitalManagementPage) with fields: Hospital Name (required), City, Address, Area/Zone, Contact Number, and Active/Inactive toggle. On save, call the addHospital backend mutation and refresh the list.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-an-edit-hospital-modal-pre-populated-with-existing-hospital-data-allow-editing-all-fields-name-city-address-area-zone-contact-active-toggle-on-save-call-the-updatehospital-backend-mutation",
-      "title": "Create an Edit Hospital modal pre-populated with existing hospital data. Allow editing all fields (name, city, address, area/zone, contact, active toggle). On save, call the updateHospital backend mutation.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-create-a-hospital-details-page-navigable-from-hospitalmanagementpage-that-includes-an-assigned-phlebotomists-section-the-section-lists-currently-assigned-phlebotomists-with-their-name-and-area-super-admin-sees-an-assign-phlebotomist-button-that-opens-a-multi-select-dropdown-with-search-of-available-phlebotomists-saving-the-selection-calls-assignphlebotomisttohospital-for-each-newly-selected-phlebotomist-show-area-match-suggestion-text-e-g-same-area-as-hospital-next-to-phlebotomists-whose-area-matches-the-hospital-s-area-do-not-auto-assign",
-      "title": "Create a Hospital Details page (navigable from HospitalManagementPage) that includes an 'Assigned Phlebotomists' section. The section lists currently assigned phlebotomists with their name and area. Super Admin sees an 'Assign Phlebotomist' button that opens a multi-select dropdown (with search) of available phlebotomists. Saving the selection calls assignPhlebotomistToHospital for each newly selected phlebotomist. Show area-match suggestion text (e.g., 'Same area as hospital') next to phlebotomists whose area matches the hospital's area — do not auto-assign.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-assigned-hospitals-section-to-the-phlebotomist-profile-page-visible-in-the-staff-app-for-super-admin-show-add-remove-controls-to-assign-or-unassign-hospitals-for-phlebotomists-show-the-list-of-assigned-hospitals-in-read-only-mode-for-lab-admin-show-the-assigned-hospitals-list-read-only",
-      "title": "Add an 'Assigned Hospitals' section to the Phlebotomist Profile page (visible in the staff app). For Super Admin, show add/remove controls to assign or unassign hospitals. For phlebotomists, show the list of assigned hospitals in read-only mode. For Lab Admin, show the assigned hospitals list read-only.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-on-the-addhospitalsamplepage-filter-the-hospital-selection-list-to-only-show-hospitals-that-are-active-and-assigned-to-the-currently-logged-in-phlebotomist-if-an-inactive-hospital-is-somehow-selected-show-an-error-message-preventing-submission",
-      "title": "On the AddHospitalSamplePage, filter the hospital selection list to only show hospitals that are active AND assigned to the currently logged-in phlebotomist. If an inactive hospital is somehow selected, show an error message preventing submission.",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-react-query-hooks-in-usequeries-ts-for-all-new-hospital-endpoints-usehospitals-paginated-search-usehospitalbyid-useaddhospital-useupdatehospital-usedisablehospital-useassignphlebotomisttohospital-useremovephlebotomistfromhospital-usegetphlebotomistsbyhospital-usegethospitalsbyphlebotomist",
-      "title": "Add React Query hooks in useQueries.ts for all new hospital endpoints: useHospitals (paginated + search), useHospitalById, useAddHospital, useUpdateHospital, useDisableHospital, useAssignPhlebotomistToHospital, useRemovePhlebotomistFromHospital, useGetPhlebotomistsByHospital, useGetHospitalsByPhlebotomist.",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "version": 1
-    }
-  ],
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Hospital Management module under Super Admin: Add/Edit/Disable hospitals with Name, City, Address, Area/Zone, Contact, Active/Inactive toggle, search by Name/City/Area, pagination (20/page), status badges, empty state",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Phlebotomist multi-hospital assignment: many-to-many logic, Assigned Phlebotomists section in Hospital Details with multi-select dropdown, Assigned Hospitals section in Phlebotomist Profile with add/remove",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Area/Zone field on Hospital and Phlebotomist; suggestion (not auto-assign) when areas match for assignment",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Permission control: Super Admin can assign/remove/edit hospitals; Lab Admin view-only; Phlebotomist sees only assigned hospitals",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Data rules: no delete if assigned (disable only), inactive hospital blocks new samples, preserve assignment history",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Add a Hospital data model to the backend with fields: id (auto-generated), name (required), city, address, area/zone, contactNumber, isActive (default true), createdAt timestamp. Store hospitals in a stable HashMap in the main actor.",
+      "summary": "Complete the phlebotomist-to-hospital assignment backend logic: ensure the assignPhlebotomistToHospital and removePhlebotomistFromHospital functions correctly update the phlebotomist-hospital assignments map, validate that the phlebotomist exists and has the correct role, and persist changes across upgrades.",
       "reqIds": [
         "REQ-1"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-7",
-      "summary": "Expose backend endpoints: addHospital, updateHospital, disableHospital (sets isActive=false, does not delete), getHospitals (returns paginated list with optional search filter on name/city/area), getHospitalById. Disabling a hospital that has phlebotomist assignments must still be allowed — only deletion is blocked.",
+      "id": "AR-2",
+      "summary": "Complete area-matching logic: when a phlebotomist logs in or is assigned, match them to hospitals in the same city/area field. Expose a backend query that returns hospitals assigned to the calling phlebotomist filtered by their area, so the AddHospitalSamplePage and HomeCollectionQueuePage only show relevant hospitals.",
       "reqIds": [
         "REQ-2"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-8",
-      "summary": "Add a many-to-many HospitalPhlebotomistAssignment model in the backend: store a stable list/map of (hospitalId, phlebotomistPrincipal) pairs. Expose endpoints: assignPhlebotomistToHospital, removePhlebotomistFromHospital, getPhlebotomistsByHospital, getHospitalsByPhlebotomist. Assignment history must never be deleted — use a soft-removal flag instead.",
+      "id": "AR-3",
+      "summary": "Validate the hospital management flow end-to-end: the HospitalManagementPage must correctly reflect add, edit, and disable operations using the updated backend functions, with proper optimistic UI updates and error toasts.",
       "reqIds": [
         "REQ-3"
       ],
       "status": "pending"
     },
     {
-      "id": "AR-9",
-      "summary": "Add an 'area' field to the UserProfile/phlebotomist model in the backend so phlebotomists can have an area/zone. When getPhlebotomistsByHospital is called, include each phlebotomist's area in the response so the frontend can compute area-match suggestions.",
+      "id": "AR-4",
+      "summary": "Ensure the HospitalDetailsPage phlebotomist assignment UI (assign/remove actions and search panel) is correctly wired to the backend assignment functions, with confirmation dialogs and success/error toasts reflecting the actual backend response.",
       "reqIds": [
         "REQ-4"
       ],
       "status": "pending"
-    },
-    {
-      "id": "AR-10",
-      "summary": "Block adding new hospital samples for an inactive hospital. In the addHospitalSample backend endpoint, validate that the selected hospital's isActive flag is true before accepting the submission; return an error if inactive.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Hospital Management System",
+  "projectName": "Continue phlebotomist assignment and area-matching backend logic",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,153 +1,59 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Hospital Management Module – Phase 1: Frontend Implementation",
+  "title": "Frontend: Hospital management and phlebotomist assignment UI",
   "requirements": [
     {
-      "id": "REQ-6",
-      "summary": "Add Hospital Management page under Super Admin navigation with list, search, pagination, and action buttons",
+      "id": "REQ-3",
+      "summary": "Validate and wire hospital management flow with optimistic UI updates and proper error handling",
       "acceptanceCriteria": [
-        "HospitalManagementPage is accessible only to superAdmin role (guarded by RoleGuard).",
-        "Hospitals list is paginated at 20 per page with next/previous controls.",
-        "Search input filters visible results by name, city, or area in real time.",
-        "Each row shows an Active/Inactive status badge.",
-        "Empty state message 'No hospitals added yet.' is shown when no hospitals exist.",
-        "Disable button triggers a confirmation dialog before calling disableHospital."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/HospitalManagementPage.tsx",
-          "operation": "create",
-          "description": "Create a new HospitalManagementPage component listing hospitals with search bar, pagination (20 per page), Active/Inactive status badges, Edit and Disable action buttons. Use the useHospitals hook for fetching paginated data with search filter. Show 'No hospitals added yet.' empty state when no data exists. Wrap Edit and Disable buttons with role checks for superAdmin. Include a confirmation dialog for disabling hospitals."
-        },
-        {
-          "path": "frontend/src/StaffApp.tsx",
-          "operation": "modify",
-          "description": "Add a lazy-loaded route for '/staff-app/hospital-management' that renders HospitalManagementPage. Import the page component dynamically using React.lazy. Register the route in the onNavigate switch statement under the superAdmin role condition."
-        },
-        {
-          "path": "frontend/src/utils/roleConfig.ts",
-          "operation": "modify",
-          "description": "Add 'Hospital Management' navigation item to the superAdmin role configuration with path '/staff-app/hospital-management' and icon 'Hospital' (Lucide icon name). Insert it in the appropriate position within the superAdmin nav items array."
-        }
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "summary": "Create Add Hospital modal with form fields and validation, calling addHospital mutation",
-      "acceptanceCriteria": [
-        "Hospital Name field shows a validation error if submitted empty.",
-        "Form calls addHospital mutation on submit and shows a success toast on completion.",
-        "Modal closes and list refreshes after successful creation."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/admin/AddHospitalModal.tsx",
-          "operation": "create",
-          "description": "Create a modal dialog component with a form containing fields: Hospital Name (required text input with validation), City (text input), Address (textarea), Area/Zone (text input), Contact Number (text input), and Active/Inactive toggle (switch/checkbox defaulting to active). Use react-hook-form for validation. On submit, call the useAddHospital mutation hook. Show success toast on completion and close modal. Handle errors with toast notifications."
-        },
-        {
-          "path": "frontend/src/pages/admin/HospitalManagementPage.tsx",
-          "operation": "modify",
-          "description": "Add an 'Add Hospital' button at the top of HospitalManagementPage that opens the AddHospitalModal. Import and render AddHospitalModal with open/close state management. After successful hospital creation, invalidate the hospitals query to refresh the list."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Create Edit Hospital modal pre-populated with existing data, calling updateHospital mutation",
-      "acceptanceCriteria": [
-        "All existing field values are pre-filled when the edit modal opens.",
-        "Saving calls updateHospital and shows a success toast.",
-        "Only superAdmin can see the Edit button."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/admin/EditHospitalModal.tsx",
-          "operation": "create",
-          "description": "Create a modal dialog component that accepts a Hospital object as a prop and pre-fills a form with fields: Hospital Name (required), City, Address, Area/Zone, Contact Number, and Active/Inactive toggle. Use react-hook-form with default values from the passed hospital. On submit, call the useUpdateHospital mutation with the hospital ID and updated fields. Show success toast on completion and close modal. Handle errors with toast notifications."
-        },
-        {
-          "path": "frontend/src/pages/admin/HospitalManagementPage.tsx",
-          "operation": "modify",
-          "description": "Add Edit buttons in each hospital row that open EditHospitalModal with the selected hospital data. Import and render EditHospitalModal with open/close state and selected hospital state management. After successful update, invalidate the hospitals query to refresh the list."
-        }
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "summary": "Create Hospital Details page with Assigned Phlebotomists section and assignment controls",
-      "acceptanceCriteria": [
-        "Assigned phlebotomists list is shown with name and area.",
-        "Assign Phlebotomist button is visible only to superAdmin.",
-        "Multi-select dropdown supports text search to filter phlebotomists.",
-        "Area-match suggestion label appears next to phlebotomists sharing the hospital's area.",
-        "Saving assignment calls assignPhlebotomistToHospital and refreshes the list.",
-        "If no phlebotomists exist, show an appropriate empty state."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/admin/HospitalDetailsPage.tsx",
-          "operation": "create",
-          "description": "Create HospitalDetailsPage component showing hospital details at the top and an 'Assigned Phlebotomists' section below. Use useHospitalById to fetch hospital data and useGetPhlebotomistsByHospital to fetch assigned phlebotomists with their area information. Display each assigned phlebotomist with name and area. For superAdmin role, show an 'Assign Phlebotomist' button that opens a multi-select dropdown. The dropdown should list all phlebotomists (fetched via a query), support text search/filtering, and show '(Same area as hospital)' suggestion text next to phlebotomists whose area matches the hospital's area. On saving selections, call useAssignPhlebotomistToHospital for each newly selected phlebotomist. Show empty state 'No phlebotomists available' if none exist. Include a remove/unassign button per phlebotomist that calls useRemovePhlebotomistFromHospital with a removal reason."
-        },
-        {
-          "path": "frontend/src/StaffApp.tsx",
-          "operation": "modify",
-          "description": "Add a lazy-loaded route for '/staff-app/hospital-management/:hospitalId' that renders HospitalDetailsPage. Import the page component dynamically using React.lazy. Register the route in the onNavigate switch statement under the superAdmin role condition."
-        },
-        {
-          "path": "frontend/src/pages/admin/HospitalManagementPage.tsx",
-          "operation": "modify",
-          "description": "Make each hospital row clickable or add a 'View Details' button/link that navigates to '/staff-app/hospital-management/{hospitalId}' to open HospitalDetailsPage."
-        }
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "summary": "Add Assigned Hospitals section to Phlebotomist Profile page with role-based controls",
-      "acceptanceCriteria": [
-        "Phlebotomist profile page shows an 'Assigned Hospitals' section.",
-        "SuperAdmin sees add and remove controls for each assigned hospital entry.",
-        "Phlebotomist and Lab Admin roles see the section as read-only.",
-        "Removing a hospital calls removePhlebotomistFromHospital and updates the list."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/patient/ProfilePage.tsx",
-          "operation": "modify",
-          "description": "Add an 'Assigned Hospitals' section to ProfilePage that displays hospitals assigned to the current user (if phlebotomist role). Use useGetHospitalsByPhlebotomist hook to fetch assigned hospital IDs and useHospitalById for each to get full details (name, city, area). For superAdmin viewing a phlebotomist profile, show add/remove controls. For phlebotomist and labAdmin roles, display the list as read-only. When removing a hospital (superAdmin only), call useRemovePhlebotomistFromHospital with a removal reason and refresh the assigned hospitals list. Show empty state 'No hospitals assigned' if list is empty."
-        }
-      ]
-    },
-    {
-      "id": "REQ-11",
-      "summary": "Filter hospital selection on AddHospitalSamplePage to show only active hospitals assigned to the logged-in phlebotomist",
-      "acceptanceCriteria": [
-        "Hospital dropdown on AddHospitalSamplePage only shows active hospitals assigned to the current phlebotomist.",
-        "If no hospitals are assigned, show a clear empty state message."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
-          "operation": "modify",
-          "description": "Update the hospital selection logic to filter hospitals using both useGetHospitalsByPhlebotomist (to get assigned hospital IDs) and useHospitals (to get hospital details). Only display hospitals where isActive is true AND the hospital ID is in the assigned list. If the filtered list is empty, show an empty state message such as 'No active hospitals assigned to you. Please contact your administrator.' Ensure the form prevents submission if an invalid or inactive hospital is somehow selected, displaying a descriptive error message."
-        }
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "summary": "Add React Query hooks for all new hospital management endpoints",
-      "acceptanceCriteria": [
-        "All mutation hooks invalidate the relevant hospital and assignment query caches on success.",
-        "useHospitals accepts page and searchTerm parameters.",
-        "Hooks follow the existing pattern in useQueries.ts."
+        "Adding a hospital via AddHospitalModal creates a new entry visible in the list immediately after success",
+        "Editing a hospital via EditHospitalModal updates the displayed fields without a full page reload",
+        "Disabling a hospital removes it from the active list or marks it visually as disabled",
+        "Search filters hospitals by name, city, or area in real time"
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Add React Query hooks for hospital management: useHospitals (query accepting searchTerm parameter for filtering by name/city/area), useHospitalById (query accepting hospitalId), useAddHospital (mutation for creating hospitals), useUpdateHospital (mutation for updating hospitals), useDisableHospital (mutation for soft-disabling hospitals), useAssignPhlebotomistToHospital (mutation for assigning phlebotomists), useRemovePhlebotomistFromHospital (mutation for removing assignments with removalReason), useGetPhlebotomistsByHospital (query accepting hospitalId and returning assigned phlebotomist principals with area info), and useGetHospitalsByPhlebotomist (query accepting phlebotomist principal and returning assigned hospital IDs). Ensure all mutation hooks invalidate the relevant query keys on success (e.g., useAddHospital invalidates ['hospitals'], useAssignPhlebotomistToHospital invalidates both ['phlebotomistsByHospital', hospitalId] and ['hospitalsByPhlebotomist', phlebotomist]). Follow existing patterns from useQueries.ts for error handling and cache invalidation."
+          "description": "Review and enhance the useAddHospital, useUpdateHospital, and useDisableHospital mutation hooks to ensure they include onSuccess callbacks that invalidate the hospitals query cache, triggering immediate list refresh. Ensure error handling propagates backend errors to the UI via toast notifications."
+        },
+        {
+          "path": "frontend/src/pages/admin/HospitalManagementPage.tsx",
+          "operation": "modify",
+          "description": "Verify that the HospitalManagementPage correctly invokes AddHospitalModal and EditHospitalModal with proper success/error toast feedback. Ensure the hospital list re-fetches or updates optimistically after add/edit/disable operations. Confirm the search input filters hospitals by name, city, and area in real time using the existing search state and filtered list logic."
+        },
+        {
+          "path": "frontend/src/components/admin/AddHospitalModal.tsx",
+          "operation": "modify",
+          "description": "Ensure the AddHospitalModal form submission calls the useAddHospital mutation and closes the modal on success. Add success toast notification after hospital creation. Verify form validation and error display for required fields."
+        },
+        {
+          "path": "frontend/src/components/admin/EditHospitalModal.tsx",
+          "operation": "modify",
+          "description": "Ensure the EditHospitalModal pre-populates the form with existing hospital data and calls the useUpdateHospital mutation on submission. Add success toast notification after update. Verify form validation and error display for required fields. Ensure the modal closes on success."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Wire HospitalDetailsPage phlebotomist assignment UI to backend with confirmation dialogs and toast feedback",
+      "acceptanceCriteria": [
+        "Assigning a phlebotomist from the search panel calls the backend and shows a success toast",
+        "Removing a phlebotomist shows a confirmation dialog before calling the backend",
+        "The phlebotomist list on HospitalDetailsPage refreshes after any assignment change",
+        "Errors from the backend are surfaced as error toasts"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add or enhance mutation hooks useAssignPhlebotomistToHospital and useRemovePhlebotomistFromHospital that call the corresponding backend capabilities (assignPhlebotomistToHospital and removePhlebotomistFromHospital). Ensure onSuccess callbacks invalidate the query cache for phlebotomists assigned to the hospital, triggering a list refresh. Include error handling that surfaces backend errors via toast notifications."
+        },
+        {
+          "path": "frontend/src/pages/admin/HospitalDetailsPage.tsx",
+          "operation": "modify",
+          "description": "Wire the phlebotomist search panel and assignment actions to the useAssignPhlebotomistToHospital mutation. Ensure the assign button calls the mutation with the hospital ID and selected phlebotomist principal, then shows a success toast on completion. Wire the remove button to show a confirmation dialog (with reason input field) before calling useRemovePhlebotomistFromHospital. Ensure the assigned phlebotomist list re-fetches after any assignment or removal. Display error toasts if the backend returns errors (e.g., non-existent principal, wrong role, or other validation failures)."
         }
       ]
     }

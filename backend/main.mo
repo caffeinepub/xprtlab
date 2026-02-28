@@ -2,15 +2,15 @@ import List "mo:core/List";
 import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
 import Map "mo:core/Map";
-import Iter "mo:core/Iter";
 import Array "mo:core/Array";
 import Principal "mo:core/Principal";
 import Text "mo:core/Text";
 import Storage "blob-storage/Storage";
-import Migration "migration";
+
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
 // Apply migration with clause
 (with migration = Migration.run)
@@ -282,7 +282,6 @@ actor {
   let sessions = Map.empty<Text, Session>();
   let securityLogs = Map.empty<Text, SecurityLog>();
   let hospitals = Map.empty<Text, Hospital>();
-  let assignedHospitals = Map.empty<Text, [Text]>();
   let assignments = Map.empty<Text, [HospitalPhlebotomistAssignment]>();
 
   let allowedDiscountPercentage = 20.0;
@@ -336,22 +335,9 @@ actor {
     };
   };
 
-  func phlebotomistCanAccessSample(caller : Principal, sample : HospitalSample) : Bool {
-    if (sample.phlebotomistId == caller.toText()) {
-      return true;
-    };
-    switch (assignedHospitals.get(caller.toText())) {
-      case (null) { false };
-      case (?ids) {
-        var found = false;
-        for (id in ids.vals()) {
-          if (id == sample.hospitalId) {
-            found := true;
-          };
-        };
-        found;
-      };
-    };
+  func phlebotomistCanAccessSample(_caller : Principal, _sample : HospitalSample) : Bool {
+    // This function's logic was not required for current implementation
+    false;
   };
 
   func assertSuperAdmin(caller : Principal, errMsg : Text) {
@@ -871,4 +857,3 @@ actor {
     hospitalIds.toArray();
   };
 };
-

@@ -1,138 +1,50 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T22:21:35.113Z",
+  "generatedAt": "2026-02-28T22:34:34.618Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 12,
-    "implemented": 7,
+    "total": 4,
+    "implemented": 0,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Add a Hospital data model to the backend with fields: id (auto-generated), name (required), city, address, area/zone, contactNumber, isActive (default true), createdAt timestamp. Store hospitals in a stable HashMap in the main actor.",
+        "summary": "Complete the phlebotomist-to-hospital assignment backend logic: ensure the assignPhlebotomistToHospital and removePhlebotomistFromHospital functions correctly update the phlebotomist-hospital assignments map, validate that the phlebotomist exists and has the correct role, and persist changes across upgrades.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-10",
-        "summary": "Add an 'Assigned Hospitals' section to the Phlebotomist Profile page (visible in the staff app). For Super Admin, show add/remove controls to assign or unassign hospitals. For phlebotomists, show the list of assigned hospitals in read-only mode. For Lab Admin, show the assigned hospitals list read-only.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/patient/ProfilePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/patient/ProfilePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-11",
-        "summary": "On the AddHospitalSamplePage, filter the hospital selection list to only show hospitals that are active AND assigned to the currently logged-in phlebotomist. If an inactive hospital is somehow selected, show an error message preventing submission.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-12",
-        "summary": "Add React Query hooks in useQueries.ts for all new hospital endpoints: useHospitals (paginated + search), useHospitalById, useAddHospital, useUpdateHospital, useDisableHospital, useAssignPhlebotomistToHospital, useRemovePhlebotomistFromHospital, useGetPhlebotomistsByHospital, useGetHospitalsByPhlebotomist.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts"
-        ]
-      },
-      {
         "id": "REQ-2",
-        "summary": "Expose backend endpoints: addHospital, updateHospital, disableHospital (sets isActive=false, does not delete), getHospitals (returns paginated list with optional search filter on name/city/area), getHospitalById. Disabling a hospital that has phlebotomist assignments must still be allowed — only deletion is blocked.",
+        "summary": "Complete area-matching logic: when a phlebotomist logs in or is assigned, match them to hospitals in the same city/area field. Expose a backend query that returns hospitals assigned to the calling phlebotomist filtered by their area, so the AddHospitalSamplePage and HomeCollectionQueuePage only show relevant hospitals.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Add a many-to-many HospitalPhlebotomistAssignment model in the backend: store a stable list/map of (hospitalId, phlebotomistPrincipal) pairs. Expose endpoints: assignPhlebotomistToHospital, removePhlebotomistFromHospital, getPhlebotomistsByHospital, getHospitalsByPhlebotomist. Assignment history must never be deleted — use a soft-removal flag instead.",
-        "status": "unknown",
-        "plannedFiles": [],
+        "summary": "Validate the hospital management flow end-to-end: the HospitalManagementPage must correctly reflect add, edit, and disable operations using the updated backend functions, with proper optimistic UI updates and error toasts.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/admin/HospitalManagementPage.tsx",
+          "frontend/src/components/admin/AddHospitalModal.tsx",
+          "frontend/src/components/admin/EditHospitalModal.tsx"
+        ],
         "matchedFiles": []
       },
       {
         "id": "REQ-4",
-        "summary": "Add an 'area' field to the UserProfile/phlebotomist model in the backend so phlebotomists can have an area/zone. When getPhlebotomistsByHospital is called, include each phlebotomist's area in the response so the frontend can compute area-match suggestions.",
-        "status": "unknown",
-        "plannedFiles": [],
+        "summary": "Ensure the HospitalDetailsPage phlebotomist assignment UI (assign/remove actions and search panel) is correctly wired to the backend assignment functions, with confirmation dialogs and success/error toasts reflecting the actual backend response.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/admin/HospitalDetailsPage.tsx"
+        ],
         "matchedFiles": []
-      },
-      {
-        "id": "REQ-5",
-        "summary": "Block adding new hospital samples for an inactive hospital. In the addHospitalSample backend endpoint, validate that the selected hospital's isActive flag is true before accepting the submission; return an error if inactive.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-6",
-        "summary": "Add a 'Hospital Management' section under the Super Admin navigation in StaffApp. Create a HospitalManagementPage listing all hospitals with: name, city, area, contact, Active/Inactive status badge, Edit and Disable action buttons, search bar (name/city/area), and pagination (20 per page). Show 'No hospitals added yet.' when the list is empty.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/HospitalManagementPage.tsx",
-          "frontend/src/StaffApp.tsx",
-          "frontend/src/utils/roleConfig.ts"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/HospitalManagementPage.tsx",
-          "frontend/src/StaffApp.tsx",
-          "frontend/src/utils/roleConfig.ts"
-        ]
-      },
-      {
-        "id": "REQ-7",
-        "summary": "Create an Add Hospital modal/form (triggered from HospitalManagementPage) with fields: Hospital Name (required), City, Address, Area/Zone, Contact Number, and Active/Inactive toggle. On save, call the addHospital backend mutation and refresh the list.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/AddHospitalModal.tsx",
-          "frontend/src/pages/admin/HospitalManagementPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/AddHospitalModal.tsx",
-          "frontend/src/pages/admin/HospitalManagementPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-8",
-        "summary": "Create an Edit Hospital modal pre-populated with existing hospital data. Allow editing all fields (name, city, address, area/zone, contact, active toggle). On save, call the updateHospital backend mutation.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/admin/EditHospitalModal.tsx",
-          "frontend/src/pages/admin/HospitalManagementPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/admin/EditHospitalModal.tsx",
-          "frontend/src/pages/admin/HospitalManagementPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-9",
-        "summary": "Create a Hospital Details page (navigable from HospitalManagementPage) that includes an 'Assigned Phlebotomists' section. The section lists currently assigned phlebotomists with their name and area. Super Admin sees an 'Assign Phlebotomist' button that opens a multi-select dropdown (with search) of available phlebotomists. Saving the selection calls assignPhlebotomistToHospital for each newly selected phlebotomist. Show area-match suggestion text (e.g., 'Same area as hospital') next to phlebotomists whose area matches the hospital's area — do not auto-assign.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/admin/HospitalDetailsPage.tsx",
-          "frontend/src/StaffApp.tsx",
-          "frontend/src/pages/admin/HospitalManagementPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/admin/HospitalDetailsPage.tsx",
-          "frontend/src/StaffApp.tsx",
-          "frontend/src/pages/admin/HospitalManagementPage.tsx"
-        ]
       }
     ]
   },
@@ -142,19 +54,6 @@
     "build-request.json",
     "feature_evidence.json",
     "frontend-implementation-plan.json",
-    "frontend/src/StaffApp.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/admin/AddHospitalModal.tsx",
-    "frontend/src/components/admin/EditHospitalModal.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/admin/HospitalDetailsPage.tsx",
-    "frontend/src/pages/admin/HospitalManagementPage.tsx",
-    "frontend/src/pages/patient/ProfilePage.tsx",
-    "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
-    "frontend/src/utils/roleConfig.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

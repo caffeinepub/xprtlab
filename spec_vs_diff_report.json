@@ -1,99 +1,48 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T22:21:35.108Z",
-  "summary": "The diff implements the majority of the Hospital Management Module requirements across backend and frontend. Most REQs are addressed, but several acceptance criteria have gaps or are unverifiable due to truncation. Key concerns: REQ-6 RoleGuard enforcement is not evidenced, REQ-9 multi-select dropdown for phlebotomist assignment relies on an unimplemented 'getAllPhlebotomists' backend endpoint, REQ-10 Lab Admin read-only view of assigned hospitals needs verification, and REQ-12 useHospitalById hook presence is unclear from truncated useQueries.ts.",
+  "generatedAt": "2026-02-28T22:34:34.614Z",
+  "summary": "The diff includes a migration.mo file and modifications to backend/main.mo and project_state.json. The migration.mo addresses upgrade persistence (REQ-1 AC), and backend/main.mo shows relevant types and structure. However, the main.mo is truncated so we cannot verify full implementation of all backend functions. No frontend files were modified, meaning REQ-2 (frontend AddHospitalSamplePage using getAssignedHospitals), REQ-3 (HospitalManagementPage UI), and REQ-4 (HospitalDetailsPage UI) frontend acceptance criteria are unimplemented. The project_state.json shows all items as 'pending', further confirming no work was completed.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "getHospitals supports pagination (page size 20) and optional search term filtering name, city, and area fields at the backend level.",
-      "reason": "The HospitalManagementPage implements client-side pagination and the useHospitals hook appears to accept a searchTerm, but from the truncated backend/main.mo it is unclear whether server-side pagination and search filtering are implemented in the getHospitals endpoint itself.",
+      "id": "REQ-1",
+      "requirement": "Complete the phlebotomist-to-hospital assignment backend logic: assignPhlebotomistToHospital and removePhlebotomistFromHospital correctly update the map, validate phlebotomist existence and role.",
+      "reason": "The backend/main.mo is truncated and the actual function bodies for assignPhlebotomistToHospital, removePhlebotomistFromHospital, and role validation cannot be confirmed as implemented. The project_state.json marks REQ-1 as 'pending'.",
       "evidence": [
         "backend/main.mo",
-        "frontend/src/pages/admin/HospitalManagementPage.tsx"
+        "project_state.json"
       ]
     },
     {
-      "id": "REQ-6",
-      "requirement": "HospitalManagementPage is accessible only to superAdmin role (guarded by RoleGuard).",
-      "reason": "The HospitalManagementPage file does not show a RoleGuard wrapping, and StaffApp.tsx shows the 'Hospitals' nav item is added for both labAdmin and superAdmin roles, suggesting the page is accessible to labAdmin as well without a guard.",
+      "id": "REQ-2",
+      "requirement": "Complete area-matching logic and expose getAssignedHospitals query; AddHospitalSamplePage and HomeCollectionQueuePage use this query instead of fetching all hospitals.",
+      "reason": "No frontend files were modified. The AddHospitalSamplePage and HomeCollectionQueuePage are not updated to use getAssignedHospitals. The backend implementation of area-matching and getAssignedHospitals cannot be confirmed due to truncation. Project state marks REQ-2 as 'pending'.",
       "evidence": [
-        "frontend/src/pages/admin/HospitalManagementPage.tsx",
-        "frontend/src/StaffApp.tsx",
-        "frontend/src/utils/roleConfig.ts"
+        "project_state.json"
       ]
     },
     {
-      "id": "REQ-9",
-      "requirement": "Multi-select dropdown with search of available phlebotomists relies on a backend getAllPhlebotomists endpoint.",
-      "reason": "HospitalDetailsPage.tsx calls actor.getAllPhlebotomists() but there is no evidence this endpoint is implemented in backend/main.mo. The code falls back to an empty list, meaning the assign phlebotomist feature may be non-functional.",
+      "id": "REQ-3",
+      "requirement": "HospitalManagementPage must correctly reflect add, edit, and disable operations with optimistic UI updates and error toasts.",
+      "reason": "No frontend files were modified in the diff. HospitalManagementPage, AddHospitalModal, EditHospitalModal, and related frontend logic are not updated. Project state marks REQ-3 as 'pending'.",
       "evidence": [
-        "frontend/src/pages/admin/HospitalDetailsPage.tsx",
-        "backend/main.mo"
+        "project_state.json"
       ]
     },
     {
-      "id": "REQ-10",
-      "requirement": "For Lab Admin role, show the assigned hospitals list in read-only mode on the Phlebotomist Profile page.",
-      "reason": "ProfilePage.tsx checks for isSuperAdminViewer to show remove controls and shows phlebotomist view based on effectiveRole, but there is no explicit handling for labAdmin role to render the read-only assigned hospitals section.",
+      "id": "REQ-4",
+      "requirement": "HospitalDetailsPage phlebotomist assignment UI wired to backend with confirmation dialogs and success/error toasts.",
+      "reason": "No frontend files were modified in the diff. HospitalDetailsPage is not updated. Project state marks REQ-4 as 'pending'.",
       "evidence": [
-        "frontend/src/pages/patient/ProfilePage.tsx"
-      ]
-    },
-    {
-      "id": "REQ-12",
-      "requirement": "useHospitalById hook must be present in useQueries.ts.",
-      "reason": "The useQueries.ts file is truncated and useHospitalById is not visible in the shown portion, making it unverifiable whether this hook is implemented.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts"
+        "project_state.json"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "Migration module (backend/migration.mo) with explicit old-to-new schema migration logic including OldHospital, OldUserProfile, and NewActor types.",
-      "reason": "The build request did not request a formal migration module or explicit schema migration code. It only required stable storage persistence across upgrades. A full migration.mo module was added beyond what was specified.",
-      "evidence": [
-        "backend/migration.mo"
-      ]
-    },
-    {
-      "description": "Hospital Management navigation item added for labAdmin role in addition to superAdmin.",
-      "reason": "REQ-6 specifies the Hospital Management section should be under Super Admin navigation only. The diff adds a Hospitals nav item to labAdmin in both StaffApp.tsx and roleConfig.ts, which was not requested.",
-      "evidence": [
-        "frontend/src/StaffApp.tsx",
-        "frontend/src/utils/roleConfig.ts"
-      ]
-    },
-    {
-      "description": "useGetAssignedHospitals legacy hook used alongside the new useGetHospitalsByPhlebotomist in ProfilePage.",
-      "reason": "The build request only specifies using the new assignment system via useGetHospitalsByPhlebotomist. A legacy useGetAssignedHospitals hook is imported and used as a fallback, which was not part of the specification.",
-      "evidence": [
-        "frontend/src/pages/patient/ProfilePage.tsx"
-      ]
-    },
-    {
-      "description": "removalReason field included in the removePhlebotomistFromHospital mutation UI in ProfilePage and HospitalDetailsPage.",
-      "reason": "The build request specifies soft-removal via an inactive flag but does not request a removalReason field in the removal flow or UI.",
-      "evidence": [
-        "frontend/src/pages/patient/ProfilePage.tsx",
-        "frontend/src/pages/admin/HospitalDetailsPage.tsx"
-      ]
-    }
-  ],
-  "confidence": 0.62,
+  "hallucinated_features": [],
+  "confidence": 0.72,
   "changed_files": [
     "backend/main.mo",
     "backend/migration.mo",
-    "frontend/src/StaffApp.tsx",
-    "frontend/src/components/admin/AddHospitalModal.tsx",
-    "frontend/src/components/admin/EditHospitalModal.tsx",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/admin/HospitalDetailsPage.tsx",
-    "frontend/src/pages/admin/HospitalManagementPage.tsx",
-    "frontend/src/pages/patient/ProfilePage.tsx",
-    "frontend/src/pages/phlebotomist/AddHospitalSamplePage.tsx",
-    "frontend/src/utils/roleConfig.ts",
     "project_state.json"
   ]
 }
