@@ -1,0 +1,52 @@
+export interface NavItem {
+  label: string;
+  path: string;
+  icon: string;
+  badgeCount?: number;
+}
+
+type AppRole = "patient" | "phlebotomist" | "labAdmin" | "superAdmin";
+
+export const roleNavConfig: Record<AppRole, NavItem[]> = {
+  patient: [
+    { label: "Home", path: "home", icon: "Home" },
+    { label: "Book Test", path: "book-test", icon: "FlaskConical" },
+    { label: "Collections", path: "home-collection", icon: "MapPin" },
+    { label: "Reports", path: "reports", icon: "FileText" },
+    { label: "Profile", path: "profile", icon: "User" },
+  ],
+  phlebotomist: [
+    { label: "Tasks", path: "task-queue", icon: "ClipboardList" },
+    {
+      label: "Attendance",
+      path: "phlebotomist-attendance",
+      icon: "CalendarCheck",
+    },
+    {
+      label: "Add Sample",
+      path: "hospital-sample-entry",
+      icon: "FlaskConical",
+    },
+    { label: "Home Visits", path: "home-collection-queue", icon: "Home" },
+    { label: "Profile", path: "profile", icon: "User" },
+  ],
+  labAdmin: [
+    { label: "Bookings", path: "admin-bookings", icon: "CalendarDays" },
+    { label: "Samples", path: "admin-hospital-samples", icon: "FlaskConical" },
+    { label: "Reports", path: "admin-reports", icon: "FileText" },
+    { label: "Tests", path: "test-management", icon: "TestTube" },
+    { label: "Hospitals", path: "hospital-management", icon: "Building2" },
+  ],
+  superAdmin: [
+    {
+      label: "Dashboard",
+      path: "super-admin-dashboard",
+      icon: "LayoutDashboard",
+    },
+    { label: "Bookings", path: "admin-bookings", icon: "CalendarDays" },
+    { label: "Tests", path: "test-management", icon: "TestTube" },
+    { label: "Hospitals", path: "hospital-management", icon: "Building2" },
+    { label: "Audit", path: "audit-logs", icon: "BarChart3" },
+    { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
+  ],
+};
