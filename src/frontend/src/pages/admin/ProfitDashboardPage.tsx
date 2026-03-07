@@ -20,7 +20,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  getDemoHospitals,
+  getDemoSamples,
+  getDemoTests,
+} from "../../utils/demoStorage";
 import { formatCurrency } from "../../utils/formatters";
+import {
+  computeProfitPerTest,
+  getProfitStatusColor,
+} from "../../utils/profitUtils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -262,6 +271,261 @@ function generateDemoProfitData(filter: FilterPeriod): DemoProfitData {
   };
 }
 
+// ─── Real Profit Calculation from localStorage ────────────────────────────────
+
+function computeRealProfitData(filter: FilterPeriod): DemoProfitData {
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  const testMasters = getDemoTests();
+
+  // Fall back to generated demo data when no test masters are stored
+  if (testMasters.length === 0) {
+    return generateDemoProfitData(filter);
+  }
+
+  // Build test master lookup by testCode (case-insensitive)
+  const masterMap = new Map(
+    testMasters.map((t) => [t.testCode.toUpperCase(), t]),
+  );
+
+  // Date boundary for filter
+  const filterStart =
+    filter === "today"
+      ? now - dayMs
+      : filter === "week"
+        ? now - 7 * dayMs
+        : filter === "month"
+          ? now - 30 * dayMs
+          : 0; // "custom" = all time
+
+  const allSamples = getDemoSamples();
+  const filteredSamples = allSamples.filter((s) => s.createdAt >= filterStart);
+  const todaySamples = allSamples.filter((s) => s.createdAt >= now - dayMs);
+  const monthSamples = allSamples.filter(
+    (s) => s.createdAt >= now - 30 * dayMs,
+  );
+
+  // Helper: compute profit for a single sample-test pair
+  function sampleTestProfit(
+    testId: string,
+    mrpFallback: number,
+  ): { profit: number; commissionAmt: number; mrp: number } {
+    const master = masterMap.get(testId.toUpperCase());
+    if (master) {
+      const commissionAmt = master.mrp * (master.doctorCommissionPct / 100);
+      return {
+        profit: computeProfitPerTest(
+          master.mrp,
+          master.labCost,
+          master.doctorCommissionPct,
+        ),
+        commissionAmt,
+        mrp: master.mrp,
+      };
+    }
+    // No master found — estimate: assume 50% commission, 0 lab cost
+    const commissionAmt = mrpFallback * 0.5;
+    return { profit: mrpFallback * 0.5, commissionAmt, mrp: mrpFallback };
+  }
+
+  // Total profit from a sample array
+  function totalProfitFromSamples(samples: typeof allSamples): number {
+    return samples.reduce((sum, s) => {
+      const sProfit = s.tests.reduce(
+        (acc, t) => acc + sampleTestProfit(t.testId, t.price).profit,
+        0,
+      );
+      return sum + sProfit;
+    }, 0);
+  }
+
+  const profitToday = totalProfitFromSamples(todaySamples);
+  const profitMonth = totalProfitFromSamples(monthSamples);
+  const filteredProfit = totalProfitFromSamples(filteredSamples);
+  const totalProfit = totalProfitFromSamples(allSamples);
+
+  // Average profit per test in filtered set
+  const totalTestCount = filteredSamples.reduce(
+    (sum, s) => sum + s.tests.length,
+    0,
+  );
+  const avgProfitPerTest =
+    totalTestCount > 0 ? Math.round(filteredProfit / totalTestCount) : 0;
+
+  // Most / Least profitable test
+  const testProfitMap = new Map<
+    string,
+    { name: string; profitPerTest: number }
+  >();
+  for (const master of testMasters) {
+    const ppt = computeProfitPerTest(
+      master.mrp,
+      master.labCost,
+      master.doctorCommissionPct,
+    );
+    testProfitMap.set(master.testCode.toUpperCase(), {
+      name: master.testName,
+      profitPerTest: ppt,
+    });
+  }
+  const byProfit = Array.from(testProfitMap.values()).sort(
+    (a, b) => b.profitPerTest - a.profitPerTest,
+  );
+  const mostProfitableTest =
+    byProfit.length > 0
+      ? {
+          name: byProfit[0].name,
+          profit: Math.round(byProfit[0].profitPerTest),
+        }
+      : { name: "N/A", profit: 0 };
+  const leastProfitableTest =
+    byProfit.length > 0
+      ? {
+          name: byProfit[byProfit.length - 1].name,
+          profit: Math.round(byProfit[byProfit.length - 1].profitPerTest),
+        }
+      : { name: "N/A", profit: 0 };
+
+  // Profit chart — last 30 days
+  const profitChart = Array.from({ length: 30 }, (_, i) => {
+    const dayStart = now - (29 - i) * dayMs;
+    const dayEnd = dayStart + dayMs;
+    const label = new Date(dayStart).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+    });
+    const dayProfit = allSamples
+      .filter((s) => s.createdAt >= dayStart && s.createdAt < dayEnd)
+      .reduce(
+        (sum, s) =>
+          sum +
+          s.tests.reduce(
+            (acc, t) => acc + sampleTestProfit(t.testId, t.price).profit,
+            0,
+          ),
+        0,
+      );
+    // Add small variance so chart doesn't look flat when little data
+    return { date: label, profit: Math.max(0, dayProfit) };
+  });
+
+  // Hospital profit breakdown
+  const hospitals = getDemoHospitals();
+  const hospitalMap = new Map(hospitals.map((h) => [h.id, h.name]));
+  const hospitalAggMap = new Map<
+    string,
+    { revenue: number; commission: number; profit: number; tests: number }
+  >();
+  for (const s of filteredSamples) {
+    const hId = s.hospitalId;
+    if (!hospitalAggMap.has(hId)) {
+      hospitalAggMap.set(hId, {
+        revenue: 0,
+        commission: 0,
+        profit: 0,
+        tests: 0,
+      });
+    }
+    const agg = hospitalAggMap.get(hId)!;
+    for (const t of s.tests) {
+      const { profit, commissionAmt, mrp } = sampleTestProfit(
+        t.testId,
+        t.price,
+      );
+      agg.revenue += mrp;
+      agg.commission += commissionAmt;
+      agg.profit += profit;
+      agg.tests += 1;
+    }
+  }
+  const hospitalProfits: HospitalProfit[] = Array.from(
+    hospitalAggMap.entries(),
+  ).map(([id, agg]) => ({
+    id,
+    name: hospitalMap.get(id) ?? `Hospital ${id}`,
+    totalTests: agg.tests,
+    revenue: Math.round(agg.revenue),
+    commission: Math.round(agg.commission),
+    profit: Math.round(agg.profit),
+  }));
+
+  // If no hospital data from samples, fall back to the demo hospital profits
+  const finalHospitalProfits =
+    hospitalProfits.length > 0
+      ? hospitalProfits
+      : generateDemoProfitData(filter).hospitalProfits;
+
+  // Test-wise profit table
+  const testAggMap = new Map<
+    string,
+    {
+      testName: string;
+      testCode: string;
+      mrp: number;
+      labCost: number;
+      doctorCommission: number;
+      profitPerTest: number;
+      count: number;
+      totalProfit: number;
+    }
+  >();
+
+  for (const s of filteredSamples) {
+    for (const t of s.tests) {
+      const key = t.testId.toUpperCase();
+      const master = masterMap.get(key);
+      if (!testAggMap.has(key)) {
+        const mrp = master?.mrp ?? t.price;
+        const labCost = master?.labCost ?? 0;
+        const commPct = master?.doctorCommissionPct ?? 50;
+        const ppt = computeProfitPerTest(mrp, labCost, commPct);
+        testAggMap.set(key, {
+          testName: master?.testName ?? t.testName,
+          testCode: master?.testCode ?? t.testCode,
+          mrp,
+          labCost,
+          doctorCommission: Math.round(mrp * (commPct / 100)),
+          profitPerTest: ppt,
+          count: 0,
+          totalProfit: 0,
+        });
+      }
+      const agg = testAggMap.get(key)!;
+      agg.count += 1;
+      agg.totalProfit += agg.profitPerTest;
+    }
+  }
+
+  let testProfits: TestProfit[] = Array.from(testAggMap.values()).map((a) => ({
+    testName: a.testName,
+    testCode: a.testCode,
+    mrp: a.mrp,
+    labCost: a.labCost,
+    doctorCommission: a.doctorCommission,
+    totalTests: a.count,
+    profitPerTest: Math.round(a.profitPerTest),
+    totalProfit: Math.round(a.totalProfit),
+  }));
+
+  // If no test data from samples, fall back to demo test profits
+  if (testProfits.length === 0) {
+    testProfits = generateDemoProfitData(filter).testProfits;
+  }
+
+  return {
+    profitToday: Math.round(profitToday),
+    profitMonth: Math.round(profitMonth),
+    avgProfitPerTest,
+    mostProfitableTest,
+    leastProfitableTest,
+    totalProfit: Math.round(totalProfit),
+    profitChart,
+    hospitalProfits: finalHospitalProfits,
+    testProfits,
+  };
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 interface ProfitCardProps {
@@ -381,7 +645,7 @@ export default function ProfitDashboardPage({
   const [hospitalPage, setHospitalPage] = useState(0);
   const [testPage, setTestPage] = useState(0);
 
-  const data = useMemo(() => generateDemoProfitData(filter), [filter]);
+  const data = useMemo(() => computeRealProfitData(filter), [filter]);
 
   // Hospital pagination
   const totalHospitalPages = Math.max(
@@ -642,36 +906,55 @@ export default function ProfitDashboardPage({
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedHospitals.map((h, idx) => (
-                        <tr
-                          key={h.id}
-                          className={`border-b border-border last:border-0 transition-colors hover:bg-gray-50/80 ${idx % 2 === 0 ? "" : "bg-gray-50/30"}`}
-                          data-ocid={`profit_dashboard.hospital.row.${idx + 1}`}
-                        >
-                          <td className="px-5 py-3.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
-                                <Building2 className="w-3.5 h-3.5 text-purple-600" />
+                      {paginatedHospitals.map((h, idx) => {
+                        const hProfitPct =
+                          h.revenue > 0 ? (h.profit / h.revenue) * 100 : 0;
+                        const hColor =
+                          hProfitPct >= 30
+                            ? "green"
+                            : hProfitPct >= 10
+                              ? "yellow"
+                              : "red";
+                        const hDotCls =
+                          hColor === "green"
+                            ? "bg-green-500"
+                            : hColor === "yellow"
+                              ? "bg-yellow-500"
+                              : "bg-red-500";
+                        return (
+                          <tr
+                            key={h.id}
+                            className={`border-b border-border last:border-0 transition-colors hover:bg-gray-50/80 ${idx % 2 === 0 ? "" : "bg-gray-50/30"}`}
+                            data-ocid={`profit_dashboard.hospital.row.${idx + 1}`}
+                          >
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                                  <Building2 className="w-3.5 h-3.5 text-purple-600" />
+                                </div>
+                                <span className="font-medium text-foreground text-sm">
+                                  {h.name}
+                                </span>
+                                <span
+                                  className={`w-2 h-2 rounded-full flex-shrink-0 ${hDotCls}`}
+                                />
                               </div>
-                              <span className="font-medium text-foreground text-sm">
-                                {h.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-semibold text-foreground">
-                            {h.totalTests}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-semibold text-foreground">
-                            {formatCurrency(h.revenue)}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-semibold text-orange-600">
-                            {formatCurrency(h.commission)}
-                          </td>
-                          <td className="px-4 py-3.5 text-right font-bold text-green-700">
-                            {formatCurrency(h.profit)}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-semibold text-foreground">
+                              {h.totalTests}
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-semibold text-foreground">
+                              {formatCurrency(h.revenue)}
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-semibold text-orange-600">
+                              {formatCurrency(h.commission)}
+                            </td>
+                            <td className="px-4 py-3.5 text-right font-bold text-green-700">
+                              {formatCurrency(h.profit)}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -757,39 +1040,56 @@ export default function ProfitDashboardPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedTests.map((t, idx) => (
-                    <tr
-                      key={t.testCode}
-                      className={`border-b border-border last:border-0 transition-colors hover:bg-gray-50/80 ${idx % 2 === 0 ? "" : "bg-gray-50/30"}`}
-                      data-ocid={`profit_dashboard.test.row.${idx + 1}`}
-                    >
-                      <td className="px-5 py-3.5">
-                        <div>
-                          <p className="font-semibold text-foreground text-sm">
-                            {t.testName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {t.testCode}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-medium text-foreground">
-                        {formatCurrency(t.mrp)}
-                      </td>
-                      <td className="px-4 py-3.5 text-right text-muted-foreground">
-                        {formatCurrency(t.labCost)}
-                      </td>
-                      <td className="px-4 py-3.5 text-right text-orange-600">
-                        {formatCurrency(t.doctorCommission)}
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-semibold text-foreground">
-                        {t.totalTests}
-                      </td>
-                      <td className="px-4 py-3.5 text-right font-bold text-green-700">
-                        {formatCurrency(t.totalProfit)}
-                      </td>
-                    </tr>
-                  ))}
+                  {paginatedTests.map((t, idx) => {
+                    const tColor = getProfitStatusColor(t.mrp, t.profitPerTest);
+                    const tDotCls =
+                      tColor === "green"
+                        ? "bg-green-500"
+                        : tColor === "yellow"
+                          ? "bg-yellow-500"
+                          : "bg-red-500";
+                    const isLoss = t.profitPerTest < 0;
+                    return (
+                      <tr
+                        key={t.testCode}
+                        className={`border-b border-border last:border-0 transition-colors hover:bg-gray-50/80 ${isLoss ? "bg-red-50/50" : idx % 2 === 0 ? "" : "bg-gray-50/30"}`}
+                        data-ocid={`profit_dashboard.test.row.${idx + 1}`}
+                      >
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-start gap-2">
+                            <span
+                              className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${tDotCls}`}
+                            />
+                            <div>
+                              <p className="font-semibold text-foreground text-sm">
+                                {t.testName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {t.testCode}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-medium text-foreground">
+                          {formatCurrency(t.mrp)}
+                        </td>
+                        <td className="px-4 py-3.5 text-right text-muted-foreground">
+                          {formatCurrency(t.labCost)}
+                        </td>
+                        <td className="px-4 py-3.5 text-right text-orange-600">
+                          {formatCurrency(t.doctorCommission)}
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-semibold text-foreground">
+                          {t.totalTests}
+                        </td>
+                        <td
+                          className={`px-4 py-3.5 text-right font-bold ${isLoss ? "text-red-600" : "text-green-700"}`}
+                        >
+                          {formatCurrency(t.totalProfit)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

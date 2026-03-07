@@ -1,16 +1,20 @@
 import { Switch } from "@/components/ui/switch";
-import { AlertCircle, Loader2, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, Loader2, X } from "lucide-react";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { TestError } from "../../backend";
 import { useAddTest } from "../../hooks/useQueries";
+import { addDemoTestMaster } from "../../utils/demoStorage";
+import { computeProfitPerTest } from "../../utils/profitUtils";
 
 interface AddTestFormValues {
   name: string;
   code: string;
   sampleType: string;
   mrp: number;
+  labCost: number;
+  doctorCommission: number;
   isActive: boolean;
 }
 
@@ -36,11 +40,22 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
       code: "",
       sampleType: "",
       mrp: 0,
+      labCost: 0,
+      doctorCommission: 0,
       isActive: true,
     },
   });
 
   const isActive = watch("isActive");
+  const watchedMrp = watch("mrp");
+  const watchedLabCost = watch("labCost");
+  const watchedDoctorCommission = watch("doctorCommission");
+
+  const commissionAmt =
+    (watchedMrp ?? 0) * ((watchedDoctorCommission ?? 0) / 100);
+  const profitPerTest =
+    (watchedMrp ?? 0) - (watchedLabCost ?? 0) - commissionAmt;
+  const showLossWarning = profitPerTest < 0 && (watchedMrp ?? 0) > 0;
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -75,6 +90,19 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
         toast.error("Failed to add test. Please try again.");
         return;
       }
+
+      // Persist labCost & doctorCommission to demo storage
+      const code = values.code.trim().toUpperCase();
+      addDemoTestMaster({
+        id: code,
+        testName: values.name.trim(),
+        testCode: code,
+        mrp: values.mrp,
+        labCost: values.labCost ?? 0,
+        doctorCommissionPct: values.doctorCommission ?? 0,
+        sampleType: values.sampleType.trim(),
+        isActive: values.isActive,
+      });
 
       toast.success(`Test "${values.name}" added successfully`);
       reset();
@@ -149,6 +177,18 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
             <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
             <p className="text-sm text-red-700 font-medium">
               Failed to add test. Please check your inputs and try again.
+            </p>
+          </div>
+        )}
+
+        {/* Loss Warning Banner */}
+        {showLossWarning && (
+          <div className="mx-7 mt-4 flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-800 font-medium">
+              Warning: This test will generate negative profit. (MRP ₹
+              {watchedMrp} − Lab Cost ₹{watchedLabCost ?? 0} − Commission ₹
+              {Math.round(commissionAmt)} = ₹{Math.round(profitPerTest)})
             </p>
           </div>
         )}
@@ -269,6 +309,83 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
               </p>
             )}
           </div>
+
+          {/* Lab Cost */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="add-labCost"
+              className="block text-xs font-semibold text-gray-700 uppercase tracking-wide"
+            >
+              Lab Cost (₹)
+            </label>
+            <input
+              id="add-labCost"
+              type="number"
+              min={0}
+              step={1}
+              placeholder="e.g. 40"
+              className="w-full rounded-xl border-2 border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              {...register("labCost", {
+                min: { value: 0, message: "Lab cost must be 0 or more" },
+                valueAsNumber: true,
+              })}
+            />
+            {errors.labCost && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.labCost.message}
+              </p>
+            )}
+          </div>
+
+          {/* Doctor Commission */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="add-doctorCommission"
+              className="block text-xs font-semibold text-gray-700 uppercase tracking-wide"
+            >
+              Doctor Commission (%)
+            </label>
+            <input
+              id="add-doctorCommission"
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              placeholder="e.g. 50"
+              className="w-full rounded-xl border-2 border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              {...register("doctorCommission", {
+                min: { value: 0, message: "Commission must be 0 or more" },
+                max: { value: 100, message: "Commission cannot exceed 100%" },
+                valueAsNumber: true,
+              })}
+            />
+            {errors.doctorCommission && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.doctorCommission.message}
+              </p>
+            )}
+          </div>
+
+          {/* Profit Preview */}
+          {(watchedMrp ?? 0) > 0 && (
+            <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-xs flex items-center gap-3">
+              <span className="text-gray-500">
+                Commission: ₹{Math.round(commissionAmt)}
+              </span>
+              <span className="text-gray-400">|</span>
+              <span
+                className={
+                  profitPerTest >= 0
+                    ? "text-green-600 font-semibold"
+                    : "text-red-600 font-semibold"
+                }
+              >
+                Profit per Test: ₹{Math.round(profitPerTest)}
+              </span>
+            </div>
+          )}
 
           {/* Active Toggle */}
           <div className="flex items-center justify-between rounded-xl border-2 border-gray-200 px-4 py-3 bg-gray-50">

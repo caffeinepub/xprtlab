@@ -21,6 +21,7 @@ export const KEYS = {
   DELIVERY_TRACKING: "demo_delivery_tracking",
   HOSPITALS: "demo_hospitals",
   SETTLEMENTS: "demo_settlements",
+  TESTS: "demo_tests",
 } as const;
 
 // ─── Demo IDs ─────────────────────────────────────────────────────────────────
@@ -152,6 +153,17 @@ export interface DemoSettlement {
   settlementType: "Settled" | "Partial";
   timestamp: number;
   notes?: string;
+}
+
+export interface DemoTestMaster {
+  id: string;
+  testName: string;
+  testCode: string;
+  mrp: number;
+  labCost: number;
+  doctorCommissionPct: number; // percentage 0–100
+  sampleType: string;
+  isActive: boolean;
 }
 
 // ─── Safe read/write helpers ──────────────────────────────────────────────────
@@ -896,6 +908,111 @@ function buildDefaultDeliveryTracking(): DemoDeliveryTracking[] {
   ];
 }
 
+function buildDefaultTestMasters(): DemoTestMaster[] {
+  return [
+    {
+      id: "CBC001",
+      testName: "CBC",
+      testCode: "CBC001",
+      mrp: 300,
+      labCost: 40,
+      doctorCommissionPct: 50,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "BSF001",
+      testName: "Blood Sugar Fasting",
+      testCode: "BSF001",
+      mrp: 150,
+      labCost: 20,
+      doctorCommissionPct: 40,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "LP001",
+      testName: "Lipid Profile",
+      testCode: "LP001",
+      mrp: 600,
+      labCost: 80,
+      doctorCommissionPct: 50,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "TP001",
+      testName: "Thyroid Profile",
+      testCode: "TP001",
+      mrp: 700,
+      labCost: 90,
+      doctorCommissionPct: 50,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "VD001",
+      testName: "Vitamin D",
+      testCode: "VD001",
+      mrp: 1200,
+      labCost: 500,
+      doctorCommissionPct: 56.8,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "UR001",
+      testName: "Urine Routine",
+      testCode: "UR001",
+      mrp: 200,
+      labCost: 30,
+      doctorCommissionPct: 50,
+      sampleType: "Urine",
+      isActive: true,
+    },
+    {
+      id: "LFT001",
+      testName: "Liver Function Test",
+      testCode: "LFT001",
+      mrp: 800,
+      labCost: 100,
+      doctorCommissionPct: 50,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "KFT001",
+      testName: "Kidney Function Test",
+      testCode: "KFT001",
+      mrp: 750,
+      labCost: 95,
+      doctorCommissionPct: 50,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "HBA001",
+      testName: "HbA1c",
+      testCode: "HBA001",
+      mrp: 500,
+      labCost: 70,
+      doctorCommissionPct: 50,
+      sampleType: "Blood",
+      isActive: true,
+    },
+    {
+      id: "DN001",
+      testName: "Dengue NS1",
+      testCode: "DN001",
+      mrp: 900,
+      labCost: 150,
+      doctorCommissionPct: 50,
+      sampleType: "Blood",
+      isActive: true,
+    },
+  ];
+}
+
 function buildDefaultSettlements(): DemoSettlement[] {
   const now = Date.now();
   return [
@@ -943,6 +1060,7 @@ export function initializeDemoStorage(): void {
   seedIfEmpty(KEYS.STATUS_HISTORY, buildDefaultStatusHistory());
   seedIfEmpty(KEYS.DELIVERY_TRACKING, buildDefaultDeliveryTracking());
   seedIfEmpty(KEYS.SETTLEMENTS, buildDefaultSettlements());
+  seedIfEmpty(KEYS.TESTS, buildDefaultTestMasters());
 }
 
 // ─── Read helpers ─────────────────────────────────────────────────────────────
@@ -1087,4 +1205,42 @@ export function saveDemoSettlement(settlement: DemoSettlement): void {
   const all = safeRead<DemoSettlement>(KEYS.SETTLEMENTS) ?? [];
   all.push(settlement);
   safeWrite(KEYS.SETTLEMENTS, all);
+}
+
+// ─── Test Master helpers ───────────────────────────────────────────────────────
+
+export function getDemoTests(): DemoTestMaster[] {
+  return safeRead<DemoTestMaster>(KEYS.TESTS) ?? [];
+}
+
+export function saveDemoTests(tests: DemoTestMaster[]): void {
+  safeWrite(KEYS.TESTS, tests);
+}
+
+export function addDemoTestMaster(test: DemoTestMaster): void {
+  const all = getDemoTests();
+  // Prevent duplicate testCode
+  const exists = all.some(
+    (t) => t.testCode.toUpperCase() === test.testCode.toUpperCase(),
+  );
+  if (exists) {
+    // Update existing instead
+    updateDemoTestMaster(test.testCode, test);
+    return;
+  }
+  all.push(test);
+  safeWrite(KEYS.TESTS, all);
+}
+
+export function updateDemoTestMaster(
+  testCode: string,
+  updates: Partial<DemoTestMaster>,
+): void {
+  const all = getDemoTests();
+  const updated = all.map((t) =>
+    t.testCode.toUpperCase() === testCode.toUpperCase()
+      ? { ...t, ...updates }
+      : t,
+  );
+  safeWrite(KEYS.TESTS, updated);
 }

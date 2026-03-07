@@ -34,6 +34,10 @@ import {
   useGetAllTests,
   useSetTestStatus,
 } from "../../hooks/useQueries";
+import {
+  computeProfitPerTest,
+  getProfitStatusColor,
+} from "../../utils/profitUtils";
 
 const PAGE_SIZE = 20;
 
@@ -106,6 +110,28 @@ function parseCSV(content: string): {
   }
 
   return { rows, parseErrors };
+}
+
+// Profit status colour dot
+function ProfitDot({ color }: { color: "green" | "yellow" | "red" }) {
+  const cls =
+    color === "green"
+      ? "bg-green-500"
+      : color === "yellow"
+        ? "bg-yellow-500"
+        : "bg-red-500";
+  return (
+    <span
+      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${cls}`}
+      title={
+        color === "green"
+          ? "Profitable (>30%)"
+          : color === "yellow"
+            ? "Low profit (10–30%)"
+            : "Loss / <10%"
+      }
+    />
+  );
 }
 
 // Status badge component for test active/inactive state
@@ -345,6 +371,12 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
               <TableHead className="font-semibold">Code</TableHead>
               <TableHead className="font-semibold">Sample Type</TableHead>
               <TableHead className="font-semibold">MRP</TableHead>
+              {isSuperAdmin && (
+                <TableHead className="font-semibold">Lab Cost</TableHead>
+              )}
+              {isSuperAdmin && (
+                <TableHead className="font-semibold">Commission %</TableHead>
+              )}
               <TableHead className="font-semibold">Status</TableHead>
               {isSuperAdmin && (
                 <TableHead className="font-semibold text-center">
@@ -375,6 +407,16 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
                     <TableCell>
                       <Skeleton className="h-4 w-16" />
                     </TableCell>
+                    {isSuperAdmin && (
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                    )}
+                    {isSuperAdmin && (
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Skeleton className="h-4 w-16" />
                     </TableCell>
@@ -394,7 +436,7 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
             ) : isError ? (
               <TableRow>
                 <TableCell
-                  colSpan={isSuperAdmin ? 7 : 5}
+                  colSpan={isSuperAdmin ? 9 : 5}
                   className="text-center text-destructive py-8"
                 >
                   Failed to load tests. Please try again.
@@ -403,7 +445,7 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
             ) : paginatedTests.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={isSuperAdmin ? 7 : 5}
+                  colSpan={isSuperAdmin ? 9 : 5}
                   className="text-center text-muted-foreground py-8"
                 >
                   {searchQuery
@@ -414,12 +456,31 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
             ) : (
               paginatedTests.map((test) => {
                 const isToggling = togglingIds.has(test.id);
+                const labCost = (test as any).labCost ?? 0;
+                const commissionPct = (test as any).doctorCommission ?? 0;
+                const mrpNum = Number(test.price);
+                const profit = computeProfitPerTest(
+                  mrpNum,
+                  labCost,
+                  commissionPct,
+                );
+                const profitColor = getProfitStatusColor(mrpNum, profit);
+                const isLoss = profit < 0;
                 return (
                   <TableRow
                     key={test.id}
-                    className="hover:bg-muted/30 transition-colors"
+                    className={`hover:bg-muted/30 transition-colors ${isLoss ? "bg-red-50" : ""}`}
                   >
-                    <TableCell className="font-medium">{test.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {isSuperAdmin ? (
+                        <div className="flex items-center gap-2">
+                          <ProfitDot color={profitColor} />
+                          {test.name}
+                        </div>
+                      ) : (
+                        test.name
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="font-mono text-xs">
                         {test.code}
@@ -431,6 +492,16 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
                     <TableCell className="font-medium">
                       {formatMRP(test.price)}
                     </TableCell>
+                    {isSuperAdmin && (
+                      <TableCell className="text-muted-foreground">
+                        ₹{labCost}
+                      </TableCell>
+                    )}
+                    {isSuperAdmin && (
+                      <TableCell className="text-muted-foreground">
+                        {commissionPct}%
+                      </TableCell>
+                    )}
                     <TableCell>
                       <TestStatusBadge isActive={test.isActive} />
                     </TableCell>

@@ -10,18 +10,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { TestError, type TestOutput } from "../../backend";
 import { useUpdateTest } from "../../hooks/useQueries";
+import { updateDemoTestMaster } from "../../utils/demoStorage";
+import { computeProfitPerTest } from "../../utils/profitUtils";
 
 interface EditTestFormValues {
   name: string;
   code: string;
   sampleType: string;
   mrp: number;
+  labCost: number;
+  doctorCommission: number;
   isActive: boolean;
 }
 
@@ -52,11 +56,25 @@ export default function EditTestModal({
       code: "",
       sampleType: "",
       mrp: 0,
+      labCost: 0,
+      doctorCommission: 0,
       isActive: true,
     },
   });
 
   const isActive = watch("isActive");
+  const watchedMrp = watch("mrp");
+  const watchedLabCost = watch("labCost");
+  const watchedDoctorCommission = watch("doctorCommission");
+
+  const commissionAmt =
+    (watchedMrp ?? 0) * ((watchedDoctorCommission ?? 0) / 100);
+  const profitPerTest = computeProfitPerTest(
+    watchedMrp ?? 0,
+    watchedLabCost ?? 0,
+    watchedDoctorCommission ?? 0,
+  );
+  const showLossWarning = profitPerTest < 0 && (watchedMrp ?? 0) > 0;
 
   // Pre-populate form when test changes
   useEffect(() => {
@@ -66,6 +84,8 @@ export default function EditTestModal({
         code: test.code,
         sampleType: test.sampleType,
         mrp: Number(test.price),
+        labCost: (test as any).labCost ?? 0,
+        doctorCommission: (test as any).doctorCommission ?? 0,
         isActive: test.isActive,
       });
     }
@@ -97,6 +117,13 @@ export default function EditTestModal({
         return;
       }
 
+      // Persist labCost & doctorCommission to demo storage
+      updateDemoTestMaster(test.code, {
+        labCost: values.labCost ?? 0,
+        doctorCommissionPct: values.doctorCommission ?? 0,
+        mrp: values.mrp,
+      });
+
       toast.success(`Test "${values.name}" updated successfully`);
       onClose();
     } catch (err: any) {
@@ -123,6 +150,18 @@ export default function EditTestModal({
             Update the details for this test. You may also change the Test Code.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Loss Warning Banner */}
+        {showLossWarning && (
+          <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 mt-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-800 font-medium">
+              Warning: This test will generate negative profit. (MRP ₹
+              {watchedMrp} − Lab Cost ₹{watchedLabCost ?? 0} − Commission ₹
+              {Math.round(commissionAmt)} = ₹{Math.round(profitPerTest)})
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
           {/* Test Name */}
@@ -203,6 +242,69 @@ export default function EditTestModal({
               <p className="text-xs text-destructive">{errors.mrp.message}</p>
             )}
           </div>
+
+          {/* Lab Cost */}
+          <div className="space-y-1">
+            <Label htmlFor="edit-labCost">Lab Cost (₹)</Label>
+            <Input
+              id="edit-labCost"
+              type="number"
+              min={0}
+              step={1}
+              placeholder="e.g. 40"
+              {...register("labCost", {
+                min: { value: 0, message: "Lab cost must be 0 or more" },
+                valueAsNumber: true,
+              })}
+            />
+            {errors.labCost && (
+              <p className="text-xs text-destructive">
+                {errors.labCost.message}
+              </p>
+            )}
+          </div>
+
+          {/* Doctor Commission */}
+          <div className="space-y-1">
+            <Label htmlFor="edit-doctorCommission">Doctor Commission (%)</Label>
+            <Input
+              id="edit-doctorCommission"
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              placeholder="e.g. 50"
+              {...register("doctorCommission", {
+                min: { value: 0, message: "Commission must be 0 or more" },
+                max: { value: 100, message: "Commission cannot exceed 100%" },
+                valueAsNumber: true,
+              })}
+            />
+            {errors.doctorCommission && (
+              <p className="text-xs text-destructive">
+                {errors.doctorCommission.message}
+              </p>
+            )}
+          </div>
+
+          {/* Profit Preview */}
+          {(watchedMrp ?? 0) > 0 && (
+            <div className="rounded-lg bg-muted/50 border border-border px-4 py-2.5 text-xs flex items-center gap-3">
+              <span className="text-muted-foreground">
+                Commission: ₹{Math.round(commissionAmt)}
+              </span>
+              <span className="text-muted-foreground">|</span>
+              <span
+                className={
+                  profitPerTest >= 0
+                    ? "text-green-600 font-semibold"
+                    : "text-red-600 font-semibold"
+                }
+              >
+                Profit per Test: ₹{Math.round(profitPerTest)}
+              </span>
+            </div>
+          )}
 
           {/* Active Toggle */}
           <div className="flex items-center justify-between rounded-lg border border-border p-3">
