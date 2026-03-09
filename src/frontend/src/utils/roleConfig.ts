@@ -16,26 +16,18 @@ export const roleNavConfig: Record<AppRole, NavItem[]> = {
     { label: "Profile", path: "profile", icon: "User" },
   ],
   phlebotomist: [
+    { label: "Home", path: "phlebotomist-attendance", icon: "Home" },
     { label: "Tasks", path: "task-queue", icon: "ClipboardList" },
-    {
-      label: "Attendance",
-      path: "phlebotomist-attendance",
-      icon: "CalendarCheck",
-    },
-    {
-      label: "Add Sample",
-      path: "hospital-sample-entry",
-      icon: "FlaskConical",
-    },
-    { label: "Home Visits", path: "home-collection-queue", icon: "Home" },
-    { label: "Profile", path: "profile", icon: "User" },
+    { label: "Visits", path: "home-collection-queue", icon: "MapPin" },
+    { label: "Sample", path: "hospital-sample-entry", icon: "FlaskConical" },
+    { label: "My Samples", path: "my-hospital-samples", icon: "Package" },
   ],
   labAdmin: [
-    { label: "Bookings", path: "admin-bookings", icon: "CalendarDays" },
+    { label: "Home", path: "admin-bookings", icon: "Home" },
     { label: "Samples", path: "admin-hospital-samples", icon: "FlaskConical" },
     { label: "Reports", path: "admin-reports", icon: "FileText" },
-    { label: "Tests", path: "test-management", icon: "TestTube" },
     { label: "Hospitals", path: "hospital-management", icon: "Building2" },
+    { label: "Settings", path: "test-management", icon: "LayoutDashboard" },
   ],
   superAdmin: [
     {
@@ -43,10 +35,9 @@ export const roleNavConfig: Record<AppRole, NavItem[]> = {
       path: "super-admin-dashboard",
       icon: "LayoutDashboard",
     },
-    { label: "Bookings", path: "admin-bookings", icon: "CalendarDays" },
     { label: "Tests", path: "test-management", icon: "TestTube" },
     { label: "Hospitals", path: "hospital-management", icon: "Building2" },
-    { label: "Audit", path: "audit-logs", icon: "BarChart3" },
     { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
+    { label: "Settings", path: "audit-logs", icon: "BarChart3" },
   ],
 };

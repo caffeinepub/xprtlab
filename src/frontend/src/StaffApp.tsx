@@ -72,19 +72,23 @@ function getNavItems(role: AppRole): NavItem[] {
   if (role === "phlebotomist") {
     return [
       { label: "Home", path: "phlebotomist-attendance", icon: "Home" },
-      { label: "Tasks", path: "tasks", icon: "ClipboardList" },
-      { label: "Visits", path: "home-collections", icon: "MapPin" },
+      { label: "Tasks", path: "task-queue", icon: "ClipboardList" },
+      { label: "Visits", path: "home-collection-queue", icon: "MapPin" },
       { label: "Sample", path: "hospital-sample-entry", icon: "FlaskConical" },
       { label: "My Samples", path: "my-hospital-samples", icon: "Package" },
     ];
   }
   if (role === "labAdmin") {
     return [
-      { label: "Bookings", path: "admin-bookings", icon: "CalendarDays" },
+      { label: "Home", path: "admin-bookings", icon: "Home" },
+      {
+        label: "Samples",
+        path: "admin-hospital-samples",
+        icon: "FlaskConical",
+      },
       { label: "Reports", path: "admin-reports", icon: "FileText" },
-      { label: "Samples", path: "admin-samples", icon: "FlaskConical" },
-      { label: "Tests", path: "test-management", icon: "TestTube" },
       { label: "Hospitals", path: "hospital-management", icon: "Building2" },
+      { label: "Settings", path: "test-management", icon: "LayoutDashboard" },
     ];
   }
   if (role === "superAdmin") {
@@ -97,7 +101,7 @@ function getNavItems(role: AppRole): NavItem[] {
       { label: "Tests", path: "test-management", icon: "TestTube" },
       { label: "Hospitals", path: "hospital-management", icon: "Building2" },
       { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
-      { label: "Profit", path: "profit-dashboard", icon: "TrendingUp" },
+      { label: "Settings", path: "audit-logs", icon: "BarChart3" },
     ];
   }
   return [];
@@ -205,6 +209,7 @@ export default function StaffApp() {
       case "phlebotomist-attendance":
         return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
       case "tasks":
+      case "task-queue":
         return (
           <TaskQueuePage
             isDemoMode={demoMode}
@@ -213,6 +218,7 @@ export default function StaffApp() {
           />
         );
       case "home-collections":
+      case "home-collection-queue":
         return <HomeCollectionQueuePage isDemoMode={demoMode} />;
       case "hospital-sample-entry":
         return <AddHospitalSamplePage isDemoMode={demoMode} />;
@@ -239,6 +245,7 @@ export default function StaffApp() {
       case "create-camp":
         return <CreateCampPage />;
       case "admin-samples":
+      case "admin-hospital-samples":
         return <AdminHospitalSamplesPage />;
       case "admin-attendance":
         return <AdminAttendancePage />;

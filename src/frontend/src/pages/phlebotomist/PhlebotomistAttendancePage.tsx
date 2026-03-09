@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useCamera } from "../../camera/useCamera";
+import HealthcareBg from "../../components/shared/HealthcareBg";
 import { useGetTodaySummary } from "../../hooks/useQueries";
 import {
   MAX_GPS_ACCURACY_METERS,
@@ -927,29 +928,58 @@ function StepIndicator({ currentStep }: StepIndicatorProps) {
     <div className="flex items-center justify-center gap-0 mb-2">
       {steps.map((step, idx) => (
         <React.Fragment key={step.key}>
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-center gap-1.5">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                idx < stepIndex
-                  ? "bg-green-500 text-white"
+              className="flex items-center justify-center text-xs font-bold transition-all duration-300"
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                ...(idx < stepIndex
+                  ? {
+                      background: "#22C55E",
+                      color: "#FFFFFF",
+                      boxShadow: "0 4px 12px rgba(34,197,94,0.3)",
+                    }
                   : idx === stepIndex
-                    ? "bg-gradient-brand text-white shadow-btn-gradient"
-                    : "bg-gray-100 text-gray-400"
-              }`}
+                    ? {
+                        background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                        color: "#FFFFFF",
+                        boxShadow: "0 4px 12px rgba(13,71,161,0.3)",
+                      }
+                    : {
+                        background: "#F3F4F6",
+                        color: "#9CA3AF",
+                      }),
+              }}
             >
               {idx < stepIndex ? <CheckCircle className="w-4 h-4" /> : idx + 1}
             </div>
             <span
-              className={`text-xs font-medium ${idx === stepIndex ? "text-gray-800" : "text-gray-400"}`}
+              className="text-xs font-semibold transition-all duration-300"
+              style={{
+                color:
+                  idx === stepIndex
+                    ? "#0D47A1"
+                    : idx < stepIndex
+                      ? "#22C55E"
+                      : "#9CA3AF",
+              }}
             >
               {step.label}
             </span>
           </div>
           {idx < steps.length - 1 && (
             <div
-              className={`w-12 h-0.5 mb-5 mx-1 rounded-full transition-all ${
-                idx < stepIndex ? "bg-green-400" : "bg-gray-200"
-              }`}
+              className="mb-6 mx-2 rounded-full transition-all duration-300"
+              style={{
+                width: "40px",
+                height: "2px",
+                background:
+                  idx < stepIndex
+                    ? "linear-gradient(90deg, #22C55E, #16A34A)"
+                    : "#E5E7EB",
+              }}
             />
           )}
         </React.Fragment>
@@ -1030,29 +1060,35 @@ export default function PhlebotomistAttendancePage({
   // ── Completed state ──
   if (completedShift) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24 page-fade-in">
-        {/* Gradient header */}
-        <div className="gradient-header px-4 pt-6 pb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
-              <CalendarCheck className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">Attendance</h1>
-              <p className="text-xs text-white/70">
-                {new Date().toLocaleDateString("en-IN", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </p>
+      <div
+        className="relative min-h-screen pb-[90px] page-fade-in"
+        style={{ background: "#F7F9FC" }}
+      >
+        <HealthcareBg variant="minimal" opacity={0.035} />
+        <div className="relative z-10">
+          {/* Gradient header */}
+          <div className="gradient-header px-4 pt-6 pb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                <CalendarCheck className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Attendance</h1>
+                <p className="text-xs text-white/70">
+                  {new Date().toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="px-4 -mt-4 space-y-4 max-w-lg mx-auto">
-          <CompletedShiftPanel shift={completedShift} />
-          <TodaySummaryCards />
+          <div className="px-4 -mt-4 space-y-4 max-w-lg mx-auto">
+            <CompletedShiftPanel shift={completedShift} />
+            <TodaySummaryCards />
+          </div>
         </div>
       </div>
     );
@@ -1061,15 +1097,60 @@ export default function PhlebotomistAttendancePage({
   // ── Active shift ──
   if (activeShift) {
     return (
-      <div className="min-h-screen bg-gray-50 pb-24 page-fade-in">
+      <div
+        className="relative min-h-screen pb-[90px] page-fade-in"
+        style={{ background: "#F7F9FC" }}
+      >
+        <HealthcareBg variant="minimal" opacity={0.035} />
+        <div className="relative z-10">
+          {/* Gradient header */}
+          <div className="gradient-header px-4 pt-6 pb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">Attendance</h1>
+                <p className="text-xs text-white/70">
+                  {new Date().toLocaleDateString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 -mt-4 space-y-4 max-w-lg mx-auto">
+            <ActiveShiftPanel
+              shift={activeShift}
+              onEndShift={handleEndShift}
+              isEnding={isEnding}
+            />
+            <TodaySummaryCards />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Start shift flow ──
+  return (
+    <div
+      className="relative min-h-screen pb-[90px] page-fade-in"
+      style={{ background: "#F7F9FC" }}
+    >
+      <HealthcareBg variant="minimal" opacity={0.035} />
+      <div className="relative z-10">
         {/* Gradient header */}
         <div className="gradient-header px-4 pt-6 pb-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
+              <CalendarCheck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">Attendance</h1>
+              <h1 className="text-xl font-bold text-white">Start Attendance</h1>
               <p className="text-xs text-white/70">
                 {new Date().toLocaleDateString("en-IN", {
                   weekday: "long",
@@ -1082,63 +1163,30 @@ export default function PhlebotomistAttendancePage({
         </div>
 
         <div className="px-4 -mt-4 space-y-4 max-w-lg mx-auto">
-          <ActiveShiftPanel
-            shift={activeShift}
-            onEndShift={handleEndShift}
-            isEnding={isEnding}
-          />
+          {/* Step indicator */}
+          <div className="step-card p-4">
+            <StepIndicator currentStep={startStep} />
+          </div>
+
+          {/* Step content */}
+          <div className="animate-step-slide-in">
+            {startStep === "gps" && <GPSStep onSuccess={handleGPSSuccess} />}
+            {startStep === "selfie" && (
+              <SelfieStep onSuccess={handleSelfieSuccess} />
+            )}
+            {startStep === "confirm" && gpsLocation && (
+              <ConfirmStep
+                location={gpsLocation}
+                selfieUrl={selfieUrl}
+                onConfirm={handleConfirmStart}
+                isLoading={isStarting}
+              />
+            )}
+          </div>
+
+          {/* Today's summary (always visible) */}
           <TodaySummaryCards />
         </div>
-      </div>
-    );
-  }
-
-  // ── Start shift flow ──
-  return (
-    <div className="min-h-screen bg-gray-50 pb-24 page-fade-in">
-      {/* Gradient header */}
-      <div className="gradient-header px-4 pt-6 pb-8">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center">
-            <CalendarCheck className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Start Attendance</h1>
-            <p className="text-xs text-white/70">
-              {new Date().toLocaleDateString("en-IN", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 -mt-4 space-y-4 max-w-lg mx-auto">
-        {/* Step indicator */}
-        <div className="step-card p-4">
-          <StepIndicator currentStep={startStep} />
-        </div>
-
-        {/* Step content */}
-        <div className="animate-step-slide-in">
-          {startStep === "gps" && <GPSStep onSuccess={handleGPSSuccess} />}
-          {startStep === "selfie" && (
-            <SelfieStep onSuccess={handleSelfieSuccess} />
-          )}
-          {startStep === "confirm" && gpsLocation && (
-            <ConfirmStep
-              location={gpsLocation}
-              selfieUrl={selfieUrl}
-              onConfirm={handleConfirmStart}
-              isLoading={isStarting}
-            />
-          )}
-        </div>
-
-        {/* Today's summary (always visible) */}
-        <TodaySummaryCards />
       </div>
     </div>
   );

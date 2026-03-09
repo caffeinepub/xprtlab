@@ -1,18 +1,36 @@
-import {
-  Activity,
-  FileText,
-  FlaskConical,
-  Loader2,
-  Shield,
-} from "lucide-react";
-import React from "react";
-import { useInternetIdentity } from "../../hooks/useInternetIdentity";
+import { Activity, FileText, FlaskConical, Shield } from "lucide-react";
+import React, { useState } from "react";
+import OTPLoginScreen from "./OTPLoginScreen";
 
-export default function LoginScreen() {
-  const { login, loginStatus, identity } = useInternetIdentity();
+interface LoginScreenProps {
+  onAuthenticated?: () => void;
+}
 
-  const isLoggingIn = loginStatus === "logging-in";
-  const isAuthenticated = !!identity;
+export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const handleOTPSuccess = (_mobile: string) => {
+    setIsAuthenticated(true);
+    if (onAuthenticated) onAuthenticated();
+  };
+
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-green-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Login Successful
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            You are now securely logged in.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col items-center justify-center p-4">
@@ -20,11 +38,33 @@ export default function LoginScreen() {
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-4">
           <img
-            src="/assets/logo-1.png"
-            alt="Xpertlab"
-            className="h-14 w-auto object-contain"
+            src="/assets/uploads/logo-3-1.png"
+            alt="XpertLab"
+            className="h-[34px] w-auto object-contain"
+            onError={(e) => {
+              const img = e.currentTarget;
+              img.style.display = "none";
+              const fallback = img.nextElementSibling as HTMLElement | null;
+              if (fallback) fallback.style.display = "block";
+            }}
           />
-          <p className="text-sm text-muted-foreground font-medium">
+          <span
+            className="hidden text-xl font-extrabold tracking-tight"
+            style={{
+              background: "linear-gradient(to right, #0D47A1, #26C6DA)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            XpertLab
+          </span>
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-gray-900">Secure Login</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Enter your mobile number to continue
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground font-medium">
             Phlebotomist Portal
           </p>
         </div>
@@ -55,27 +95,8 @@ export default function LoginScreen() {
           ))}
         </div>
 
-        {/* Sign In Button */}
-        <button
-          type="button"
-          onClick={login}
-          disabled={isLoggingIn || isAuthenticated}
-          className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          {isLoggingIn ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
-            </>
-          ) : (
-            <>
-              <Shield className="h-4 w-4" /> Sign In Securely
-            </>
-          )}
-        </button>
-
-        <p className="text-center text-xs text-muted-foreground">
-          Powered by Internet Identity — secure, passwordless authentication
-        </p>
+        {/* OTP Login */}
+        <OTPLoginScreen isDemoMode={true} onSuccess={handleOTPSuccess} />
       </div>
     </div>
   );

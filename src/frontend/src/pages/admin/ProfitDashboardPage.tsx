@@ -678,7 +678,7 @@ export default function ProfitDashboardPage({
 
   return (
     <div
-      className="min-h-screen bg-gray-50 pb-24"
+      className="min-h-screen bg-gray-50 pb-[90px]"
       data-ocid="profit_dashboard.page"
     >
       {/* Page Header */}

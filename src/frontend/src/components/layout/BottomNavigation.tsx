@@ -58,7 +58,15 @@ export default function BottomNavigation({
   onNavigate,
 }: BottomNavigationProps) {
   return (
-    <nav className="bottom-nav fixed bottom-0 left-0 right-0 z-50 flex items-stretch">
+    <nav
+      className="bottom-nav flex items-stretch"
+      style={{
+        background: "#FFFFFF",
+        borderTop: "1px solid #E5E7EB",
+        boxShadow: "0 -8px 25px rgba(0,0,0,0.08)",
+        height: "70px",
+      }}
+    >
       {items.map((item) => {
         const isActive = currentPath === item.path;
         const IconComponent = iconMap[item.icon] ?? Home;
@@ -67,23 +75,33 @@ export default function BottomNavigation({
           <button
             type="button"
             key={item.path}
+            data-ocid={`nav.${item.path.replace(/\//g, "")}.tab`}
             onClick={() => onNavigate(item.path)}
-            className={`flex-1 flex flex-col items-center justify-center py-2 px-1 relative transition-all duration-200 ${
-              isActive
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className="flex-1 flex flex-col items-center justify-center py-2 px-1 relative transition-all duration-200"
+            style={{
+              color: isActive ? "#0D47A1" : "#9CA3AF",
+            }}
           >
-            {/* Active indicator */}
+            {/* Pill highlight for active tab */}
             {isActive && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-gradient-brand" />
+              <span
+                className="absolute inset-x-2 top-1 bottom-1 rounded-xl"
+                style={{
+                  background: "rgba(13,71,161,0.07)",
+                  zIndex: 0,
+                }}
+              />
             )}
 
             {/* Icon with badge */}
-            <span className="relative">
-              <IconComponent
-                className={`w-5 h-5 transition-all duration-200 ${isActive ? "scale-110" : ""}`}
-              />
+            <span
+              className="relative flex items-center justify-center transition-all duration-200"
+              style={{
+                transform: isActive ? "scale(1.1)" : "scale(1)",
+                zIndex: 1,
+              }}
+            >
+              <IconComponent className="w-[22px] h-[22px]" />
               {item.badgeCount != null && item.badgeCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
                   {item.badgeCount > 99 ? "99+" : item.badgeCount}
@@ -92,9 +110,12 @@ export default function BottomNavigation({
             </span>
 
             <span
-              className={`text-[10px] mt-0.5 font-medium leading-tight transition-all duration-200 ${
-                isActive ? "font-semibold" : ""
-              }`}
+              className="mt-0.5 leading-tight transition-all duration-200"
+              style={{
+                fontSize: "11px",
+                fontWeight: isActive ? 700 : 500,
+                zIndex: 1,
+              }}
             >
               {item.label}
             </span>

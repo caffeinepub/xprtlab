@@ -49,7 +49,7 @@ class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md w-full bg-card rounded-2xl shadow-card p-8 text-center">
             <div className="mb-6">
               <img
-                src="/assets/logo-1.png"
+                src="/assets/uploads/logo-3-1.png"
                 alt="XpertLab"
                 className="h-10 mx-auto mb-4 object-contain"
                 onError={(e) => {

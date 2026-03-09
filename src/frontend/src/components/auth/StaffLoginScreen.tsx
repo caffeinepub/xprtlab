@@ -1,7 +1,8 @@
-import { BarChart3, FlaskConical, Loader2, Shield } from "lucide-react";
+import { BarChart3, FlaskConical, Shield } from "lucide-react";
 import type React from "react";
-import { useInternetIdentity } from "../../hooks/useInternetIdentity";
 import type { AppRole } from "../../types/models";
+import HealthcareBg from "../shared/HealthcareBg";
+import OTPLoginScreen from "./OTPLoginScreen";
 
 interface StaffLoginScreenProps {
   onDemoMode?: (role: AppRole) => void;
@@ -10,122 +11,155 @@ interface StaffLoginScreenProps {
 export default function StaffLoginScreen({
   onDemoMode,
 }: StaffLoginScreenProps) {
-  const { login, loginStatus, identity } = useInternetIdentity();
-
-  const isLoggingIn = loginStatus === "logging-in";
-  const isAuthenticated = !!identity;
-
   const demoRoles: {
     role: AppRole;
     label: string;
     icon: React.ReactNode;
     color: string;
+    bg: string;
+    border: string;
   }[] = [
     {
       role: "phlebotomist",
       label: "Phlebotomist",
-      icon: <FlaskConical className="h-4 w-4" />,
-      color: "bg-blue-50 border-blue-200 text-blue-700",
+      icon: <FlaskConical className="h-5 w-5" />,
+      color: "#1565C0",
+      bg: "#EFF6FF",
+      border: "#BFDBFE",
     },
     {
       role: "labAdmin",
       label: "Lab Admin",
-      icon: <BarChart3 className="h-4 w-4" />,
-      color: "bg-purple-50 border-purple-200 text-purple-700",
+      icon: <BarChart3 className="h-5 w-5" />,
+      color: "#7C3AED",
+      bg: "#F5F3FF",
+      border: "#DDD6FE",
     },
     {
       role: "superAdmin",
       label: "Super Admin",
-      icon: <Shield className="h-4 w-4" />,
-      color: "bg-red-50 border-red-200 text-red-700",
+      icon: <Shield className="h-5 w-5" />,
+      color: "#B91C1C",
+      bg: "#FEF2F2",
+      border: "#FECACA",
     },
   ];
 
+  const handleOTPSuccess = (_mobile: string) => {
+    try {
+      const stored = localStorage.getItem("xpertlab_demo_user");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const role = parsed.role as AppRole;
+        if (role && onDemoMode) {
+          onDemoMode(role);
+          return;
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+    if (onDemoMode) {
+      onDemoMode("phlebotomist");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm space-y-6">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <img
-            src="/assets/logo-1.png"
-            alt="Xpertlab"
-            className="h-14 w-auto object-contain"
-          />
-          <p className="text-sm text-muted-foreground font-medium text-center">
-            Staff Portal
-          </p>
-        </div>
+    <div
+      className="relative min-h-screen flex flex-col items-center justify-center p-4"
+      style={{ background: "#F7F9FC" }}
+    >
+      <HealthcareBg variant="default" opacity={0.04} />
 
-        {/* Role Info */}
-        <div className="bg-muted/50 rounded-xl p-3 space-y-1.5">
-          <p className="text-xs font-bold text-foreground">Access Levels:</p>
-          {[
-            {
-              icon: <FlaskConical className="h-3 w-3" />,
-              label: "Phlebotomist — Sample collection & attendance",
-            },
-            {
-              icon: <BarChart3 className="h-3 w-3" />,
-              label: "Lab Admin — Bookings, reports & billing",
-            },
-            {
-              icon: <Shield className="h-3 w-3" />,
-              label: "Super Admin — Full system access",
-            },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center gap-2 text-xs text-muted-foreground"
+      <div className="relative z-10 w-full max-w-sm">
+        {/* Logo header */}
+        <div className="flex flex-col items-center mb-6">
+          <div
+            className="bg-white rounded-2xl px-5 py-3.5 shadow-md mb-4"
+            style={{ boxShadow: "0 8px 24px rgba(13,71,161,0.10)" }}
+          >
+            <img
+              src="/assets/uploads/logo-4-1.png"
+              alt="XpertLab"
+              className="h-[42px] w-auto object-contain"
+              onError={(e) => {
+                const img = e.currentTarget;
+                img.src = "/assets/uploads/logo-5-2.png";
+                img.onerror = () => {
+                  img.style.display = "none";
+                  const fallback = img.nextElementSibling as HTMLElement | null;
+                  if (fallback) fallback.style.display = "block";
+                };
+              }}
+            />
+            <span
+              className="hidden text-xl font-extrabold tracking-tight"
+              style={{
+                background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
             >
-              <span className="text-primary">{item.icon}</span>
-              <span>{item.label}</span>
-            </div>
-          ))}
+              XpertLab
+            </span>
+          </div>
+          <div className="text-center">
+            <h1
+              className="font-bold text-gray-900"
+              style={{ fontSize: "20px" }}
+            >
+              Staff Secure Login
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Enter your mobile number to continue
+            </p>
+          </div>
         </div>
 
-        {/* Sign In */}
-        <button
-          type="button"
-          onClick={login}
-          disabled={isLoggingIn || isAuthenticated}
-          className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-primary/90 transition-colors shadow-sm"
+        {/* Login card */}
+        <div
+          className="bg-white rounded-2xl p-6 space-y-5"
+          style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
         >
-          {isLoggingIn ? (
+          <OTPLoginScreen isDemoMode={true} onSuccess={handleOTPSuccess} />
+
+          {/* Demo Mode Role Picker */}
+          {onDemoMode && (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" /> Signing in...
-            </>
-          ) : (
-            <>
-              <Shield className="h-4 w-4" /> Sign In with Internet Identity
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  Quick Demo
+                </span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-center text-gray-500">
+                  Select a role to jump directly into demo mode
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {demoRoles.map(
+                    ({ role, label, icon, color, bg, border }, idx) => (
+                      <button
+                        type="button"
+                        key={role}
+                        onClick={() => onDemoMode(role)}
+                        data-ocid={`login.demo_button.${idx + 1}`}
+                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl border font-semibold text-xs transition-all hover:opacity-80 active:scale-95"
+                        style={{ color, background: bg, borderColor: border }}
+                      >
+                        {icon}
+                        <span className="text-center leading-tight">
+                          {label}
+                        </span>
+                      </button>
+                    ),
+                  )}
+                </div>
+              </div>
             </>
           )}
-        </button>
-
-        {/* Demo Mode */}
-        {onDemoMode && (
-          <>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-border" />
-              <span className="text-xs font-semibold text-muted-foreground">
-                OR TRY DEMO MODE
-              </span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {demoRoles.map(({ role, label, icon, color }) => (
-                <button
-                  type="button"
-                  key={role}
-                  onClick={() => onDemoMode(role)}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border font-semibold text-xs transition-colors hover:opacity-80 ${color}`}
-                >
-                  {icon}
-                  <span className="text-center leading-tight">{label}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );

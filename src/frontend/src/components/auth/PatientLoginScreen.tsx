@@ -3,6 +3,7 @@ import { Activity, FileText, FlaskConical, Heart, Home } from "lucide-react";
 import React from "react";
 import { useInternetIdentity } from "../../hooks/useInternetIdentity";
 import GradientButton from "../shared/GradientButton";
+import HealthcareBg from "../shared/HealthcareBg";
 
 interface PatientLoginScreenProps {
   showRoleError?: boolean;
@@ -55,16 +56,46 @@ export default function PatientLoginScreen({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary/80 to-accent flex flex-col">
+    <div
+      className="relative min-h-screen flex flex-col"
+      style={{
+        background:
+          "linear-gradient(160deg, #0D47A1 0%, #1565C0 40%, #26A69A 100%)",
+      }}
+    >
+      <HealthcareBg variant="ecg" opacity={0.04} />
+
       {/* Header */}
-      <header className="flex items-center justify-between px-4 pt-8 pb-4">
+      <header className="relative z-10 flex items-center justify-between px-4 pt-8 pb-4">
         <div className="flex items-center gap-3">
-          <div className="bg-white rounded-xl px-3 py-2 shadow-md">
+          <div
+            className="bg-white rounded-xl px-3 py-2"
+            style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}
+          >
             <img
-              src="/assets/logo-1.png"
-              alt="Xpertlab"
-              className="h-8 w-auto object-contain"
+              src="/assets/uploads/logo-4-1.png"
+              alt="XpertLab"
+              className="h-[36px] w-auto object-contain"
+              onError={(e) => {
+                const img = e.currentTarget;
+                img.src = "/assets/uploads/logo-5-2.png";
+                img.onerror = () => {
+                  img.style.display = "none";
+                  const fallback = img.nextElementSibling as HTMLElement | null;
+                  if (fallback) fallback.style.display = "block";
+                };
+              }}
             />
+            <span
+              className="hidden text-base font-extrabold tracking-tight"
+              style={{
+                background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              XpertLab
+            </span>
           </div>
         </div>
         <a
@@ -75,8 +106,8 @@ export default function PatientLoginScreen({
         </a>
       </header>
 
-      {/* Hero */}
-      <div className="px-4 mb-6">
+      {/* Hero image */}
+      <div className="relative z-10 px-4 mb-6">
         <div className="rounded-2xl overflow-hidden shadow-xl">
           <img
             src="/assets/generated/hero-banner.dim_1200x400.png"
@@ -87,11 +118,10 @@ export default function PatientLoginScreen({
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center px-4 pb-8">
+      <main className="relative z-10 flex-1 flex flex-col items-center px-4 pb-8">
         <div className="w-full max-w-md">
-          {/* Role Error */}
           {showRoleError && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-4 mb-5 text-center">
+            <div className="bg-white/15 border border-white/25 rounded-xl p-4 mb-5 text-center">
               <p className="text-white font-semibold text-sm">
                 ⚠️ Staff Account Detected
               </p>
@@ -106,16 +136,27 @@ export default function PatientLoginScreen({
           )}
 
           {/* Login Card */}
-          <div className="bg-white rounded-2xl p-6 shadow-xl mb-6">
+          <div
+            className="bg-white rounded-2xl p-6 mb-6"
+            style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.18)" }}
+          >
             <div className="text-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-3 shadow-md">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md"
+                style={{
+                  background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                }}
+              >
                 <Heart className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-foreground">
-                Welcome, Patient
+              <h2
+                className="font-bold text-gray-900 leading-tight"
+                style={{ fontSize: "20px" }}
+              >
+                Your Health. Simplified.
               </h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Sign in to manage your health journey
+              <p className="text-gray-500 mt-2" style={{ fontSize: "14px" }}>
+                Secure access to your diagnostic tests and reports.
               </p>
             </div>
 
@@ -124,25 +165,31 @@ export default function PatientLoginScreen({
               loading={isLoggingIn}
               className="w-full"
               size="lg"
+              data-ocid="login.primary_button"
             >
               {isLoggingIn
                 ? "Signing in..."
                 : identity
                   ? "Sign Out"
-                  : "Sign In with Internet Identity"}
+                  : "Continue Secure Login"}
             </GradientButton>
 
-            <p className="text-center text-xs text-muted-foreground mt-3">
+            <p className="text-center text-xs text-gray-400 mt-3">
               Secure, private authentication — no passwords needed
             </p>
           </div>
 
-          {/* Features */}
+          {/* Features grid */}
           <div className="grid grid-cols-2 gap-3">
             {features.map(({ icon: Icon, label, desc }) => (
               <div
                 key={label}
-                className="bg-white/15 backdrop-blur-sm rounded-xl p-3 border border-white/20"
+                className="rounded-xl p-3 border"
+                style={{
+                  background: "rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(8px)",
+                  borderColor: "rgba(255,255,255,0.2)",
+                }}
               >
                 <Icon className="w-5 h-5 text-white mb-2" />
                 <p className="text-white text-xs font-semibold leading-tight">
@@ -155,17 +202,8 @@ export default function PatientLoginScreen({
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="text-center py-3 text-white/50 text-xs">
-        © {new Date().getFullYear()} Xpertlab · Built with{" "}
-        <a
-          href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || "xpertlab")}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-white/80"
-        >
-          caffeine.ai
-        </a>
+      <footer className="relative z-10 text-center py-3 text-white/50 text-xs">
+        © XpertLab
       </footer>
     </div>
   );

@@ -1,4 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap");
+/* ── Self-hosted fonts ─────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/assets/fonts/PlusJakartaSans[wght].woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -6,25 +13,26 @@
 
 @layer base {
   :root {
-    --background: oklch(0.99 0.002 240);
+    /* ── Brand-matched OKLCH tokens ──────────────────────────────────────── */
+    --background: oklch(0.975 0.005 240); /* #F7F9FC ≈ very light blue-grey */
     --foreground: oklch(0.15 0.02 240);
-    --card: oklch(1 0 0);
+    --card: oklch(1 0 0); /* #FFFFFF */
     --card-foreground: oklch(0.15 0.02 240);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.15 0.02 240);
-    --primary: oklch(0.38 0.18 250);
+    --primary: oklch(0.36 0.19 255); /* #0D47A1 */
     --primary-foreground: oklch(1 0 0);
     --secondary: oklch(0.96 0.01 240);
     --secondary-foreground: oklch(0.25 0.03 240);
     --muted: oklch(0.96 0.01 240);
     --muted-foreground: oklch(0.55 0.02 240);
-    --accent: oklch(0.75 0.14 200);
-    --accent-foreground: oklch(0.15 0.02 240);
+    --accent: oklch(0.65 0.12 185); /* #26A69A */
+    --accent-foreground: oklch(1 0 0);
     --destructive: oklch(0.55 0.22 25);
     --destructive-foreground: oklch(1 0 0);
     --border: oklch(0.9 0.01 240);
     --input: oklch(0.9 0.01 240);
-    --ring: oklch(0.38 0.18 250);
+    --ring: oklch(0.36 0.19 255);
     --radius: 0.75rem;
     --success: oklch(0.6 0.18 145);
     --warning: oklch(0.75 0.18 75);
@@ -37,19 +45,19 @@
     --card-foreground: oklch(0.95 0.01 240);
     --popover: oklch(0.17 0.02 240);
     --popover-foreground: oklch(0.95 0.01 240);
-    --primary: oklch(0.65 0.18 250);
+    --primary: oklch(0.6 0.19 255);
     --primary-foreground: oklch(0.1 0.02 240);
     --secondary: oklch(0.22 0.02 240);
     --secondary-foreground: oklch(0.9 0.01 240);
     --muted: oklch(0.22 0.02 240);
     --muted-foreground: oklch(0.65 0.02 240);
-    --accent: oklch(0.65 0.14 200);
+    --accent: oklch(0.65 0.12 185);
     --accent-foreground: oklch(0.95 0.01 240);
     --destructive: oklch(0.55 0.22 25);
     --destructive-foreground: oklch(1 0 0);
     --border: oklch(0.28 0.02 240);
     --input: oklch(0.28 0.02 240);
-    --ring: oklch(0.65 0.18 250);
+    --ring: oklch(0.6 0.19 255);
   }
 
   * {
@@ -58,9 +66,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Poppins", "Inter", system-ui, -apple-system, sans-serif;
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-size: 14px;
   }
 
   h1,
@@ -69,7 +79,7 @@
   h4,
   h5,
   h6 {
-    font-family: "Poppins", "Inter", system-ui, sans-serif;
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
     font-weight: 700;
     letter-spacing: -0.01em;
   }
@@ -80,33 +90,66 @@
   input,
   textarea,
   button {
-    font-family: "Poppins", "Inter", system-ui, sans-serif;
+    font-family: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   }
 }
 
 @layer components {
-  /* Floating nav utility */
+  /* ── Bottom navigation ───────────────────────────────────────────────────── */
   .floating-nav {
     @apply fixed bottom-0 left-0 right-0 z-50;
   }
 
-  /* Premium card */
+  .bottom-nav {
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.08);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 70px;
+    z-index: 100;
+  }
+
+  /* ── Card system ─────────────────────────────────────────────────────────── */
+  .card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 12px 32px rgba(13, 71, 161, 0.12);
+    transform: translateY(-2px);
+  }
+
   .premium-card {
-    background: white;
-    border-radius: 18px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
 
   .premium-card:hover {
-    box-shadow: 0 8px 32px rgba(13, 71, 161, 0.12);
+    box-shadow: 0 12px 32px rgba(13, 71, 161, 0.12);
+    transform: translateY(-2px);
   }
 
-  /* Step card */
-  .step-card {
-    background: white;
+  .card-medical {
+    background: #ffffff;
     border-radius: 16px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .card-medical:hover {
+    box-shadow: 0 12px 32px rgba(13, 71, 161, 0.12);
+  }
+
+  .step-card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
 
@@ -114,30 +157,30 @@
     box-shadow: 0 8px 28px rgba(13, 71, 161, 0.12);
   }
 
-  .step-card:active {
-    transform: scale(1.03);
-  }
-
-  /* Gradient button */
+  /* ── Buttons ──────────────────────────────────────────────────────────────── */
   .btn-gradient {
-    background: linear-gradient(135deg, #0d47a1 0%, #26c6da 100%);
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
     color: white;
     border-radius: 12px;
+    height: 48px;
     font-weight: 600;
     font-size: 0.875rem;
-    padding: 0.75rem 1.5rem;
+    padding: 0 1.5rem;
     transition: all 0.2s ease;
     border: none;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
   }
 
   .btn-gradient:hover {
-    box-shadow: 0 4px 16px rgba(13, 71, 161, 0.35);
+    box-shadow: 0 6px 20px rgba(13, 71, 161, 0.4);
     transform: translateY(-1px);
   }
 
   .btn-gradient:active {
-    transform: scale(1.03);
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(13, 71, 161, 0.3);
   }
 
   .btn-gradient:disabled {
@@ -147,50 +190,123 @@
     box-shadow: none;
   }
 
-  /* Frosted glass nav */
-  .glass-nav {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 -4px 24px rgba(13, 71, 161, 0.1), 0 -1px 0 rgba(0, 0, 0, 0.06);
-    border-top: 1px solid rgba(255, 255, 255, 0.6);
+  /* ── Button ripple ───────────────────────────────────────────────────────── */
+  .btn-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-ripple::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(0);
+    border-radius: inherit;
+    transition: transform 0.3s ease;
+  }
+  .btn-ripple:active::after {
+    transform: scale(2);
+    opacity: 0;
   }
 
-  /* Page fade-in */
+  /* ── Gradient button (alias) ─────────────────────────────────────────────── */
+  .gradient-btn {
+    @apply btn-gradient btn-ripple flex items-center justify-center gap-2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  /* ── Icon containers ─────────────────────────────────────────────────────── */
+  .icon-container {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Gradient headers ────────────────────────────────────────────────────── */
+  .gradient-header {
+    background: linear-gradient(135deg, #0d47a1 0%, #26a69a 100%);
+  }
+
+  .gradient-header-h {
+    background: linear-gradient(90deg, #0d47a1 0%, #26a69a 100%);
+  }
+
+  /* ── Page transitions ────────────────────────────────────────────────────── */
   .page-fade-in {
     animation: pageFadeIn 0.3s ease forwards;
   }
 
-  /* Gradient header */
-  .gradient-header {
-    background: linear-gradient(135deg, #0d47a1 0%, #26c6da 100%);
+  /* ── Glass nav ───────────────────────────────────────────────────────────── */
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
   }
 }
 
 @layer utilities {
-  /* Medical typography */
+  /* ── Medical typography scale ────────────────────────────────────────────── */
   .text-medical-heading {
-    font-family: "Poppins", sans-serif;
+    font-family: "Plus Jakarta Sans", "Inter", sans-serif;
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.2;
+    font-size: 20px;
   }
 
-  .text-medical-label {
-    font-family: "Poppins", sans-serif;
+  .text-section-header {
+    font-size: 16px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-size: 0.7rem;
+    color: oklch(var(--foreground));
   }
 
-  .text-medical-body {
-    font-family: "Poppins", sans-serif;
+  .text-card-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .text-body {
+    font-size: 14px;
     font-weight: 400;
     line-height: 1.6;
   }
+
+  .text-medical-label {
+    font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 12px;
+  }
+
+  .text-medical-body {
+    font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  /* ── Icon pulse utility ─────────────────────────────────────────────────── */
+  .icon-pulse {
+    animation: iconPulse 0.6s ease;
+  }
+
+  /* ── bg-gradient-brand helper ────────────────────────────────────────────── */
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+  }
 }
 
+/* ── Keyframes ───────────────────────────────────────────────────────────────── */
 @keyframes pageFadeIn {
   from {
     opacity: 0;
@@ -210,6 +326,16 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@keyframes iconPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
   }
 }
 
@@ -234,7 +360,6 @@
   }
 }
 
-/* Modal entrance animations */
 @keyframes modalBackdropIn {
   from {
     opacity: 0;

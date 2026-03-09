@@ -8,16 +8,21 @@ export default function AppSelectorPage() {
       {/* Header */}
       <header className="bg-card shadow-sm px-4 py-4 flex items-center justify-center">
         <img
-          src="/assets/logo-1.png"
+          src="/assets/uploads/logo-3-1.png"
           alt="XpertLab"
-          className="h-10 object-contain"
+          className="h-[34px] object-contain"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.style.display = "none";
             const parent = target.parentElement;
             if (parent) {
               const fallback = document.createElement("span");
-              fallback.className = "text-xl font-bold text-primary";
+              fallback.style.background =
+                "linear-gradient(to right, #0D47A1, #26C6DA)";
+              fallback.style.webkitBackgroundClip = "text";
+              fallback.style.webkitTextFillColor = "transparent";
+              fallback.style.fontWeight = "800";
+              fallback.style.fontSize = "20px";
               fallback.textContent = "XpertLab";
               parent.appendChild(fallback);
             }
@@ -158,18 +163,7 @@ export default function AppSelectorPage() {
       {/* Footer */}
       <footer className="py-4 px-4 text-center">
         <p className="text-xs text-muted-foreground">
-          Built with <span className="text-destructive">♥</span> using{" "}
-          <a
-            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || "xpertlab")}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary hover:underline font-medium"
-          >
-            caffeine.ai
-          </a>
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          © {new Date().getFullYear()} XpertLab. All rights reserved.
+          © {new Date().getFullYear()} XpertLab
         </p>
       </footer>
     </div>

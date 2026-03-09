@@ -24,7 +24,7 @@ export default function RevenueSettlementsPage({
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-[90px]">
       {/* Page Header */}
       <div className="bg-white border-b border-gray-100 px-4 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">

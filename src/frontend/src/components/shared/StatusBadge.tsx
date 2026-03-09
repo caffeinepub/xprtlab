@@ -22,82 +22,97 @@ type StatusKey =
   | "REPORT_READY"
   | "REPORT_DELIVERED";
 
-interface StatusConfig {
-  label: string;
-  className: string;
-}
-
-const statusConfig: Record<StatusKey, StatusConfig> = {
+// Inline style-based pill badge using spec colors
+const statusStyles: Record<
+  StatusKey,
+  { bg: string; color: string; label: string }
+> = {
   // ── Booking ──────────────────────────────────────────────────────────────
   pending: {
+    bg: "rgba(245,158,11,0.15)",
+    color: "#B45309",
     label: "Pending",
-    className: "bg-amber-100 text-amber-800 border border-amber-200",
   },
   confirmed: {
+    bg: "rgba(59,130,246,0.15)",
+    color: "#1D4ED8",
     label: "Confirmed",
-    className: "bg-blue-100 text-blue-800 border border-blue-200",
   },
   completed: {
+    bg: "rgba(22,163,74,0.15)",
+    color: "#16A34A",
     label: "Completed",
-    className: "bg-emerald-100 text-emerald-800 border border-emerald-200",
   },
   canceled: {
+    bg: "rgba(239,68,68,0.15)",
+    color: "#DC2626",
     label: "Canceled",
-    className: "bg-red-100 text-red-800 border border-red-200",
   },
 
   // ── Incident severity ────────────────────────────────────────────────────
   low: {
+    bg: "rgba(34,197,94,0.15)",
+    color: "#16A34A",
     label: "Low",
-    className: "bg-green-100 text-green-800 border border-green-200",
   },
   medium: {
+    bg: "rgba(245,158,11,0.15)",
+    color: "#B45309",
     label: "Medium",
-    className: "bg-yellow-100 text-yellow-800 border border-yellow-200",
   },
   high: {
+    bg: "rgba(239,68,68,0.15)",
+    color: "#DC2626",
     label: "High",
-    className: "bg-red-100 text-red-800 border border-red-200",
   },
 
   // ── Home Collection statuses ─────────────────────────────────────────────
   ASSIGNED: {
+    bg: "rgba(107,114,128,0.15)",
+    color: "#6B7280",
     label: "Assigned",
-    className: "bg-gray-100 text-gray-700 border border-gray-200",
   },
   EN_ROUTE: {
+    bg: "rgba(59,130,246,0.15)",
+    color: "#3B82F6",
     label: "En Route",
-    className: "bg-blue-100 text-blue-700 border border-blue-200",
   },
   SAMPLE_COLLECTED: {
-    label: "Sample Collected",
-    className: "bg-teal-100 text-teal-700 border border-teal-200",
+    bg: "rgba(34,197,94,0.15)",
+    color: "#22C55E",
+    label: "Collected",
   },
   COMPLETED: {
+    bg: "rgba(22,163,74,0.15)",
+    color: "#16A34A",
     label: "Completed",
-    className: "bg-emerald-100 text-emerald-800 border border-emerald-200",
   },
 
   // ── Hospital Sample statuses ─────────────────────────────────────────────
   DISPATCHED: {
+    bg: "rgba(59,130,246,0.15)",
+    color: "#3B82F6",
     label: "Dispatched",
-    className: "bg-blue-100 text-blue-700 border border-blue-200",
   },
   RECEIVED_AT_LAB: {
+    bg: "rgba(139,92,246,0.15)",
+    color: "#7C3AED",
     label: "Received at Lab",
-    className: "bg-purple-100 text-purple-700 border border-purple-200",
   },
   PROCESSING: {
+    bg: "rgba(245,158,11,0.15)",
+    color: "#F59E0B",
     label: "Processing",
-    className: "bg-orange-100 text-orange-700 border border-orange-200",
   },
   REPORT_READY: {
+    bg: "rgba(139,92,246,0.15)",
+    color: "#8B5CF6",
     label: "Report Ready",
-    className: "bg-green-100 text-green-700 border border-green-200",
   },
   REPORT_DELIVERED: {
+    bg: "rgba(22,163,74,0.15)",
+    color: "#16A34A",
     label: "Report Delivered",
-    className: "bg-emerald-100 text-emerald-800 border border-emerald-200",
   },
 };
 
@@ -110,12 +125,20 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
   status,
   className = "",
 }) => {
-  const config = statusConfig[status as StatusKey];
+  const style = statusStyles[status as StatusKey];
 
-  if (!config) {
+  if (!style) {
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 transition-all duration-300 ease-in-out ${className}`}
+        className={`inline-flex items-center rounded-full font-medium transition-all duration-300 ease-in-out ${className}`}
+        style={{
+          padding: "4px 10px",
+          borderRadius: "999px",
+          fontSize: "12px",
+          fontWeight: 500,
+          background: "rgba(107,114,128,0.12)",
+          color: "#6B7280",
+        }}
       >
         {status}
       </span>
@@ -124,9 +147,17 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium transition-all duration-300 ease-in-out ${config.className} ${className}`}
+      className={`inline-flex items-center transition-all duration-300 ease-in-out ${className}`}
+      style={{
+        padding: "4px 10px",
+        borderRadius: "999px",
+        fontSize: "12px",
+        fontWeight: 500,
+        background: style.bg,
+        color: style.color,
+      }}
     >
-      {config.label}
+      {style.label}
     </span>
   );
 };

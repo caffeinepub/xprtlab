@@ -260,7 +260,7 @@ export default function AuditLogsPage({
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-[90px]">
       {/* Header */}
       <div className="bg-card border-b border-border px-4 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">

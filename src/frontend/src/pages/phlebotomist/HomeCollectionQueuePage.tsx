@@ -142,7 +142,7 @@ export default function HomeCollectionQueuePage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
+    <div className="min-h-screen bg-gray-50 pb-[90px]">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-1">

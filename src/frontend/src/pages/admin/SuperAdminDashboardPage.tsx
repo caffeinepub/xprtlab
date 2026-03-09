@@ -24,10 +24,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import HealthcareBg from "../../components/shared/HealthcareBg";
 import { useGetAllTests, useHospitals } from "../../hooks/useQueries";
 import { formatCurrency } from "../../utils/formatters";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getRelativeTime(timestamp: number): string {
   const diff = Date.now() - timestamp;
@@ -39,8 +38,6 @@ function getRelativeTime(timestamp: number): string {
   const days = Math.floor(hrs / 24);
   return `${days}d ago`;
 }
-
-// ─── Demo Data ────────────────────────────────────────────────────────────────
 
 interface DemoDashboardData {
   revenueTodayAmount: number;
@@ -210,8 +207,6 @@ function generateDemoDashboardData(): DemoDashboardData {
   };
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
 interface SummaryCardProps {
   title: string;
   value: string;
@@ -230,20 +225,49 @@ function SummaryCard({
   iconColor,
 }: SummaryCardProps) {
   return (
-    <div className="premium-card p-5 flex items-start gap-4">
+    <div
+      className="bg-white flex items-start gap-4 transition-all duration-200"
+      style={{
+        borderRadius: "16px",
+        padding: "18px",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLDivElement).style.boxShadow =
+          "0 12px 32px rgba(13,71,161,0.12)";
+        (e.currentTarget as HTMLDivElement).style.transform =
+          "translateY(-2px)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLDivElement).style.boxShadow =
+          "0 8px 24px rgba(0,0,0,0.08)";
+        (e.currentTarget as HTMLDivElement).style.transform = "";
+      }}
+    >
       <div
-        className={`flex-shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center ${iconBg}`}
+        className="flex-shrink-0 flex items-center justify-center"
+        style={{
+          width: "42px",
+          height: "42px",
+          borderRadius: "12px",
+          background: iconBg,
+        }}
       >
-        <span className={iconColor}>{icon}</span>
+        <span style={{ color: iconColor }}>{icon}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+        <p
+          className="font-semibold text-gray-500 uppercase tracking-wide mb-1"
+          style={{ fontSize: "11px" }}
+        >
           {title}
         </p>
-        <p className="text-2xl font-bold text-foreground leading-tight">
+        <p className="text-2xl font-bold text-gray-900 leading-tight">
           {value}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+        <p className="text-gray-400 mt-0.5" style={{ fontSize: "12px" }}>
+          {subtitle}
+        </p>
       </div>
     </div>
   );
@@ -256,50 +280,53 @@ type ActivityType =
   | "report_delivered";
 
 function ActivityIcon({ type }: { type: ActivityType }) {
-  switch (type) {
-    case "test_added":
-      return (
-        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-          <TestTube className="w-4 h-4 text-blue-600" />
-        </div>
-      );
-    case "hospital_added":
-      return (
-        <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0">
-          <Building2 className="w-4 h-4 text-purple-600" />
-        </div>
-      );
-    case "sample_created":
-      return (
-        <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center flex-shrink-0">
-          <FlaskConical className="w-4 h-4 text-teal-600" />
-        </div>
-      );
-    case "report_delivered":
-      return (
-        <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
-          <FileCheck className="w-4 h-4 text-green-600" />
-        </div>
-      );
-  }
+  const configs: Record<ActivityType, { bg: string; icon: React.ReactNode }> = {
+    test_added: {
+      bg: "#EFF6FF",
+      icon: <TestTube className="w-4 h-4 text-blue-600" />,
+    },
+    hospital_added: {
+      bg: "#F5F3FF",
+      icon: <Building2 className="w-4 h-4 text-purple-600" />,
+    },
+    sample_created: {
+      bg: "#F0FDFA",
+      icon: <FlaskConical className="w-4 h-4 text-teal-600" />,
+    },
+    report_delivered: {
+      bg: "#F0FDF4",
+      icon: <FileCheck className="w-4 h-4 text-green-600" />,
+    },
+  };
+  const { bg, icon } = configs[type];
+  return (
+    <div
+      className="flex items-center justify-center flex-shrink-0"
+      style={{
+        width: "34px",
+        height: "34px",
+        borderRadius: "10px",
+        background: bg,
+      }}
+    >
+      {icon}
+    </div>
+  );
 }
 
 function RevenueTooltip({
   active,
   payload,
   label,
-}: {
-  active?: boolean;
-  payload?: { value: number }[];
-  label?: string;
-}) {
+}: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white border border-border rounded-xl shadow-card px-4 py-3">
-        <p className="text-xs font-semibold text-muted-foreground mb-1">
-          {label}
-        </p>
-        <p className="text-base font-bold text-foreground">
+      <div
+        className="bg-white border border-gray-100 rounded-xl px-4 py-3"
+        style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
+      >
+        <p className="text-xs font-semibold text-gray-400 mb-1">{label}</p>
+        <p className="text-base font-bold text-gray-900">
           {formatCurrency(payload[0].value)}
         </p>
       </div>
@@ -307,8 +334,6 @@ function RevenueTooltip({
   }
   return null;
 }
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 interface SuperAdminDashboardPageProps {
   isDemoMode?: boolean;
@@ -321,17 +346,12 @@ export default function SuperAdminDashboardPage({
 }: SuperAdminDashboardPageProps) {
   const [hospitalPage, setHospitalPage] = useState(0);
 
-  // Live data queries — always called at top level, gracefully handle empty
   const { data: hospitals = [] } = useHospitals();
   const { data: allTests = [] } = useGetAllTests();
-
-  // Suppress unused variable warning — allTests used for future live metrics
   void allTests;
 
-  // Demo data (stable reference)
   const demoData = useMemo(() => generateDemoDashboardData(), []);
 
-  // ── Derived metrics ──────────────────────────────────────────────────────
   const metrics = useMemo(() => {
     if (isDemoMode) {
       return {
@@ -356,7 +376,6 @@ export default function SuperAdminDashboardPage({
     };
   }, [isDemoMode, demoData, hospitals]);
 
-  // ── Revenue chart data ───────────────────────────────────────────────────
   const revenueChartData = useMemo(() => {
     if (isDemoMode) return demoData.revenueChart;
     const now = Date.now();
@@ -370,7 +389,6 @@ export default function SuperAdminDashboardPage({
 
   const hasRevenueData = revenueChartData.some((d) => d.revenue > 0);
 
-  // ── Hospital performance data ────────────────────────────────────────────
   const hospitalPerformanceData = useMemo(() => {
     if (isDemoMode) return demoData.hospitalPerformance;
     return (hospitals as { id: string; name: string; isActive: boolean }[]).map(
@@ -384,13 +402,11 @@ export default function SuperAdminDashboardPage({
     );
   }, [isDemoMode, demoData, hospitals]);
 
-  // ── Recent activity ──────────────────────────────────────────────────────
   const recentActivity = useMemo(() => {
     if (isDemoMode) return demoData.recentActivity;
     return [];
   }, [isDemoMode, demoData]);
 
-  // ── Pagination ───────────────────────────────────────────────────────────
   const totalHospitalPages = Math.max(
     1,
     Math.ceil(hospitalPerformanceData.length / ROWS_PER_PAGE),
@@ -401,357 +417,454 @@ export default function SuperAdminDashboardPage({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24">
-      {/* Page Header */}
-      <div className="bg-white border-b border-border px-4 py-5">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-brand flex items-center justify-center">
-              <LayoutDashboard className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-xs text-muted-foreground">
-                Super Admin Overview
-              </p>
+    <div
+      className="relative min-h-screen pb-[90px] page-fade-in"
+      style={{ background: "#F7F9FC" }}
+    >
+      <HealthcareBg variant="minimal" opacity={0.035} />
+
+      <div className="relative z-10">
+        {/* Gradient Page Header */}
+        <div
+          className="px-4 py-5"
+          style={{
+            background: "linear-gradient(135deg, #0D47A1 0%, #26A69A 100%)",
+            boxShadow: "0 4px 20px rgba(13,71,161,0.2)",
+          }}
+        >
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: "42px",
+                  height: "42px",
+                  borderRadius: "12px",
+                  background: "rgba(255,255,255,0.2)",
+                }}
+              >
+                <LayoutDashboard className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1
+                  className="font-bold text-white"
+                  style={{ fontSize: "20px" }}
+                >
+                  Dashboard
+                </h1>
+                <p className="text-white/70" style={{ fontSize: "12px" }}>
+                  Super Admin Overview
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
-        {/* ── 1. Summary Cards ─────────────────────────────────────────── */}
-        <section>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            Key Metrics
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <SummaryCard
-              title="Revenue Today"
-              value={formatCurrency(metrics.revenueToday)}
-              subtitle="Collected today"
-              icon={<IndianRupee className="w-5 h-5" />}
-              iconBg="bg-blue-50"
-              iconColor="text-blue-600"
-            />
-            <SummaryCard
-              title="Revenue This Month"
-              value={formatCurrency(metrics.revenueMonth)}
-              subtitle="Current month total"
-              icon={<TrendingUp className="w-5 h-5" />}
-              iconBg="bg-indigo-50"
-              iconColor="text-indigo-600"
-            />
-            <SummaryCard
-              title="Samples Today"
-              value={String(metrics.samplesToday)}
-              subtitle="Collected today"
-              icon={<FlaskConical className="w-5 h-5" />}
-              iconBg="bg-teal-50"
-              iconColor="text-teal-600"
-            />
-            <SummaryCard
-              title="Active Hospitals"
-              value={String(metrics.activeHospitals)}
-              subtitle="Currently active"
-              icon={<Building2 className="w-5 h-5" />}
-              iconBg="bg-purple-50"
-              iconColor="text-purple-600"
-            />
-            <SummaryCard
-              title="Active Phlebotomists"
-              value={String(metrics.activePhlebotomists)}
-              subtitle="On shift today"
-              icon={<Users className="w-5 h-5" />}
-              iconBg="bg-orange-50"
-              iconColor="text-orange-600"
-            />
-            <SummaryCard
-              title="Pending Reports"
-              value={String(metrics.pendingReports)}
-              subtitle="Awaiting delivery"
-              icon={<FileText className="w-5 h-5" />}
-              iconBg="bg-red-50"
-              iconColor="text-red-500"
-            />
-          </div>
-        </section>
-
-        {/* ── 2. Revenue Chart ─────────────────────────────────────────── */}
-        <section>
-          <div className="premium-card p-5">
-            <div className="flex items-center gap-2 mb-5">
-              <Activity className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">
-                Revenue Last 7 Days
-              </h2>
+        <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+          {/* ── 1. Summary Cards ─────────────────────────────────────────── */}
+          <section>
+            <h2
+              className="font-semibold text-gray-400 uppercase tracking-wider mb-4"
+              style={{ fontSize: "12px" }}
+            >
+              Key Metrics
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <SummaryCard
+                title="Revenue Today"
+                value={formatCurrency(metrics.revenueToday)}
+                subtitle="Collected today"
+                icon={<IndianRupee className="w-5 h-5" />}
+                iconBg="#EFF6FF"
+                iconColor="#1D4ED8"
+              />
+              <SummaryCard
+                title="Revenue This Month"
+                value={formatCurrency(metrics.revenueMonth)}
+                subtitle="Current month total"
+                icon={<TrendingUp className="w-5 h-5" />}
+                iconBg="#EEF2FF"
+                iconColor="#4338CA"
+              />
+              <SummaryCard
+                title="Samples Today"
+                value={String(metrics.samplesToday)}
+                subtitle="Collected today"
+                icon={<FlaskConical className="w-5 h-5" />}
+                iconBg="#F0FDFA"
+                iconColor="#0D9488"
+              />
+              <SummaryCard
+                title="Active Hospitals"
+                value={String(metrics.activeHospitals)}
+                subtitle="Currently active"
+                icon={<Building2 className="w-5 h-5" />}
+                iconBg="#F5F3FF"
+                iconColor="#7C3AED"
+              />
+              <SummaryCard
+                title="Active Phlebotomists"
+                value={String(metrics.activePhlebotomists)}
+                subtitle="On shift today"
+                icon={<Users className="w-5 h-5" />}
+                iconBg="#FFF7ED"
+                iconColor="#EA580C"
+              />
+              <SummaryCard
+                title="Pending Reports"
+                value={String(metrics.pendingReports)}
+                subtitle="Awaiting delivery"
+                icon={<FileText className="w-5 h-5" />}
+                iconBg="#FEF2F2"
+                iconColor="#DC2626"
+              />
             </div>
+          </section>
 
-            {hasRevenueData ? (
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={revenueChartData}
-                    margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="revenueGradient"
-                        x1="0"
-                        y1="0"
-                        x2="1"
-                        y2="0"
-                      >
-                        <stop offset="0%" stopColor="#0D47A1" />
-                        <stop offset="100%" stopColor="#26C6DA" />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#f0f0f0"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="day"
-                      tick={{
-                        fontSize: 11,
-                        fill: "#888",
-                        fontFamily: "Poppins, sans-serif",
-                      }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{
-                        fontSize: 11,
-                        fill: "#888",
-                        fontFamily: "Poppins, sans-serif",
-                      }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v: number) =>
-                        `₹${(v / 1000).toFixed(0)}k`
-                      }
-                      width={42}
-                    />
-                    <Tooltip content={<RevenueTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke="url(#revenueGradient)"
-                      strokeWidth={3}
-                      dot={{ fill: "#0D47A1", strokeWidth: 2, r: 4 }}
-                      activeDot={{
-                        r: 6,
-                        fill: "#26C6DA",
-                        strokeWidth: 2,
-                        stroke: "#fff",
-                      }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="h-56 flex flex-col items-center justify-center text-center">
-                <Activity className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  No revenue data available.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ── 3. Hospital Performance Table ────────────────────────────── */}
-        <section>
-          <div className="premium-card overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <Building2 className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">
-                Hospital Performance
-              </h2>
-            </div>
-
-            {hospitalPerformanceData.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center px-4">
-                <Building2 className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  No hospitals available.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-border">
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Hospital Name
-                        </th>
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Samples
-                        </th>
-                        <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Revenue
-                        </th>
-                        <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedHospitals.map((h, idx) => (
-                        <tr
-                          key={h.id}
-                          className={`border-b border-border last:border-0 transition-colors hover:bg-gray-50/80 ${
-                            idx % 2 === 0 ? "" : "bg-gray-50/30"
-                          }`}
-                        >
-                          <td className="px-5 py-3.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
-                                <Building2 className="w-3.5 h-3.5 text-purple-600" />
-                              </div>
-                              <span className="font-medium text-foreground text-sm">
-                                {h.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-right">
-                            <span className="font-semibold text-foreground">
-                              {h.totalSamples}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3.5 text-right">
-                            <span className="font-semibold text-foreground">
-                              {formatCurrency(h.revenue)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            {h.isActive ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-                                Active
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" />
-                                Inactive
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {/* ── 2. Revenue Chart ─────────────────────────────────────────── */}
+          <section>
+            <div
+              className="bg-white p-5"
+              style={{
+                borderRadius: "16px",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              }}
+            >
+              <div className="flex items-center gap-2.5 mb-5">
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "10px",
+                    background: "rgba(13,71,161,0.08)",
+                  }}
+                >
+                  <Activity className="w-4 h-4 text-primary" />
                 </div>
+                <h2
+                  className="font-semibold text-gray-900"
+                  style={{ fontSize: "16px" }}
+                >
+                  Revenue Last 7 Days
+                </h2>
+              </div>
 
-                {/* Pagination */}
-                {totalHospitalPages > 1 && (
-                  <div className="flex items-center justify-between px-5 py-3 border-t border-border bg-gray-50/50">
-                    <p className="text-xs text-muted-foreground">
-                      Showing {hospitalPage * ROWS_PER_PAGE + 1}–
-                      {Math.min(
-                        (hospitalPage + 1) * ROWS_PER_PAGE,
-                        hospitalPerformanceData.length,
-                      )}{" "}
-                      of {hospitalPerformanceData.length}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setHospitalPage((p) => Math.max(0, p - 1))
+              {hasRevenueData ? (
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={revenueChartData}
+                      margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient
+                          id="revenueGradient"
+                          x1="0"
+                          y1="0"
+                          x2="1"
+                          y2="0"
+                        >
+                          <stop offset="0%" stopColor="#0D47A1" />
+                          <stop offset="100%" stopColor="#26A69A" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#f0f0f0"
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="day"
+                        tick={{
+                          fontSize: 11,
+                          fill: "#9CA3AF",
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{
+                          fontSize: 11,
+                          fill: "#9CA3AF",
+                          fontFamily: "'Plus Jakarta Sans', sans-serif",
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v: number) =>
+                          `₹${(v / 1000).toFixed(0)}k`
                         }
-                        disabled={hospitalPage === 0}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-white hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      {Array.from(
-                        { length: totalHospitalPages },
-                        (_, i) => i,
-                      ).map((pageIdx) => (
+                        width={42}
+                      />
+                      <Tooltip content={<RevenueTooltip />} />
+                      <Line
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="url(#revenueGradient)"
+                        strokeWidth={3}
+                        dot={{ fill: "#0D47A1", strokeWidth: 2, r: 4 }}
+                        activeDot={{
+                          r: 6,
+                          fill: "#26A69A",
+                          strokeWidth: 2,
+                          stroke: "#fff",
+                        }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-56 flex flex-col items-center justify-center text-center">
+                  <Activity className="w-10 h-10 text-gray-200 mb-3" />
+                  <p className="text-sm text-gray-400">
+                    No revenue data available.
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* ── 3. Hospital Performance Table ────────────────────────────── */}
+          <section>
+            <div
+              className="bg-white overflow-hidden"
+              style={{
+                borderRadius: "16px",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              }}
+            >
+              <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "10px",
+                    background: "rgba(124,58,237,0.08)",
+                  }}
+                >
+                  <Building2 className="w-4 h-4 text-purple-600" />
+                </div>
+                <h2
+                  className="font-semibold text-gray-900"
+                  style={{ fontSize: "16px" }}
+                >
+                  Hospital Performance
+                </h2>
+              </div>
+
+              {hospitalPerformanceData.length === 0 ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                  <Building2 className="w-10 h-10 text-gray-200 mb-3" />
+                  <p className="text-sm text-gray-400">
+                    No hospitals available.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-100">
+                          <th className="text-left px-5 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Hospital Name
+                          </th>
+                          <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Samples
+                          </th>
+                          <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Revenue
+                          </th>
+                          <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedHospitals.map((h, idx) => (
+                          <tr
+                            key={h.id}
+                            className={`border-b border-gray-50 last:border-0 transition-colors hover:bg-gray-50/60 ${idx % 2 === 0 ? "" : "bg-gray-50/20"}`}
+                          >
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className="flex items-center justify-center flex-shrink-0"
+                                  style={{
+                                    width: "30px",
+                                    height: "30px",
+                                    borderRadius: "8px",
+                                    background: "#F5F3FF",
+                                  }}
+                                >
+                                  <Building2 className="w-3.5 h-3.5 text-purple-600" />
+                                </div>
+                                <span className="font-medium text-gray-800 text-sm">
+                                  {h.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="font-semibold text-gray-800">
+                                {h.totalSamples}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="font-semibold text-gray-800">
+                                {formatCurrency(h.revenue)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-center">
+                              {h.isActive ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400 inline-block" />
+                                  Inactive
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {totalHospitalPages > 1 && (
+                    <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+                      <p className="text-xs text-gray-400">
+                        Showing {hospitalPage * ROWS_PER_PAGE + 1}–
+                        {Math.min(
+                          (hospitalPage + 1) * ROWS_PER_PAGE,
+                          hospitalPerformanceData.length,
+                        )}{" "}
+                        of {hospitalPerformanceData.length}
+                      </p>
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          key={`hosp-page-btn-${pageIdx}`}
-                          onClick={() => setHospitalPage(pageIdx)}
-                          className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                            pageIdx === hospitalPage
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-muted-foreground hover:bg-white hover:shadow-sm"
-                          }`}
+                          data-ocid="dashboard.hospital_table.pagination_prev"
+                          onClick={() =>
+                            setHospitalPage((p) => Math.max(0, p - 1))
+                          }
+                          disabled={hospitalPage === 0}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                         >
-                          {pageIdx + 1}
+                          <ChevronLeft className="w-4 h-4" />
                         </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setHospitalPage((p) =>
-                            Math.min(totalHospitalPages - 1, p + 1),
-                          )
-                        }
-                        disabled={hospitalPage === totalHospitalPages - 1}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-white hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </section>
-
-        {/* ── 4. Recent Activity ───────────────────────────────────────── */}
-        <section>
-          <div className="premium-card overflow-hidden">
-            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-              <Clock className="w-5 h-5 text-primary" />
-              <h2 className="text-base font-semibold text-foreground">
-                Recent Activity
-              </h2>
-            </div>
-
-            {recentActivity.length === 0 ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center px-4">
-                <Clock className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  No recent activity.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {recentActivity.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50/60 transition-colors"
-                  >
-                    <ActivityIcon type={item.actionType} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground leading-snug">
-                        {item.action}
-                      </p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-muted-foreground">
-                          {item.user}
-                        </span>
-                        <span className="text-muted-foreground/40 text-xs">
-                          ·
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {getRelativeTime(item.timestamp)}
-                        </span>
+                        {Array.from(
+                          { length: totalHospitalPages },
+                          (_, i) => i,
+                        ).map((pageIdx) => (
+                          <button
+                            type="button"
+                            key={`hosp-page-btn-${pageIdx}`}
+                            onClick={() => setHospitalPage(pageIdx)}
+                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                              pageIdx === hospitalPage
+                                ? "text-white shadow-sm"
+                                : "text-gray-400 hover:bg-white hover:shadow-sm"
+                            }`}
+                            style={
+                              pageIdx === hospitalPage
+                                ? {
+                                    background:
+                                      "linear-gradient(135deg, #0D47A1, #1976D2)",
+                                  }
+                                : {}
+                            }
+                          >
+                            {pageIdx + 1}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          data-ocid="dashboard.hospital_table.pagination_next"
+                          onClick={() =>
+                            setHospitalPage((p) =>
+                              Math.min(totalHospitalPages - 1, p + 1),
+                            )
+                          }
+                          disabled={hospitalPage === totalHospitalPages - 1}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-white hover:shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )}
+                </>
+              )}
+            </div>
+          </section>
+
+          {/* ── 4. Recent Activity ───────────────────────────────────────── */}
+          <section>
+            <div
+              className="bg-white overflow-hidden"
+              style={{
+                borderRadius: "16px",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              }}
+            >
+              <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "34px",
+                    height: "34px",
+                    borderRadius: "10px",
+                    background: "rgba(13,71,161,0.08)",
+                  }}
+                >
+                  <Clock className="w-4 h-4 text-primary" />
+                </div>
+                <h2
+                  className="font-semibold text-gray-900"
+                  style={{ fontSize: "16px" }}
+                >
+                  Recent Activity
+                </h2>
               </div>
-            )}
-          </div>
-        </section>
+
+              {recentActivity.length === 0 ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                  <Clock className="w-10 h-10 text-gray-200 mb-3" />
+                  <p className="text-sm text-gray-400">No recent activity.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {recentActivity.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50/50 transition-colors"
+                    >
+                      <ActivityIcon type={item.actionType} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 leading-snug">
+                          {item.action}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-xs text-gray-400">
+                            {item.user}
+                          </span>
+                          <span className="text-gray-300 text-xs">·</span>
+                          <span className="text-xs text-gray-400">
+                            {getRelativeTime(item.timestamp)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );
