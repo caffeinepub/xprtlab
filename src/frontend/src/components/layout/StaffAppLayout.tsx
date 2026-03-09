@@ -69,12 +69,12 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
       >
         <div className="flex items-center gap-2.5">
           <img
-            src="/assets/uploads/logo-4-1.png"
+            src="/assets/uploads/logo-6-1.png"
             alt="XpertLab"
             className="h-[36px] object-contain"
             onError={(e) => {
               const img = e.currentTarget;
-              img.src = "/assets/uploads/logo-5-2.png";
+              img.src = "/assets/uploads/logo-6-1.png";
               img.onerror = () => {
                 img.style.display = "none";
                 const fallback = img.nextElementSibling as HTMLElement | null;

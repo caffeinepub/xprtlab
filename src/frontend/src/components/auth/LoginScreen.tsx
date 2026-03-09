@@ -38,7 +38,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-4">
           <img
-            src="/assets/uploads/logo-3-1.png"
+            src="/assets/uploads/logo-6-1.png"
             alt="XpertLab"
             className="h-[34px] w-auto object-contain"
             onError={(e) => {

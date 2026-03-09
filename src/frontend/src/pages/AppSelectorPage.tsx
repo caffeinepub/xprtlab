@@ -8,7 +8,7 @@ export default function AppSelectorPage() {
       {/* Header */}
       <header className="bg-card shadow-sm px-4 py-4 flex items-center justify-center">
         <img
-          src="/assets/uploads/logo-3-1.png"
+          src="/assets/uploads/logo-6-1.png"
           alt="XpertLab"
           className="h-[34px] object-contain"
           onError={(e) => {

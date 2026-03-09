@@ -79,12 +79,12 @@ export default function StaffLoginScreen({
             style={{ boxShadow: "0 8px 24px rgba(13,71,161,0.10)" }}
           >
             <img
-              src="/assets/uploads/logo-4-1.png"
+              src="/assets/uploads/logo-6-1.png"
               alt="XpertLab"
               className="h-[42px] w-auto object-contain"
               onError={(e) => {
                 const img = e.currentTarget;
-                img.src = "/assets/uploads/logo-5-2.png";
+                img.src = "/assets/uploads/logo-6-1.png";
                 img.onerror = () => {
                   img.style.display = "none";
                   const fallback = img.nextElementSibling as HTMLElement | null;
