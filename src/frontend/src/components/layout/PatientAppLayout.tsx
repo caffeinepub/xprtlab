@@ -34,29 +34,10 @@ export default function PatientAppLayout({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img
-              src="/assets/uploads/logo-6-1.png"
+              src="/assets/logo.png"
               alt="XpertLab"
               className="h-[36px] w-auto object-contain"
-              onError={(e) => {
-                const img = e.currentTarget;
-                img.src = "/assets/uploads/logo-6-1.png";
-                img.onerror = () => {
-                  img.style.display = "none";
-                  const fallback = img.nextElementSibling as HTMLElement | null;
-                  if (fallback) fallback.style.display = "block";
-                };
-              }}
             />
-            <span
-              className="hidden text-lg font-extrabold tracking-tight"
-              style={{
-                background: "linear-gradient(135deg, #0D47A1, #26A69A)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              XpertLab
-            </span>
           </div>
           <span
             className="text-xs font-semibold px-3 py-1 rounded-full border"

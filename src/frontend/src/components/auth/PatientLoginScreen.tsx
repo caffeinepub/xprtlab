@@ -73,29 +73,10 @@ export default function PatientLoginScreen({
             style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}
           >
             <img
-              src="/assets/uploads/logo-6-1.png"
+              src="/assets/logo.png"
               alt="XpertLab"
               className="h-[36px] w-auto object-contain"
-              onError={(e) => {
-                const img = e.currentTarget;
-                img.src = "/assets/uploads/logo-6-1.png";
-                img.onerror = () => {
-                  img.style.display = "none";
-                  const fallback = img.nextElementSibling as HTMLElement | null;
-                  if (fallback) fallback.style.display = "block";
-                };
-              }}
             />
-            <span
-              className="hidden text-base font-extrabold tracking-tight"
-              style={{
-                background: "linear-gradient(135deg, #0D47A1, #26A69A)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              XpertLab
-            </span>
           </div>
         </div>
         <a

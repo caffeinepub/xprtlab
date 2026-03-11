@@ -27,13 +27,9 @@ export default function AppLayout({
         <div className="flex items-center justify-between px-4 py-2">
           <div className="flex items-center gap-2">
             <img
-              src="/assets/uploads/logo-6-1.png"
+              src="/assets/logo.png"
               alt="XpertLab"
-              className="h-[34px] w-auto object-contain"
-              onError={(e) => {
-                const img = e.currentTarget;
-                img.style.display = "none";
-              }}
+              className="h-[36px] w-auto object-contain"
             />
           </div>
         </div>

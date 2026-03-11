@@ -49,12 +49,9 @@ class ErrorBoundary extends Component<Props, State> {
           <div className="max-w-md w-full bg-card rounded-2xl shadow-card p-8 text-center">
             <div className="mb-6">
               <img
-                src="/assets/uploads/logo-6-1.png"
+                src="/assets/logo.png"
                 alt="XpertLab"
-                className="h-10 mx-auto mb-4 object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                }}
+                className="h-[36px] w-auto mx-auto mb-4 object-contain"
               />
               <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg

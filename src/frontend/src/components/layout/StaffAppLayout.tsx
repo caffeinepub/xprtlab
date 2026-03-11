@@ -69,29 +69,10 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
       >
         <div className="flex items-center gap-2.5">
           <img
-            src="/assets/uploads/logo-6-1.png"
+            src="/assets/logo.png"
             alt="XpertLab"
-            className="h-[36px] object-contain"
-            onError={(e) => {
-              const img = e.currentTarget;
-              img.src = "/assets/uploads/logo-6-1.png";
-              img.onerror = () => {
-                img.style.display = "none";
-                const fallback = img.nextElementSibling as HTMLElement | null;
-                if (fallback) fallback.style.display = "flex";
-              };
-            }}
+            className="h-[36px] w-auto object-contain"
           />
-          <span
-            className="hidden items-center gap-1 text-lg font-extrabold tracking-tight"
-            style={{
-              background: "linear-gradient(135deg, #0D47A1, #26A69A)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            XpertLab
-          </span>
         </div>
         {roleLabel && (
           <span

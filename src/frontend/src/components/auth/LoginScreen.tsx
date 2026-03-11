@@ -38,26 +38,10 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
       <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-4">
           <img
-            src="/assets/uploads/logo-6-1.png"
+            src="/assets/logo.png"
             alt="XpertLab"
-            className="h-[34px] w-auto object-contain"
-            onError={(e) => {
-              const img = e.currentTarget;
-              img.style.display = "none";
-              const fallback = img.nextElementSibling as HTMLElement | null;
-              if (fallback) fallback.style.display = "block";
-            }}
+            className="h-[36px] w-auto object-contain"
           />
-          <span
-            className="hidden text-xl font-extrabold tracking-tight"
-            style={{
-              background: "linear-gradient(to right, #0D47A1, #26C6DA)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            XpertLab
-          </span>
           <div className="text-center">
             <h1 className="text-xl font-bold text-gray-900">Secure Login</h1>
             <p className="text-sm text-muted-foreground mt-1">

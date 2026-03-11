@@ -62,12 +62,9 @@ export default function LoadingScreen({
     <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
       <div className="flex flex-col items-center gap-4">
         <img
-          src="/assets/uploads/logo-6-1.png"
+          src="/assets/logo.png"
           alt="XpertLab"
-          className="h-12 object-contain animate-pulse"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
+          className="h-[36px] w-auto object-contain animate-pulse"
         />
         <div className="flex items-center gap-2">
           <div

@@ -8,25 +8,9 @@ export default function AppSelectorPage() {
       {/* Header */}
       <header className="bg-card shadow-sm px-4 py-4 flex items-center justify-center">
         <img
-          src="/assets/uploads/logo-6-1.png"
+          src="/assets/logo.png"
           alt="XpertLab"
-          className="h-[34px] object-contain"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = "none";
-            const parent = target.parentElement;
-            if (parent) {
-              const fallback = document.createElement("span");
-              fallback.style.background =
-                "linear-gradient(to right, #0D47A1, #26C6DA)";
-              fallback.style.webkitBackgroundClip = "text";
-              fallback.style.webkitTextFillColor = "transparent";
-              fallback.style.fontWeight = "800";
-              fallback.style.fontSize = "20px";
-              fallback.textContent = "XpertLab";
-              parent.appendChild(fallback);
-            }
-          }}
+          className="h-[36px] w-auto object-contain"
         />
       </header>
 
