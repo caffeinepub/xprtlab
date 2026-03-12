@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
 import HealthcareBg from "../../components/shared/HealthcareBg";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import {
   type DemoHomeCollection,
   type DemoSample,
@@ -122,6 +123,12 @@ export default function TaskQueuePage({
       >
         <HealthcareBg variant="minimal" opacity={0.04} />
         <div className="relative z-10">
+          <div className="px-4 pt-4">
+            <PageHeroHeader
+              title="My Tasks"
+              description="View and manage your assigned collection tasks"
+            />
+          </div>
           {/* Header */}
           <div
             className="px-4 pt-5 pb-4"

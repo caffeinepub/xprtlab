@@ -22,6 +22,7 @@ import {
 import React, { useState } from "react";
 import { toast } from "sonner";
 import DeliveryMethodSelectionDialog from "../../components/shared/DeliveryMethodSelectionDialog";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import SampleActionControls from "../../components/shared/SampleActionControls";
 import SampleWorkflowTimeline from "../../components/shared/SampleWorkflowTimeline";
 import WhatsAppShareConfirmDialog from "../../components/shared/WhatsAppShareConfirmDialog";
@@ -149,6 +150,12 @@ export default function AdminHospitalSamplesPage() {
 
   return (
     <div className="flex flex-col h-full">
+      <div className="px-4 pt-4">
+        <PageHeroHeader
+          title="Samples"
+          description="Track and manage hospital sample collections"
+        />
+      </div>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
         <div className="flex items-center gap-2 mb-3">

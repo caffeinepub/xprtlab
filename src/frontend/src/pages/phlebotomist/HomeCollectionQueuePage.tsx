@@ -9,6 +9,7 @@ import {
   User,
 } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import {
   type DemoHomeCollection,
   getDemoHomeCollections,
@@ -143,6 +144,12 @@ export default function HomeCollectionQueuePage({
 
   return (
     <div className="min-h-screen bg-gray-50 pb-[90px]">
+      <div className="px-4 pt-4">
+        <PageHeroHeader
+          title="Home Visits"
+          description="Manage home collection visits and patient appointments"
+        />
+      </div>
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-1">

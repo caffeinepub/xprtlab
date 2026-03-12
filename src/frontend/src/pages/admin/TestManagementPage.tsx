@@ -29,6 +29,7 @@ import { TestError, type TestInput, type TestOutput } from "../../backend";
 import AddTestModal from "../../components/admin/AddTestModal";
 import DisableTestConfirmDialog from "../../components/admin/DisableTestConfirmDialog";
 import EditTestModal from "../../components/admin/EditTestModal";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import {
   useBulkAddTests,
   useGetAllTests,
@@ -311,6 +312,12 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
 
   return (
     <div className="p-4 space-y-4">
+      <PageHeroHeader
+        title="Test Management"
+        description="Manage diagnostic tests, pricing, and availability"
+        actionLabel="Add Test"
+        onAction={() => setAddModalOpen(true)}
+      />
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">

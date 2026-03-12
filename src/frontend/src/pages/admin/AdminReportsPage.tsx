@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import MedicalCard from "../../components/shared/MedicalCard";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllReports } from "../../hooks/useQueries";
 import { formatDate } from "../../utils/formatters";
 
@@ -59,6 +60,10 @@ export default function AdminReportsPage({
 
   return (
     <div className="px-4 py-5 space-y-4 animate-fade-in">
+      <PageHeroHeader
+        title="Reports"
+        description="View and manage diagnostic reports"
+      />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground">All Reports</h1>

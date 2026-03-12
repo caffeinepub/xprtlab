@@ -11,6 +11,7 @@ import DailyRevenueOverviewModule from "../../components/admin/DailyRevenueOverv
 import HospitalLedgerModule from "../../components/admin/HospitalLedgerModule";
 import PhlebotomistCollectionsModule from "../../components/admin/PhlebotomistCollectionsModule";
 import SettlementMarkingModule from "../../components/admin/SettlementMarkingModule";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 
 interface RevenueSettlementsPageProps {
   onNavigate?: (path: string) => void;
@@ -25,6 +26,12 @@ export default function RevenueSettlementsPage({
 
   return (
     <div className="min-h-screen bg-gray-50 pb-[90px]">
+      <div className="px-4 pt-4">
+        <PageHeroHeader
+          title="Revenue & Settlements"
+          description="Track collections, hospital ledgers, and settlements"
+        />
+      </div>
       {/* Page Header */}
       <div className="bg-white border-b border-gray-100 px-4 py-5 shadow-sm">
         <div className="max-w-7xl mx-auto">

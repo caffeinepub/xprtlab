@@ -59,12 +59,20 @@ export default function BottomNavigation({
 }: BottomNavigationProps) {
   return (
     <nav
-      className="bottom-nav flex items-stretch"
       style={{
         background: "#FFFFFF",
         borderTop: "1px solid #E5E7EB",
-        boxShadow: "0 -8px 25px rgba(0,0,0,0.08)",
+        boxShadow: "0 -8px 24px rgba(0,0,0,0.08)",
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: "100%",
         height: "70px",
+        zIndex: 100,
+        display: "flex",
+        justifyContent: "space-around",
+        alignItems: "center",
       }}
     >
       {items.map((item) => {
@@ -77,9 +85,14 @@ export default function BottomNavigation({
             key={item.path}
             data-ocid={`nav.${item.path.replace(/\//g, "")}.tab`}
             onClick={() => onNavigate(item.path)}
-            className="flex-1 flex flex-col items-center justify-center py-2 px-1 relative transition-all duration-200"
+            className="flex flex-col items-center justify-center py-2 px-1 relative transition-all duration-200"
             style={{
+              flex: 1,
               color: isActive ? "#0D47A1" : "#9CA3AF",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              height: "100%",
             }}
           >
             {/* Pill highlight for active tab */}
@@ -97,7 +110,7 @@ export default function BottomNavigation({
             <span
               className="relative flex items-center justify-center transition-all duration-200"
               style={{
-                transform: isActive ? "scale(1.1)" : "scale(1)",
+                transform: isActive ? "scale(1.05)" : "scale(1)",
                 zIndex: 1,
               }}
             >
@@ -112,7 +125,7 @@ export default function BottomNavigation({
             <span
               className="mt-0.5 leading-tight transition-all duration-200"
               style={{
-                fontSize: "11px",
+                fontSize: "12px",
                 fontWeight: isActive ? 700 : 500,
                 zIndex: 1,
               }}

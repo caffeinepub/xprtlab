@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import type { Hospital } from "../../backend";
 import AddHospitalModal from "../../components/admin/AddHospitalModal";
 import EditHospitalModal from "../../components/admin/EditHospitalModal";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useDisableHospital, useHospitals } from "../../hooks/useQueries";
 
 const PAGE_SIZE = 20;
@@ -73,6 +74,14 @@ export default function HospitalManagementPage({
 
   return (
     <div className="flex flex-col h-full">
+      <div className="px-4 pt-4">
+        <PageHeroHeader
+          title="Hospital Management"
+          description="Manage hospitals and phlebotomist assignments"
+          actionLabel="Add Hospital"
+          onAction={() => setShowAddModal(true)}
+        />
+      </div>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
         <div className="flex items-center justify-between gap-2">

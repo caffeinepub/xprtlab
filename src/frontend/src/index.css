@@ -103,7 +103,7 @@
   .bottom-nav {
     background: #ffffff;
     border-top: 1px solid #e5e7eb;
-    box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
     position: fixed;
     bottom: 0;
     left: 0;
@@ -111,6 +111,9 @@
     width: 100%;
     height: 70px;
     z-index: 100;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
   }
 
   /* ── Card system ─────────────────────────────────────────────────────────── */
@@ -243,14 +246,14 @@
     animation: pageFadeIn 0.3s ease forwards;
   }
 
-  /* ── Glass nav ───────────────────────────────────────────────────────────── */
-  .glass-nav {
+  /* ── Glass nav (disabled — use .bottom-nav for solid premium nav) ────────── */
+  /* .glass-nav {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.08);
     border-top: 1px solid rgba(255, 255, 255, 0.6);
-  }
+  } */
 }
 
 @layer utilities {

@@ -1,6 +1,7 @@
 import { Download, Eye, FileText } from "lucide-react";
 import React from "react";
 import MedicalCard from "../../components/shared/MedicalCard";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetMyReports } from "../../hooks/useQueries";
 
 type PatientRoute =
@@ -27,6 +28,10 @@ export default function ReportsPage({ onNavigate }: ReportsPageProps) {
 
   return (
     <div className="p-4 space-y-4">
+      <PageHeroHeader
+        title="My Reports"
+        description="View and download your diagnostic reports"
+      />
       <div className="flex items-center gap-3">
         <button
           type="button"

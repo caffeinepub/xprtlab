@@ -1,6 +1,7 @@
 import { Calendar, Clock, FlaskConical } from "lucide-react";
 import React from "react";
 import MedicalCard from "../../components/shared/MedicalCard";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import StatusBadge from "../../components/shared/StatusBadge";
 import { useGetMyBookings } from "../../hooks/useQueries";
 
@@ -28,6 +29,10 @@ export default function MyBookingsPage({ onNavigate }: MyBookingsPageProps) {
 
   return (
     <div className="p-4 space-y-4">
+      <PageHeroHeader
+        title="My Bookings"
+        description="Track your upcoming and past test bookings"
+      />
       <div className="flex items-center gap-3">
         <button
           type="button"

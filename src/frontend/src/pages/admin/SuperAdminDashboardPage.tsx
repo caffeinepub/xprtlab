@@ -25,6 +25,7 @@ import {
   YAxis,
 } from "recharts";
 import HealthcareBg from "../../components/shared/HealthcareBg";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests, useHospitals } from "../../hooks/useQueries";
 import { formatCurrency } from "../../utils/formatters";
 
@@ -424,6 +425,12 @@ export default function SuperAdminDashboardPage({
       <HealthcareBg variant="minimal" opacity={0.035} />
 
       <div className="relative z-10">
+        <div className="px-4 pt-4">
+          <PageHeroHeader
+            title="Dashboard"
+            description="Overview of platform performance and key metrics"
+          />
+        </div>
         {/* Gradient Page Header */}
         <div
           className="px-4 py-5"

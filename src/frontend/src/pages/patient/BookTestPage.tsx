@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowRight, Minus, Plus, Search, ShoppingCart } from "lucide-react";
 import React, { useState } from "react";
 import type { TestOutput } from "../../backend";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests } from "../../hooks/useQueries";
 
 interface BookTestPageProps {
@@ -42,6 +43,12 @@ export default function BookTestPage({ onNavigate }: BookTestPageProps) {
 
   return (
     <div className="flex flex-col h-full">
+      <div className="px-4 pt-4">
+        <PageHeroHeader
+          title="Book a Test"
+          description="Browse and book diagnostic tests at your convenience"
+        />
+      </div>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
         <h1 className="text-lg font-semibold text-foreground mb-3">

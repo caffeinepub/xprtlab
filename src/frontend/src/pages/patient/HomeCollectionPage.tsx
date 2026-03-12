@@ -13,6 +13,7 @@ import {
 import React, { useState } from "react";
 import { toast } from "sonner";
 import type { TestOutput } from "../../backend";
+import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests } from "../../hooks/useQueries";
 import { useCreateHomeCollectionRequest } from "../../hooks/useQueries";
 
@@ -113,6 +114,12 @@ export default function HomeCollectionPage({
 
   return (
     <div className="flex flex-col h-full">
+      <div className="px-4 pt-4">
+        <PageHeroHeader
+          title="Home Collection"
+          description="Schedule a phlebotomist to collect samples at home"
+        />
+      </div>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-border bg-background">
         <div className="flex items-center gap-2 mb-1">
