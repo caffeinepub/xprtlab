@@ -313,7 +313,7 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
   return (
     <div className="p-4 space-y-4">
       <PageHeroHeader
-        title="Test Management"
+        title="🧪 Test Management"
         description="Manage diagnostic tests, pricing, and availability"
         actionLabel="Add Test"
         onAction={() => setAddModalOpen(true)}
@@ -384,6 +384,11 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
               {isSuperAdmin && (
                 <TableHead className="font-semibold">Commission %</TableHead>
               )}
+              {isSuperAdmin && (
+                <TableHead className="font-semibold text-right">
+                  Profit (₹)
+                </TableHead>
+              )}
               <TableHead className="font-semibold">Status</TableHead>
               {isSuperAdmin && (
                 <TableHead className="font-semibold text-center">
@@ -424,6 +429,11 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
                         <Skeleton className="h-4 w-16" />
                       </TableCell>
                     )}
+                    {isSuperAdmin && (
+                      <TableCell>
+                        <Skeleton className="h-4 w-14 ml-auto" />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <Skeleton className="h-4 w-16" />
                     </TableCell>
@@ -443,7 +453,7 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
             ) : isError ? (
               <TableRow>
                 <TableCell
-                  colSpan={isSuperAdmin ? 9 : 5}
+                  colSpan={isSuperAdmin ? 10 : 5}
                   className="text-center text-destructive py-8"
                 >
                   Failed to load tests. Please try again.
@@ -452,7 +462,7 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
             ) : paginatedTests.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={isSuperAdmin ? 9 : 5}
+                  colSpan={isSuperAdmin ? 10 : 5}
                   className="text-center text-muted-foreground py-8"
                 >
                   {searchQuery
@@ -509,6 +519,23 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
                         {commissionPct}%
                       </TableCell>
                     )}
+                    {isSuperAdmin &&
+                      (() => {
+                        const flatProfit =
+                          mrpNum - Number(labCost) - Number(commissionPct);
+                        return (
+                          <TableCell
+                            className={`text-right font-semibold ${
+                              flatProfit >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                            data-ocid={`tests.profit.item.${paginatedTests.indexOf(test) + 1}`}
+                          >
+                            {flatProfit >= 0 ? "+" : ""}₹{flatProfit.toFixed(0)}
+                          </TableCell>
+                        );
+                      })()}
                     <TableCell>
                       <TestStatusBadge isActive={test.isActive} />
                     </TableCell>

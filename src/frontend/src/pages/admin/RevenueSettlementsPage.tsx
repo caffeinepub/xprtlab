@@ -28,7 +28,7 @@ export default function RevenueSettlementsPage({
     <div className="min-h-screen bg-gray-50 pb-[90px]">
       <div className="px-4 pt-4">
         <PageHeroHeader
-          title="Revenue & Settlements"
+          title="💰 Revenue & Settlements"
           description="Track collections, hospital ledgers, and settlements"
         />
       </div>

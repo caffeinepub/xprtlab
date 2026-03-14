@@ -1,5 +1,7 @@
 import {
   Activity,
+  AlertCircle,
+  AlertTriangle,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -9,13 +11,17 @@ import {
   FlaskConical,
   IndianRupee,
   LayoutDashboard,
+  Microscope,
   TestTube,
   TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
 import type React from "react";
 import { useMemo, useState } from "react";
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
   Line,
   LineChart,
@@ -27,6 +33,7 @@ import {
 import HealthcareBg from "../../components/shared/HealthcareBg";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests, useHospitals } from "../../hooks/useQueries";
+import { getDemoSamples } from "../../utils/demoStorage";
 import { formatCurrency } from "../../utils/formatters";
 
 function getRelativeTime(timestamp: number): string {
@@ -47,7 +54,11 @@ interface DemoDashboardData {
   activeHospitals: number;
   activePhlebotomists: number;
   pendingReports: number;
+  collectionsTodayAmount: number;
+  pendingPayments: number;
+  samplesInProcessing: number;
   revenueChart: { day: string; revenue: number }[];
+  samplesChart: { day: string; samples: number }[];
   hospitalPerformance: {
     id: string;
     name: string;
@@ -81,6 +92,12 @@ function generateDemoDashboardData(): DemoDashboardData {
     };
   });
 
+  const sampleCounts = [12, 18, 14, 22, 16, 20, 18];
+  const samplesChart = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now - (6 - i) * dayMs);
+    return { day: dayNames[d.getDay()], samples: sampleCounts[i] };
+  });
+
   return {
     revenueTodayAmount: 4850,
     revenueMonthAmount: 112400,
@@ -88,7 +105,11 @@ function generateDemoDashboardData(): DemoDashboardData {
     activeHospitals: 6,
     activePhlebotomists: 4,
     pendingReports: 3,
+    collectionsTodayAmount: 3240,
+    pendingPayments: 8750,
+    samplesInProcessing: 12,
     revenueChart,
+    samplesChart,
     hospitalPerformance: [
       {
         id: "1",
@@ -336,16 +357,99 @@ function RevenueTooltip({
   return null;
 }
 
+function SamplesTooltip({
+  active,
+  payload,
+  label,
+}: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+  if (active && payload && payload.length) {
+    return (
+      <div
+        className="bg-white border border-gray-100 rounded-xl px-4 py-3"
+        style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.12)" }}
+      >
+        <p className="text-xs font-semibold text-gray-400 mb-1">{label}</p>
+        <p className="text-base font-bold text-gray-900">
+          {payload[0].value} samples
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
 interface SuperAdminDashboardPageProps {
+  onNavigate?: (route: string) => void;
   isDemoMode?: boolean;
+}
+
+// ─── Settlement Alert ─────────────────────────────────────────────────────────
+const DEPOSIT_STATUS_KEY = "xpertlab_phlebo_deposit_status";
+
+function getUnsubmittedCount(isDemoMode: boolean): number {
+  try {
+    const samples = isDemoMode ? getDemoSamples() : [];
+    const phlebotomistIds = new Set(samples.map((s) => s.phlebotomistId));
+    if (phlebotomistIds.size === 0) {
+      // Use demo fallback: 2 phlebotomists
+      phlebotomistIds.add("demo-phleb-1");
+      phlebotomistIds.add("demo-phleb-2");
+    }
+    const raw = localStorage.getItem(DEPOSIT_STATUS_KEY);
+    const statusMap = raw ? JSON.parse(raw) : {};
+    let count = 0;
+    for (const id of phlebotomistIds) {
+      const entry = statusMap[id];
+      if (!entry || entry.depositStatus !== "submitted") count++;
+    }
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
+function SettlementAlert({
+  isDemoMode,
+  onNavigate,
+}: {
+  isDemoMode: boolean;
+  onNavigate?: (route: string) => void;
+}) {
+  const unsubmittedCount = useMemo(
+    () => getUnsubmittedCount(isDemoMode),
+    [isDemoMode],
+  );
+  if (unsubmittedCount === 0) return null;
+  return (
+    <button
+      type="button"
+      className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-amber-100 transition-colors text-left"
+      onClick={() => onNavigate?.("revenue-settlements")}
+      data-ocid="dashboard.settlement.card"
+    >
+      <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0" />
+      <div className="flex-1">
+        <p className="font-semibold text-amber-800">
+          {unsubmittedCount} phlebotomist{unsubmittedCount !== 1 ? "s" : ""}{" "}
+          have not submitted today&apos;s collections
+        </p>
+        <p className="text-sm text-amber-600">
+          Click to view Phlebotomist Collections
+        </p>
+      </div>
+      <ChevronRight className="w-5 h-5 text-amber-600 shrink-0" />
+    </button>
+  );
 }
 
 const ROWS_PER_PAGE = 5;
 
 export default function SuperAdminDashboardPage({
   isDemoMode = false,
+  onNavigate,
 }: SuperAdminDashboardPageProps) {
   const [hospitalPage, setHospitalPage] = useState(0);
+  const [chartTab, setChartTab] = useState<"revenue" | "samples">("revenue");
 
   const { data: hospitals = [] } = useHospitals();
   const { data: allTests = [] } = useGetAllTests();
@@ -362,6 +466,9 @@ export default function SuperAdminDashboardPage({
         activeHospitals: demoData.activeHospitals,
         activePhlebotomists: demoData.activePhlebotomists,
         pendingReports: demoData.pendingReports,
+        collectionsToday: demoData.collectionsTodayAmount,
+        pendingPayments: demoData.pendingPayments,
+        samplesInProcessing: demoData.samplesInProcessing,
       };
     }
     const activeHospitals = (hospitals as { isActive: boolean }[]).filter(
@@ -374,6 +481,9 @@ export default function SuperAdminDashboardPage({
       activeHospitals,
       activePhlebotomists: 0,
       pendingReports: 0,
+      collectionsToday: 0,
+      pendingPayments: 0,
+      samplesInProcessing: 0,
     };
   }, [isDemoMode, demoData, hospitals]);
 
@@ -388,7 +498,19 @@ export default function SuperAdminDashboardPage({
     });
   }, [isDemoMode, demoData]);
 
+  const samplesChartData = useMemo(() => {
+    if (isDemoMode) return demoData.samplesChart;
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now - (6 - i) * dayMs);
+      return { day: dayNames[d.getDay()], samples: 0 };
+    });
+  }, [isDemoMode, demoData]);
+
   const hasRevenueData = revenueChartData.some((d) => d.revenue > 0);
+  const hasSamplesData = samplesChartData.some((d) => d.samples > 0);
 
   const hospitalPerformanceData = useMemo(() => {
     if (isDemoMode) return demoData.hospitalPerformance;
@@ -427,10 +549,11 @@ export default function SuperAdminDashboardPage({
       <div className="relative z-10">
         <div className="px-4 pt-4">
           <PageHeroHeader
-            title="Dashboard"
+            title="📊 Dashboard"
             description="Overview of platform performance and key metrics"
           />
         </div>
+
         {/* Gradient Page Header */}
         <div
           className="px-4 py-5"
@@ -468,7 +591,9 @@ export default function SuperAdminDashboardPage({
         </div>
 
         <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
-          {/* ── 1. Summary Cards ─────────────────────────────────────────── */}
+          {/* ── Settlement Alert ──────────────────────────────────────────── */}
+          <SettlementAlert isDemoMode={isDemoMode} onNavigate={onNavigate} />
+          {/* ── 1. Summary Cards ────────────────────────────────────────────── */}
           <section>
             <h2
               className="font-semibold text-gray-400 uppercase tracking-wider mb-4"
@@ -525,10 +650,35 @@ export default function SuperAdminDashboardPage({
                 iconBg="#FEF2F2"
                 iconColor="#DC2626"
               />
+              {/* 3 new metric cards */}
+              <SummaryCard
+                title="Collections Today"
+                value={formatCurrency(metrics.collectionsToday)}
+                subtitle="Cash + UPI today"
+                icon={<Wallet className="w-5 h-5" />}
+                iconBg="#F0FDF4"
+                iconColor="#16A34A"
+              />
+              <SummaryCard
+                title="Pending Payments"
+                value={formatCurrency(metrics.pendingPayments)}
+                subtitle="Outstanding balance"
+                icon={<AlertCircle className="w-5 h-5" />}
+                iconBg="#FEF3C7"
+                iconColor="#D97706"
+              />
+              <SummaryCard
+                title="Samples in Processing"
+                value={String(metrics.samplesInProcessing)}
+                subtitle="Currently in lab"
+                icon={<Microscope className="w-5 h-5" />}
+                iconBg="#EFF6FF"
+                iconColor="#2563EB"
+              />
             </div>
           </section>
 
-          {/* ── 2. Revenue Chart ─────────────────────────────────────────── */}
+          {/* ── 2. Revenue/Samples Chart ─────────────────────────────────── */}
           <section>
             <div
               className="bg-white p-5"
@@ -537,43 +687,172 @@ export default function SuperAdminDashboardPage({
                 boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
               }}
             >
-              <div className="flex items-center gap-2.5 mb-5">
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: "34px",
-                    height: "34px",
-                    borderRadius: "10px",
-                    background: "rgba(13,71,161,0.08)",
-                  }}
-                >
-                  <Activity className="w-4 h-4 text-primary" />
+              {/* Chart toggle tabs */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "10px",
+                      background: "rgba(13,71,161,0.08)",
+                    }}
+                  >
+                    <Activity className="w-4 h-4 text-primary" />
+                  </div>
+                  <h2
+                    className="font-semibold text-gray-900"
+                    style={{ fontSize: "16px" }}
+                  >
+                    {chartTab === "revenue"
+                      ? "Revenue Last 7 Days"
+                      : "Daily Sample Count"}
+                  </h2>
                 </div>
-                <h2
-                  className="font-semibold text-gray-900"
-                  style={{ fontSize: "16px" }}
+                <div
+                  className="flex items-center gap-1 p-1 rounded-xl"
+                  style={{ background: "#F7F9FC", border: "1px solid #E5E7EB" }}
                 >
-                  Revenue Last 7 Days
-                </h2>
+                  <button
+                    type="button"
+                    data-ocid="dashboard.chart.revenue_tab"
+                    onClick={() => setChartTab("revenue")}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    style={{
+                      background:
+                        chartTab === "revenue"
+                          ? "linear-gradient(135deg, #0D47A1, #1976D2)"
+                          : "transparent",
+                      color: chartTab === "revenue" ? "#fff" : "#9CA3AF",
+                      boxShadow:
+                        chartTab === "revenue"
+                          ? "0 2px 6px rgba(13,71,161,0.25)"
+                          : "none",
+                    }}
+                  >
+                    Revenue
+                  </button>
+                  <button
+                    type="button"
+                    data-ocid="dashboard.chart.samples_tab"
+                    onClick={() => setChartTab("samples")}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    style={{
+                      background:
+                        chartTab === "samples"
+                          ? "linear-gradient(135deg, #0D47A1, #1976D2)"
+                          : "transparent",
+                      color: chartTab === "samples" ? "#fff" : "#9CA3AF",
+                      boxShadow:
+                        chartTab === "samples"
+                          ? "0 2px 6px rgba(13,71,161,0.25)"
+                          : "none",
+                    }}
+                  >
+                    Samples
+                  </button>
+                </div>
               </div>
 
-              {hasRevenueData ? (
+              {chartTab === "revenue" ? (
+                hasRevenueData ? (
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={revenueChartData}
+                        margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id="revenueGradient"
+                            x1="0"
+                            y1="0"
+                            x2="1"
+                            y2="0"
+                          >
+                            <stop offset="0%" stopColor="#0D47A1" />
+                            <stop offset="100%" stopColor="#26A69A" />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="#f0f0f0"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="day"
+                          tick={{
+                            fontSize: 11,
+                            fill: "#9CA3AF",
+                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                          }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          tick={{
+                            fontSize: 11,
+                            fill: "#9CA3AF",
+                            fontFamily: "'Plus Jakarta Sans', sans-serif",
+                          }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(v: number) =>
+                            `₹${(v / 1000).toFixed(0)}k`
+                          }
+                          width={42}
+                        />
+                        <Tooltip content={<RevenueTooltip />} />
+                        <Line
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke="url(#revenueGradient)"
+                          strokeWidth={3}
+                          dot={{ fill: "#0D47A1", strokeWidth: 2, r: 4 }}
+                          activeDot={{
+                            r: 6,
+                            fill: "#26A69A",
+                            strokeWidth: 2,
+                            stroke: "#fff",
+                          }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="h-56 flex flex-col items-center justify-center text-center">
+                    <Activity className="w-10 h-10 text-gray-200 mb-3" />
+                    <p className="text-sm text-gray-400">
+                      No revenue data available.
+                    </p>
+                  </div>
+                )
+              ) : hasSamplesData ? (
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={revenueChartData}
+                    <BarChart
+                      data={samplesChartData}
                       margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
                     >
                       <defs>
                         <linearGradient
-                          id="revenueGradient"
+                          id="samplesGradient"
                           x1="0"
                           y1="0"
-                          x2="1"
-                          y2="0"
+                          x2="0"
+                          y2="1"
                         >
-                          <stop offset="0%" stopColor="#0D47A1" />
-                          <stop offset="100%" stopColor="#26A69A" />
+                          <stop
+                            offset="0%"
+                            stopColor="#0D47A1"
+                            stopOpacity={0.9}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#26A69A"
+                            stopOpacity={0.7}
+                          />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
@@ -599,40 +878,29 @@ export default function SuperAdminDashboardPage({
                         }}
                         axisLine={false}
                         tickLine={false}
-                        tickFormatter={(v: number) =>
-                          `₹${(v / 1000).toFixed(0)}k`
-                        }
-                        width={42}
+                        width={32}
                       />
-                      <Tooltip content={<RevenueTooltip />} />
-                      <Line
-                        type="monotone"
-                        dataKey="revenue"
-                        stroke="url(#revenueGradient)"
-                        strokeWidth={3}
-                        dot={{ fill: "#0D47A1", strokeWidth: 2, r: 4 }}
-                        activeDot={{
-                          r: 6,
-                          fill: "#26A69A",
-                          strokeWidth: 2,
-                          stroke: "#fff",
-                        }}
+                      <Tooltip content={<SamplesTooltip />} />
+                      <Bar
+                        dataKey="samples"
+                        fill="url(#samplesGradient)"
+                        radius={[6, 6, 0, 0]}
                       />
-                    </LineChart>
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
                 <div className="h-56 flex flex-col items-center justify-center text-center">
                   <Activity className="w-10 h-10 text-gray-200 mb-3" />
                   <p className="text-sm text-gray-400">
-                    No revenue data available.
+                    No sample data available.
                   </p>
                 </div>
               )}
             </div>
           </section>
 
-          {/* ── 3. Hospital Performance Table ────────────────────────────── */}
+          {/* ── 3. Hospital Performance Table ───────────────────────────── */}
           <section>
             <div
               className="bg-white overflow-hidden"
@@ -771,11 +1039,7 @@ export default function SuperAdminDashboardPage({
                             type="button"
                             key={`hosp-page-btn-${pageIdx}`}
                             onClick={() => setHospitalPage(pageIdx)}
-                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                              pageIdx === hospitalPage
-                                ? "text-white shadow-sm"
-                                : "text-gray-400 hover:bg-white hover:shadow-sm"
-                            }`}
+                            className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${pageIdx === hospitalPage ? "text-white shadow-sm" : "text-gray-400 hover:bg-white hover:shadow-sm"}`}
                             style={
                               pageIdx === hospitalPage
                                 ? {
@@ -809,7 +1073,7 @@ export default function SuperAdminDashboardPage({
             </div>
           </section>
 
-          {/* ── 4. Recent Activity ───────────────────────────────────────── */}
+          {/* ── 4. Recent Activity ────────────────────────────────────────── */}
           <section>
             <div
               className="bg-white overflow-hidden"

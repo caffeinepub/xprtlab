@@ -623,6 +623,75 @@ export default function MyHospitalSamplesPage({
                     >
                       Workflow Timeline
                     </p>
+                    {/* Delivery Method */}
+                    <div
+                      style={{
+                        marginBottom: "16px",
+                        padding: "12px",
+                        background: "#F0F9FF",
+                        borderRadius: "10px",
+                        border: "1px solid #BAE6FD",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: 600,
+                          color: "#0369A1",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          marginBottom: "8px",
+                        }}
+                      >
+                        Delivery Method
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {(
+                          [
+                            { value: "WHATSAPP", label: "📱 WhatsApp" },
+                            { value: "EMAIL", label: "📧 Email" },
+                            { value: "APP_DOWNLOAD", label: "📲 App Download" },
+                          ] as const
+                        ).map(({ value, label }) => {
+                          const isSelected =
+                            (sample.deliveryMethod ?? "").toUpperCase() ===
+                            value;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              data-ocid={`my_samples.delivery_method.toggle.${WORKFLOW_STAGES.indexOf(sample.status) + 1}`}
+                              onClick={() => {
+                                if (isDemoMode) {
+                                  updateDemoSampleDelivery(
+                                    sample.id,
+                                    value,
+                                    "phlebotomist",
+                                    DEMO_PHLEBO_ID,
+                                  );
+                                  loadSamples();
+                                }
+                              }}
+                              style={{
+                                padding: "5px 12px",
+                                borderRadius: "999px",
+                                fontSize: "12px",
+                                fontWeight: 500,
+                                border: isSelected
+                                  ? "2px solid #0D47A1"
+                                  : "1.5px solid #D1D5DB",
+                                background: isSelected ? "#0D47A1" : "#FFFFFF",
+                                color: isSelected ? "#FFFFFF" : "#4B5563",
+                                cursor: "pointer",
+                                transition: "all 150ms ease",
+                              }}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
                     <div className="space-y-0">
                       {WORKFLOW_STAGES.map((stage, stageIdx) => {
                         const isCompleted = stageIdx <= currentStageIdx;

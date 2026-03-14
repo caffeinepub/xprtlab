@@ -67,6 +67,9 @@ const RevenueSettlementsPage = lazy(
 const ProfitDashboardPage = lazy(
   () => import("./pages/admin/ProfitDashboardPage"),
 );
+const SuperAdminSettingsPage = lazy(
+  () => import("./pages/admin/SuperAdminSettingsPage"),
+);
 
 function getNavItems(role: AppRole): NavItem[] {
   if (role === "phlebotomist") {
@@ -101,7 +104,7 @@ function getNavItems(role: AppRole): NavItem[] {
       { label: "Tests", path: "test-management", icon: "TestTube" },
       { label: "Hospitals", path: "hospital-management", icon: "Building2" },
       { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
-      { label: "Settings", path: "audit-logs", icon: "BarChart3" },
+      { label: "Settings", path: "super-admin-settings", icon: "Settings" },
     ];
   }
   return [];
@@ -145,7 +148,6 @@ export default function StaffApp() {
   const [currentPage, setCurrentPage] = useState<string>("");
   const [pageParams, setPageParams] = useState<Record<string, string>>({});
 
-  // Initialize demo storage exactly once when demo mode is activated
   const demoInitializedRef = useRef(false);
   useEffect(() => {
     if (demoMode && !demoInitializedRef.current) {
@@ -164,7 +166,6 @@ export default function StaffApp() {
     ? demoRole
     : ((userProfile?.appRole as AppRole) ?? "phlebotomist");
 
-  // Set default page based on role once known
   useEffect(() => {
     if (currentPage) return;
     const role = demoMode
@@ -186,9 +187,8 @@ export default function StaffApp() {
     profileFetched &&
     userProfile === null;
 
-  if (!demoMode && isInitializing) {
+  if (!demoMode && isInitializing)
     return <LoadingScreen message="Initializing..." />;
-  }
 
   if (!demoMode && !isAuthenticated) {
     return (
@@ -302,6 +302,18 @@ export default function StaffApp() {
         return (
           <AccessDenied message="You do not have permission to access the Profit Dashboard." />
         );
+      case "super-admin-settings":
+        if (effectiveRole === "superAdmin") {
+          return (
+            <SuperAdminSettingsPage
+              isDemoMode={demoMode}
+              onNavigate={handleNavigate}
+            />
+          );
+        }
+        return (
+          <AccessDenied message="You do not have permission to access Settings." />
+        );
       case "profile":
         return (
           <ProfilePage
@@ -310,12 +322,10 @@ export default function StaffApp() {
           />
         );
       default:
-        if (effectiveRole === "phlebotomist") {
+        if (effectiveRole === "phlebotomist")
           return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
-        }
-        if (effectiveRole === "superAdmin") {
+        if (effectiveRole === "superAdmin")
           return <SuperAdminDashboardPage isDemoMode={demoMode} />;
-        }
         return <AdminBookingsPage onNavigate={handleNavigate} />;
     }
   };

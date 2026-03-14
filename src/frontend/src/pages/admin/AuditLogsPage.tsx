@@ -11,6 +11,7 @@ import {
   Clock,
   CreditCard,
   DollarSign,
+  Download,
   FlaskConical,
   Loader2,
   Lock,
@@ -20,7 +21,7 @@ import {
   User,
   XCircle,
 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useActor } from "../../hooks/useActor";
 
 interface AuditLogsPageProps {
@@ -173,6 +174,39 @@ const MOCK_AUDIT_LOGS: AuditLogEntry[] = [
   },
 ];
 
+function downloadCSV(rows: AuditLogEntry[]) {
+  const headers = [
+    "ID",
+    "Phlebotomist",
+    "Hospital",
+    "Action Type",
+    "Status",
+    "Amount",
+    "Timestamp",
+  ];
+  const csvRows = rows.map((log) => [
+    log.id ?? "",
+    log.phlebotomistId ?? log.actorId ?? "",
+    log.hospitalId ?? "",
+    log.actionType ?? "",
+    getLogStatus(log),
+    log.finalAmount !== undefined ? String(log.finalAmount) : "",
+    formatTimestamp(log.timestamp),
+  ]);
+  const csv = [headers, ...csvRows]
+    .map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
+    )
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "audit-logs-export.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AuditLogsPage({
   onNavigate: _onNavigate,
 }: AuditLogsPageProps) {
@@ -181,6 +215,9 @@ export default function AuditLogsPage({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
+  const [filterPhlebotomist, setFilterPhlebotomist] = useState("");
+  const [filterHospital, setFilterHospital] = useState("");
+  const [filterActionType, setFilterActionType] = useState("");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
@@ -207,9 +244,47 @@ export default function AuditLogsPage({
 
   const logs = rawLogs ?? MOCK_AUDIT_LOGS;
 
+  // Derive unique dropdown options
+  const phlebotomistOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const log of logs) {
+      const id = log.phlebotomistId ?? log.actorId;
+      if (id) ids.add(id);
+    }
+    return Array.from(ids).sort();
+  }, [logs]);
+
+  const hospitalOptions = useMemo(() => {
+    const ids = new Set<string>();
+    for (const log of logs) {
+      if (log.hospitalId) ids.add(log.hospitalId);
+    }
+    return Array.from(ids).sort();
+  }, [logs]);
+
+  const actionTypeOptions = useMemo(() => {
+    const types = new Set<string>();
+    for (const log of logs) {
+      if (log.actionType) types.add(log.actionType);
+    }
+    return Array.from(types).sort();
+  }, [logs]);
+
   const filtered = logs.filter((log) => {
     const status = getLogStatus(log);
     if (filterType !== "all" && status !== filterType) return false;
+
+    // Phlebotomist filter
+    if (filterPhlebotomist) {
+      const id = log.phlebotomistId ?? log.actorId ?? "";
+      if (id !== filterPhlebotomist) return false;
+    }
+
+    // Hospital filter
+    if (filterHospital && log.hospitalId !== filterHospital) return false;
+
+    // Action type filter
+    if (filterActionType && log.actionType !== filterActionType) return false;
 
     const searchLower = search.toLowerCase();
     if (search) {
@@ -259,6 +334,9 @@ export default function AuditLogsPage({
     suspicious: logs.filter((l) => getLogStatus(l) === "suspicious").length,
   };
 
+  const selectClass =
+    "w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30";
+
   return (
     <div className="min-h-screen bg-background pb-[90px]">
       {/* Header */}
@@ -269,7 +347,9 @@ export default function AuditLogsPage({
               <Shield className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground">Audit Logs</h1>
+              <h1 className="text-lg font-bold text-foreground">
+                🛡️ Audit Logs
+              </h1>
               <p className="text-xs text-muted-foreground">
                 All system actions &amp; security events
               </p>
@@ -325,6 +405,7 @@ export default function AuditLogsPage({
                 setPage(1);
               }}
               className={`${stat.bg} rounded-xl p-2.5 text-center transition-all ${filterType === stat.key ? "ring-2 ring-primary" : ""}`}
+              data-ocid={`audit.${stat.key}.tab`}
             >
               <p className={`text-lg font-bold ${stat.color}`}>
                 {counts[stat.key]}
@@ -336,18 +417,111 @@ export default function AuditLogsPage({
 
         {/* Filters */}
         <div className="bg-card rounded-2xl shadow-card p-4 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by phlebotomist, hospital, action..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="pl-9"
-            />
+          <div className="flex items-center justify-between gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by phlebotomist, hospital, action..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-9"
+                data-ocid="audit.search_input"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => downloadCSV(filtered)}
+              className="flex items-center gap-1.5 text-xs shrink-0"
+              data-ocid="audit.download.button"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download CSV
+            </Button>
           </div>
+
+          {/* Additional dropdowns */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <label
+                htmlFor="audit-filter-phlebo"
+                className="text-xs text-muted-foreground mb-1 block"
+              >
+                Phlebotomist
+              </label>
+              <select
+                value={filterPhlebotomist}
+                onChange={(e) => {
+                  setFilterPhlebotomist(e.target.value);
+                  setPage(1);
+                }}
+                className={selectClass}
+                id="audit-filter-phlebo"
+                data-ocid="audit.phlebotomist.select"
+              >
+                <option value="">All Phlebotomists</option>
+                {phlebotomistOptions.map((id) => (
+                  <option key={id} value={id}>
+                    {id}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="audit-filter-hospital"
+                className="text-xs text-muted-foreground mb-1 block"
+              >
+                Hospital
+              </label>
+              <select
+                value={filterHospital}
+                onChange={(e) => {
+                  setFilterHospital(e.target.value);
+                  setPage(1);
+                }}
+                className={selectClass}
+                id="audit-filter-hospital"
+                data-ocid="audit.hospital.select"
+              >
+                <option value="">All Hospitals</option>
+                {hospitalOptions.map((id) => (
+                  <option key={id} value={id}>
+                    {id}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="audit-filter-action"
+                className="text-xs text-muted-foreground mb-1 block"
+              >
+                Action Type
+              </label>
+              <select
+                value={filterActionType}
+                onChange={(e) => {
+                  setFilterActionType(e.target.value);
+                  setPage(1);
+                }}
+                className={selectClass}
+                id="audit-filter-action"
+                data-ocid="audit.action_type.select"
+              >
+                <option value="">All Actions</option>
+                {actionTypeOptions.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="flex gap-2">
             <div className="flex-1">
               <label
@@ -364,7 +538,8 @@ export default function AuditLogsPage({
                   setDateFrom(e.target.value);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={selectClass}
+                data-ocid="audit.date_from.input"
               />
             </div>
             <div className="flex-1">
@@ -382,7 +557,8 @@ export default function AuditLogsPage({
                   setDateTo(e.target.value);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={selectClass}
+                data-ocid="audit.date_to.input"
               />
             </div>
           </div>
@@ -404,7 +580,10 @@ export default function AuditLogsPage({
             <AlertDescription>Failed to load audit logs.</AlertDescription>
           </Alert>
         ) : paginated.length === 0 ? (
-          <div className="bg-card rounded-2xl shadow-card p-8 text-center">
+          <div
+            className="bg-card rounded-2xl shadow-card p-8 text-center"
+            data-ocid="audit.empty_state"
+          >
             <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
             <p className="text-muted-foreground">
               No audit logs found matching your filters.
@@ -420,6 +599,7 @@ export default function AuditLogsPage({
               return (
                 <div
                   key={log.id ?? idx}
+                  data-ocid={`audit.log.item.${idx + 1}`}
                   className={`bg-card rounded-2xl shadow-card p-4 border-l-4 ${
                     isRejected
                       ? "border-l-destructive"
@@ -518,6 +698,7 @@ export default function AuditLogsPage({
               size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
+              data-ocid="audit.pagination_prev"
             >
               Previous
             </Button>
@@ -529,6 +710,7 @@ export default function AuditLogsPage({
               size="sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
+              data-ocid="audit.pagination_next"
             >
               Next
             </Button>
