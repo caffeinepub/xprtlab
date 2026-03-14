@@ -6,6 +6,7 @@ import {
   Minus,
   Phone,
   Plus,
+  Search,
   TestTube,
   User,
 } from "lucide-react";
@@ -71,6 +72,8 @@ export default function AddHospitalSamplePage({
 }: AddHospitalSamplePageProps) {
   const [hospitals, setHospitals] = useState<DemoHospital[]>([]);
   const [selectedHospitalId, setSelectedHospitalId] = useState("");
+  const [hospitalSearch, setHospitalSearch] = useState("");
+  const [testSearch, setTestSearch] = useState("");
   const [patientName, setPatientName] = useState("");
   const [phone, setPhone] = useState("");
   const [selectedTests, setSelectedTests] = useState<TestEntry[]>([]);
@@ -92,10 +95,23 @@ export default function AddHospitalSamplePage({
   }, [isDemoMode]);
 
   const totalMrp = selectedTests.reduce((sum, t) => sum + t.price, 0);
-  const maxAllowedDiscount = Math.floor(totalMrp * 0.05); // 5% max
+  const maxAllowedDiscount = Math.floor(totalMrp * 0.05);
   const effectiveDiscount = Math.min(discountAmount, maxAllowedDiscount);
   const finalAmount = totalMrp - effectiveDiscount;
   const pendingAmount = Math.max(0, finalAmount - amountReceived);
+
+  const filteredHospitals = hospitals.filter(
+    (h) =>
+      h.name.toLowerCase().includes(hospitalSearch.toLowerCase()) ||
+      (h.address || "").toLowerCase().includes(hospitalSearch.toLowerCase()) ||
+      (h.area || "").toLowerCase().includes(hospitalSearch.toLowerCase()),
+  );
+
+  const filteredTests = DEMO_AVAILABLE_TESTS.filter(
+    (t) =>
+      t.testName.toLowerCase().includes(testSearch.toLowerCase()) ||
+      t.testCode.toLowerCase().includes(testSearch.toLowerCase()),
+  );
 
   const toggleTest = (test: TestEntry) => {
     setSelectedTests((prev) => {
@@ -173,35 +189,95 @@ export default function AddHospitalSamplePage({
     setPaymentMode("CASH");
     setError("");
     setIsSuccess(false);
+    setHospitalSearch("");
+    setTestSearch("");
     if (hospitals.length !== 1) setSelectedHospitalId("");
   };
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 text-center max-w-sm w-full">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{ background: "#F7F9FC" }}
+      >
+        <div
+          style={{
+            background: "#FFFFFF",
+            borderRadius: "24px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+            padding: "32px",
+            textAlign: "center",
+            maxWidth: "360px",
+            width: "100%",
+          }}
+          data-ocid="add_sample.success_state"
+        >
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              background: "#F0FDF4",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <CheckCircle
+              style={{ width: "32px", height: "32px", color: "#16A34A" }}
+            />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2
+            style={{
+              fontSize: "20px",
+              fontWeight: 700,
+              color: "#111827",
+              marginBottom: "8px",
+            }}
+          >
             Sample Added!
           </h2>
-          <p className="text-gray-500 text-sm mb-6">
+          <p
+            style={{ color: "#6B7280", fontSize: "14px", marginBottom: "24px" }}
+          >
             Sample for <strong>{patientName}</strong> has been recorded
             successfully.
           </p>
-          <div className="space-y-2">
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <button
               type="button"
               onClick={() => onNavigate?.("my-samples")}
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-3 rounded-xl font-semibold text-sm"
+              style={{
+                width: "100%",
+                background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                color: "white",
+                padding: "12px",
+                borderRadius: "12px",
+                fontWeight: 600,
+                fontSize: "14px",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-ocid="add_sample.primary_button"
             >
               View My Samples
             </button>
             <button
               type="button"
               onClick={handleReset}
-              className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-sm"
+              style={{
+                width: "100%",
+                background: "#F3F4F6",
+                color: "#374151",
+                padding: "12px",
+                borderRadius: "12px",
+                fontWeight: 600,
+                fontSize: "14px",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-ocid="add_sample.secondary_button"
             >
               Add Another Sample
             </button>
@@ -211,56 +287,146 @@ export default function AddHospitalSamplePage({
     );
   }
 
+  const inputStyle = {
+    width: "100%",
+    border: "1.5px solid #E5E7EB",
+    borderRadius: "12px",
+    padding: "10px 14px",
+    fontSize: "14px",
+    outline: "none",
+    background: "white",
+    boxSizing: "border-box" as const,
+  };
+
+  const cardStyle = {
+    background: "#FFFFFF",
+    borderRadius: "16px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+    padding: "16px",
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-[90px]">
+    <div className="min-h-screen pb-[90px]" style={{ background: "#F7F9FC" }}>
       <div className="px-4 pt-4">
         <PageHeroHeader
           title="Add Sample"
           description="Record a new hospital sample collection"
         />
       </div>
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
-        <h1 className="text-xl font-bold text-gray-900">Add Hospital Sample</h1>
-        <p className="text-xs text-gray-400 mt-0.5">
-          Record a new patient sample
-        </p>
-      </div>
 
-      <div className="px-4 pt-4 space-y-4">
+      <div className="px-4 space-y-4">
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">
+          <div
+            style={{
+              background: "#FEF2F2",
+              border: "1px solid #FECACA",
+              borderRadius: "12px",
+              padding: "12px",
+              fontSize: "14px",
+              color: "#DC2626",
+            }}
+            data-ocid="add_sample.error_state"
+          >
             {error}
           </div>
         )}
 
         {/* Hospital selection */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Building2 className="w-4 h-4 text-blue-600" />
-            <p className="text-sm font-semibold text-gray-800">
+        <div style={cardStyle}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "12px",
+            }}
+          >
+            <Building2
+              style={{ width: "16px", height: "16px", color: "#0D47A1" }}
+            />
+            <p
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#1F2937",
+                margin: 0,
+              }}
+            >
               Select Hospital
             </p>
           </div>
-          {hospitals.length === 0 ? (
-            <p className="text-sm text-gray-400">No hospitals assigned.</p>
+
+          {/* Hospital search */}
+          {hospitals.length > 2 && (
+            <div style={{ position: "relative", marginBottom: "12px" }}>
+              <Search
+                style={{
+                  position: "absolute",
+                  left: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: "16px",
+                  height: "16px",
+                  color: "#9CA3AF",
+                }}
+              />
+              <input
+                type="text"
+                value={hospitalSearch}
+                onChange={(e) => setHospitalSearch(e.target.value)}
+                placeholder="Search Hospital..."
+                style={{ ...inputStyle, paddingLeft: "38px" }}
+                data-ocid="add_sample.search_input"
+              />
+            </div>
+          )}
+
+          {filteredHospitals.length === 0 ? (
+            <p style={{ fontSize: "14px", color: "#9CA3AF" }}>
+              No hospitals assigned.
+            </p>
           ) : (
-            <div className="space-y-2">
-              {hospitals.map((h) => (
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
+              {filteredHospitals.map((h) => (
                 <button
                   type="button"
                   key={h.id}
                   onClick={() => setSelectedHospitalId(h.id)}
-                  className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
-                    selectedHospitalId === h.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 bg-white"
-                  }`}
+                  data-ocid="add_sample.select"
+                  style={{
+                    width: "100%",
+                    textAlign: "left",
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border:
+                      selectedHospitalId === h.id
+                        ? "2px solid #0D47A1"
+                        : "2px solid #E5E7EB",
+                    background:
+                      selectedHospitalId === h.id ? "#EFF6FF" : "white",
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                  }}
                 >
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#111827",
+                      margin: 0,
+                    }}
+                  >
                     {h.name}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p
+                    style={{
+                      fontSize: "12px",
+                      color: "#6B7280",
+                      margin: "2px 0 0",
+                    }}
+                  >
                     {h.area}, {h.city}
                   </p>
                 </button>
@@ -270,18 +436,40 @@ export default function AddHospitalSamplePage({
         </div>
 
         {/* Patient info */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <User className="w-4 h-4 text-blue-600" />
-            <p className="text-sm font-semibold text-gray-800">
+        <div style={cardStyle}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "12px",
+            }}
+          >
+            <User style={{ width: "16px", height: "16px", color: "#0D47A1" }} />
+            <p
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#1F2937",
+                margin: 0,
+              }}
+            >
               Patient Details
             </p>
           </div>
-          <div className="space-y-3">
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
             <div>
               <label
                 htmlFor="sample-patient-name"
-                className="text-xs font-medium text-gray-600 mb-1 block"
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  display: "block",
+                  marginBottom: "4px",
+                }}
               >
                 Patient Name
               </label>
@@ -291,25 +479,44 @@ export default function AddHospitalSamplePage({
                 value={patientName}
                 onChange={(e) => setPatientName(e.target.value)}
                 placeholder="Enter patient name"
-                className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none"
+                style={inputStyle}
+                data-ocid="add_sample.input"
               />
             </div>
             <div>
               <label
                 htmlFor="sample-phone"
-                className="text-xs font-medium text-gray-600 mb-1 block"
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  display: "block",
+                  marginBottom: "4px",
+                }}
               >
                 Phone Number
               </label>
-              <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden focus-within:border-blue-500">
-                <Phone className="w-4 h-4 text-gray-400 ml-3" />
+              <div style={{ position: "relative" }}>
+                <Phone
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "16px",
+                    height: "16px",
+                    color: "#9CA3AF",
+                  }}
+                />
                 <input
+                  id="sample-phone"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="10-digit mobile number"
                   maxLength={10}
-                  className="flex-1 px-3 py-2.5 text-sm focus:outline-none"
+                  style={{ ...inputStyle, paddingLeft: "38px" }}
+                  data-ocid="add_sample.input"
                 />
               </div>
             </div>
@@ -317,63 +524,218 @@ export default function AddHospitalSamplePage({
         </div>
 
         {/* Test selection */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <TestTube className="w-4 h-4 text-blue-600" />
-            <p className="text-sm font-semibold text-gray-800">Select Tests</p>
+        <div style={cardStyle}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "12px",
+            }}
+          >
+            <TestTube
+              style={{ width: "16px", height: "16px", color: "#0D47A1" }}
+            />
+            <p
+              style={{
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "#1F2937",
+                margin: 0,
+              }}
+            >
+              Select Tests
+            </p>
           </div>
-          <div className="space-y-2">
-            {DEMO_AVAILABLE_TESTS.map((test) => {
-              const isSelected = !!selectedTests.find(
-                (t) => t.testId === test.testId,
-              );
-              return (
-                <button
-                  type="button"
-                  key={test.testId}
-                  onClick={() => toggleTest(test)}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                    isSelected
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900">
-                      {test.testName}
-                    </p>
-                    <p className="text-xs text-gray-500">{test.testCode}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      ₹{test.price}
-                    </span>
-                    {isSelected ? (
-                      <Minus className="w-4 h-4 text-blue-600" />
-                    ) : (
-                      <Plus className="w-4 h-4 text-gray-400" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+
+          {/* Test search */}
+          <div style={{ position: "relative", marginBottom: "12px" }}>
+            <Search
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "16px",
+                height: "16px",
+                color: "#9CA3AF",
+              }}
+            />
+            <input
+              type="text"
+              value={testSearch}
+              onChange={(e) => setTestSearch(e.target.value)}
+              placeholder="Search Tests..."
+              style={{ ...inputStyle, paddingLeft: "38px" }}
+              data-ocid="add_sample.search_input"
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {filteredTests.length === 0 ? (
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#9CA3AF",
+                  textAlign: "center",
+                  padding: "12px",
+                }}
+              >
+                No tests match your search.
+              </p>
+            ) : (
+              filteredTests.map((test) => {
+                const isSelected = !!selectedTests.find(
+                  (t) => t.testId === test.testId,
+                );
+                return (
+                  <button
+                    type="button"
+                    key={test.testId}
+                    onClick={() => toggleTest(test)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border: isSelected
+                        ? "2px solid #0D47A1"
+                        : "2px solid #E5E7EB",
+                      background: isSelected ? "#EFF6FF" : "white",
+                      cursor: "pointer",
+                      transition: "all 150ms ease",
+                    }}
+                    data-ocid="add_sample.toggle"
+                  >
+                    <div style={{ textAlign: "left" }}>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#111827",
+                          margin: 0,
+                        }}
+                      >
+                        {test.testName}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#6B7280",
+                          margin: "2px 0 0",
+                        }}
+                      >
+                        {test.testCode}
+                      </p>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#374151",
+                        }}
+                      >
+                        ₹{test.price}
+                      </span>
+                      {isSelected ? (
+                        <Minus
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            color: "#0D47A1",
+                          }}
+                        />
+                      ) : (
+                        <Plus
+                          style={{
+                            width: "16px",
+                            height: "16px",
+                            color: "#9CA3AF",
+                          }}
+                        />
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
 
         {/* Billing */}
         {selectedTests.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <IndianRupee className="w-4 h-4 text-blue-600" />
-              <p className="text-sm font-semibold text-gray-800">Billing</p>
+          <div style={cardStyle}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "16px",
+              }}
+            >
+              <IndianRupee
+                style={{ width: "16px", height: "16px", color: "#0D47A1" }}
+              />
+              <p
+                style={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#1F2937",
+                  margin: 0,
+                }}
+              >
+                Billing
+              </p>
             </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-gray-600">
-                <span>Total MRP</span>
-                <span>₹{totalMrp}</span>
+
+            {/* Billing rows */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                marginBottom: "16px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontSize: "14px", color: "#6B7280" }}>
+                  Total MRP
+                </span>
+                <span
+                  style={{
+                    fontSize: "14px",
+                    color: "#374151",
+                    fontWeight: 500,
+                  }}
+                >
+                  ₹{totalMrp}
+                </span>
               </div>
-              <div className="flex justify-between items-center text-gray-600">
-                <span>Discount (max ₹{maxAllowedDiscount})</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontSize: "14px", color: "#6B7280" }}>
+                  Discount (max ₹{maxAllowedDiscount})
+                </span>
                 <input
                   type="number"
                   value={discountAmount}
@@ -384,48 +746,142 @@ export default function AddHospitalSamplePage({
                   }
                   min={0}
                   max={maxAllowedDiscount}
-                  className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-right text-sm focus:outline-none focus:border-blue-500"
+                  style={{
+                    width: "80px",
+                    border: "1.5px solid #E5E7EB",
+                    borderRadius: "8px",
+                    padding: "4px 8px",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    outline: "none",
+                  }}
+                  data-ocid="add_sample.input"
                 />
               </div>
-              <div className="flex justify-between font-semibold text-gray-900 border-t border-gray-100 pt-2">
-                <span>Final Amount</span>
-                <span>₹{finalAmount}</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderTop: "1.5px solid #F3F4F6",
+                  paddingTop: "10px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    color: "#0D47A1",
+                  }}
+                >
+                  Final Amount
+                </span>
+                <span
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    color: "#0D47A1",
+                  }}
+                >
+                  ₹{finalAmount}
+                </span>
               </div>
-              <div className="flex justify-between items-center text-gray-600">
-                <span>Amount Received</span>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontSize: "14px", color: "#6B7280" }}>
+                  Amount Received
+                </span>
                 <input
                   type="number"
                   value={amountReceived}
                   onChange={(e) => setAmountReceived(Number(e.target.value))}
                   min={0}
                   max={finalAmount}
-                  className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-right text-sm focus:outline-none focus:border-blue-500"
+                  style={{
+                    width: "80px",
+                    border: "1.5px solid #E5E7EB",
+                    borderRadius: "8px",
+                    padding: "4px 8px",
+                    textAlign: "right",
+                    fontSize: "14px",
+                    outline: "none",
+                  }}
+                  data-ocid="add_sample.input"
                 />
               </div>
               {pendingAmount > 0 && (
-                <div className="flex justify-between text-red-600 font-medium">
-                  <span>Pending</span>
-                  <span>₹{pendingAmount}</span>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#DC2626",
+                    }}
+                  >
+                    Pending Amount
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      color: "#DC2626",
+                    }}
+                  >
+                    ₹{pendingAmount}
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* Payment mode */}
-            <div className="mt-3">
-              <p className="text-xs font-medium text-gray-600 mb-2">
+            {/* Payment mode toggle */}
+            <div>
+              <p
+                style={{
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  color: "#374151",
+                  marginBottom: "8px",
+                }}
+              >
                 Payment Mode
               </p>
-              <div className="flex gap-2">
+              <div style={{ display: "flex", gap: "8px" }}>
                 {(["CASH", "UPI"] as const).map((mode) => (
                   <button
                     type="button"
                     key={mode}
                     onClick={() => setPaymentMode(mode)}
-                    className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-all ${
-                      paymentMode === mode
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
-                        : "border-gray-200 text-gray-600"
-                    }`}
+                    data-ocid="add_sample.toggle"
+                    style={{
+                      flex: 1,
+                      padding: "10px",
+                      borderRadius: "12px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 150ms ease",
+                      background:
+                        paymentMode === mode
+                          ? "linear-gradient(135deg, #0D47A1, #26A69A)"
+                          : "white",
+                      color: paymentMode === mode ? "white" : "#374151",
+                      boxShadow:
+                        paymentMode === mode
+                          ? "0 4px 12px rgba(13,71,161,0.25)"
+                          : "0 0 0 1.5px #E5E7EB inset",
+                    }}
                   >
                     {mode}
                   </button>
@@ -440,16 +896,36 @@ export default function AddHospitalSamplePage({
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white py-4 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+          data-ocid="add_sample.submit_button"
+          style={{
+            width: "100%",
+            background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+            color: "white",
+            padding: "14px",
+            borderRadius: "16px",
+            fontWeight: 600,
+            fontSize: "15px",
+            border: "none",
+            cursor: isSubmitting ? "not-allowed" : "pointer",
+            opacity: isSubmitting ? 0.6 : 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            boxShadow: "0 4px 16px rgba(13,71,161,0.3)",
+          }}
         >
           {isSubmitting ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2
+                style={{ width: "16px", height: "16px" }}
+                className="animate-spin"
+              />
               Saving...
             </>
           ) : (
             <>
-              <CheckCircle className="w-4 h-4" />
+              <CheckCircle style={{ width: "16px", height: "16px" }} />
               Add Sample
             </>
           )}

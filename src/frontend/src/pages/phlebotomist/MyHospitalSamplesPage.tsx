@@ -41,12 +41,15 @@ const STATUS_LABELS: Record<DemoSample["status"], string> = {
   REPORT_DELIVERED: "Delivered",
 };
 
-const STATUS_COLORS: Record<DemoSample["status"], string> = {
-  SAMPLE_COLLECTED: "bg-gray-100 text-gray-700",
-  DISPATCHED: "bg-blue-100 text-blue-700",
-  PROCESSING: "bg-orange-100 text-orange-700",
-  REPORT_READY: "bg-green-100 text-green-700",
-  REPORT_DELIVERED: "bg-emerald-100 text-emerald-700",
+const STATUS_STYLES: Record<
+  DemoSample["status"],
+  { background: string; color: string }
+> = {
+  SAMPLE_COLLECTED: { background: "#F3F4F6", color: "#6B7280" },
+  DISPATCHED: { background: "#EFF6FF", color: "#3B82F6" },
+  PROCESSING: { background: "#FFFBEB", color: "#F59E0B" },
+  REPORT_READY: { background: "#F0FDF4", color: "#16A34A" },
+  REPORT_DELIVERED: { background: "#F0FDF4", color: "#16A34A" },
 };
 
 const WORKFLOW_STAGES: DemoSample["status"][] = [
@@ -57,7 +60,6 @@ const WORKFLOW_STAGES: DemoSample["status"][] = [
   "REPORT_DELIVERED",
 ];
 
-// Build a minimal HospitalSample-like object for WhatsAppShareConfirmDialog
 function buildSampleForDialog(sample: DemoSample) {
   return {
     patientName: sample.patientName,
@@ -146,18 +148,13 @@ export default function MyHospitalSamplesPage({
       return;
     }
     setDeliveryDialogSampleId(null);
-
     if (method === "WHATSAPP") {
       setWhatsappDialogSampleId(sampleId);
       return;
     }
-
     setUpdatingId(sampleId);
     await new Promise((r) => setTimeout(r, 400));
-
-    // Use updateDemoSampleDelivery for delivery status updates
     updateDemoSampleDelivery(sampleId, method, "phlebotomist", DEMO_PHLEBO_ID);
-
     addDemoDeliveryTracking({
       id: `dt-${sampleId}-${Date.now()}`,
       sampleId,
@@ -178,15 +175,12 @@ export default function MyHospitalSamplesPage({
     setWhatsappDialogSampleId(null);
     setUpdatingId(sampleId);
     await new Promise((r) => setTimeout(r, 400));
-
-    // Use updateDemoSampleDelivery for delivery status updates
     updateDemoSampleDelivery(
       sampleId,
       "WHATSAPP",
       "phlebotomist",
       DEMO_PHLEBO_ID,
     );
-
     addDemoDeliveryTracking({
       id: `dt-${sampleId}-${Date.now()}`,
       sampleId,
@@ -208,37 +202,96 @@ export default function MyHospitalSamplesPage({
     );
   }
 
-  // Find the sample for the whatsapp dialog
   const whatsappSample = whatsappDialogSampleId
     ? samples.find((s) => s.id === whatsappDialogSampleId)
     : null;
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-[90px]">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-1">
-          <h1 className="text-xl font-bold text-gray-900">My Samples</h1>
+    <div className="min-h-screen pb-[90px]" style={{ background: "#F7F9FC" }}>
+      {/* Gradient Header */}
+      <div
+        style={{
+          background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+          padding: "20px",
+          marginBottom: "0",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontSize: "20px",
+                fontWeight: 700,
+                color: "white",
+                margin: 0,
+              }}
+            >
+              My Samples
+            </h1>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "rgba(255,255,255,0.8)",
+                margin: "4px 0 0",
+              }}
+            >
+              {samples.length} sample{samples.length !== 1 ? "s" : ""} total
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleRefresh}
-            className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full"
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              border: "none",
+              borderRadius: "10px",
+              padding: "8px 12px",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              fontSize: "13px",
+              fontWeight: 600,
+            }}
+            data-ocid="my_samples.button"
           >
             <RefreshCw
-              className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`}
+              style={{ width: "15px", height: "15px" }}
+              className={isRefreshing ? "animate-spin" : ""}
             />
             Refresh
           </button>
         </div>
-        <p className="text-xs text-gray-400">
-          {samples.length} sample{samples.length !== 1 ? "s" : ""} total
-        </p>
       </div>
 
       {/* Status summary */}
       <div className="px-4 pt-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+        <div
+          style={{
+            background: "#FFFFFF",
+            borderRadius: "16px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+            padding: "16px",
+            marginBottom: "16px",
+          }}
+        >
+          <p
+            style={{
+              fontSize: "11px",
+              fontWeight: 600,
+              color: "#9CA3AF",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              marginBottom: "12px",
+            }}
+          >
             Status Overview
           </p>
           <div className="grid grid-cols-5 gap-1">
@@ -246,8 +299,23 @@ export default function MyHospitalSamplesPage({
               const count = samples.filter((s) => s.status === stage).length;
               return (
                 <div key={stage} className="text-center">
-                  <p className="text-xl font-bold text-gray-800">{count}</p>
-                  <p className="text-xs text-gray-400 mt-0.5 leading-tight">
+                  <p
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      color: "#1F2937",
+                    }}
+                  >
+                    {count}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "11px",
+                      color: "#9CA3AF",
+                      marginTop: "2px",
+                      lineHeight: 1.2,
+                    }}
+                  >
                     {STATUS_LABELS[stage].split(" ")[0]}
                   </p>
                 </div>
@@ -260,49 +328,106 @@ export default function MyHospitalSamplesPage({
       {/* Sample cards */}
       <div className="px-4 space-y-3">
         {samples.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-            <TestTube className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">No samples yet</p>
-            <p className="text-gray-400 text-sm mt-1">
+          <div
+            style={{
+              background: "#FFFFFF",
+              borderRadius: "16px",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+              padding: "32px",
+              textAlign: "center",
+            }}
+            data-ocid="my_samples.empty_state"
+          >
+            <TestTube
+              style={{
+                width: "40px",
+                height: "40px",
+                color: "#D1D5DB",
+                margin: "0 auto 12px",
+              }}
+            />
+            <p style={{ color: "#6B7280", fontWeight: 500 }}>No samples yet</p>
+            <p style={{ color: "#9CA3AF", fontSize: "14px", marginTop: "4px" }}>
               Samples you collect will appear here.
             </p>
           </div>
         ) : (
-          samples.map((sample) => {
+          samples.map((sample, idx) => {
             const isExpanded = expandedId === sample.id;
             const isUpdating = updatingId === sample.id;
             const history: DemoStatusHistoryEntry[] = getDemoStatusHistory(
               sample.id,
             );
             const currentStageIdx = WORKFLOW_STAGES.indexOf(sample.status);
+            const statusStyle = STATUS_STYLES[sample.status];
 
             return (
               <div
                 key={sample.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+                data-ocid={`my_samples.item.${idx + 1}`}
+                style={{
+                  background: "#FFFFFF",
+                  borderRadius: "16px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                  overflow: "hidden",
+                  transition: "all 200ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow =
+                    "0 12px 32px rgba(13,71,161,0.12)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow =
+                    "0 8px 24px rgba(0,0,0,0.08)";
+                }}
               >
-                {/* Card header */}
-                <div className="p-4">
+                <div style={{ padding: "16px" }}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="font-semibold text-gray-900">
+                      <p
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "16px",
+                          color: "#111827",
+                        }}
+                      >
                         {sample.patientName}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <Phone className="w-3 h-3 text-gray-400" />
-                        <p className="text-xs text-gray-500">{sample.phone}</p>
+                        <Phone
+                          style={{
+                            width: "12px",
+                            height: "12px",
+                            color: "#9CA3AF",
+                          }}
+                        />
+                        <p style={{ fontSize: "12px", color: "#6B7280" }}>
+                          {sample.phone}
+                        </p>
                       </div>
                     </div>
                     <span
-                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${STATUS_COLORS[sample.status]}`}
+                      style={{
+                        ...statusStyle,
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        padding: "4px 10px",
+                        borderRadius: "999px",
+                      }}
                     >
                       {STATUS_LABELS[sample.status]}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-1.5 mb-2">
-                    <Building2 className="w-3.5 h-3.5 text-gray-400" />
-                    <p className="text-xs text-gray-600">
+                    <Building2
+                      style={{
+                        width: "13px",
+                        height: "13px",
+                        color: "#9CA3AF",
+                      }}
+                    />
+                    <p style={{ fontSize: "13px", color: "#6B7280" }}>
                       {getHospitalName(sample.hospitalId)}
                     </p>
                   </div>
@@ -312,7 +437,13 @@ export default function MyHospitalSamplesPage({
                     {sample.tests.map((t) => (
                       <span
                         key={t.testId}
-                        className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+                        style={{
+                          fontSize: "11px",
+                          background: "#F3F4F6",
+                          color: "#4B5563",
+                          padding: "2px 8px",
+                          borderRadius: "999px",
+                        }}
                       >
                         {t.testCode}
                       </span>
@@ -320,17 +451,22 @@ export default function MyHospitalSamplesPage({
                   </div>
 
                   {/* Billing summary */}
-                  <div className="flex items-center gap-3 text-xs text-gray-500 mb-3">
+                  <div
+                    className="flex items-center gap-3 mb-3"
+                    style={{ fontSize: "12px", color: "#6B7280" }}
+                  >
                     <div className="flex items-center gap-1">
-                      <IndianRupee className="w-3 h-3" />
-                      <span>₹{sample.finalAmount}</span>
+                      <IndianRupee style={{ width: "12px", height: "12px" }} />
+                      <span style={{ fontWeight: 600, color: "#374151" }}>
+                        ₹{sample.finalAmount}
+                      </span>
                     </div>
                     <span>·</span>
                     <span>{sample.paymentMode}</span>
                     {sample.pendingAmount > 0 && (
                       <>
                         <span>·</span>
-                        <span className="text-red-500">
+                        <span style={{ color: "#DC2626", fontWeight: 600 }}>
                           ₹{sample.pendingAmount} pending
                         </span>
                       </>
@@ -344,12 +480,32 @@ export default function MyHospitalSamplesPage({
                         type="button"
                         onClick={() => handleMarkDispatched(sample.id)}
                         disabled={isUpdating}
-                        className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-3 py-2 rounded-xl font-medium disabled:opacity-60"
+                        data-ocid={`my_samples.primary_button.${idx + 1}`}
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px",
+                          fontSize: "12px",
+                          background:
+                            "linear-gradient(135deg, #0D47A1, #26A69A)",
+                          color: "white",
+                          border: "none",
+                          padding: "8px 12px",
+                          borderRadius: "10px",
+                          fontWeight: 600,
+                          cursor: isUpdating ? "not-allowed" : "pointer",
+                          opacity: isUpdating ? 0.6 : 1,
+                        }}
                       >
                         {isUpdating ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2
+                            style={{ width: "13px", height: "13px" }}
+                            className="animate-spin"
+                          />
                         ) : (
-                          <Truck className="w-3.5 h-3.5" />
+                          <Truck style={{ width: "13px", height: "13px" }} />
                         )}
                         {isUpdating ? "Updating..." : "Mark Dispatched"}
                       </button>
@@ -360,23 +516,54 @@ export default function MyHospitalSamplesPage({
                         type="button"
                         onClick={() => setDeliveryDialogSampleId(sample.id)}
                         disabled={isUpdating}
-                        className="flex-1 flex items-center justify-center gap-1.5 text-xs bg-gradient-to-r from-green-600 to-emerald-500 text-white px-3 py-2 rounded-xl font-medium disabled:opacity-60"
+                        data-ocid={`my_samples.secondary_button.${idx + 1}`}
+                        style={{
+                          flex: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: "6px",
+                          fontSize: "12px",
+                          background:
+                            "linear-gradient(135deg, #0D47A1, #26A69A)",
+                          color: "white",
+                          border: "none",
+                          padding: "8px 12px",
+                          borderRadius: "10px",
+                          fontWeight: 600,
+                          cursor: isUpdating ? "not-allowed" : "pointer",
+                          opacity: isUpdating ? 0.6 : 1,
+                        }}
                       >
                         {isUpdating ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <Loader2
+                            style={{ width: "13px", height: "13px" }}
+                            className="animate-spin"
+                          />
                         ) : (
-                          <Send className="w-3.5 h-3.5" />
+                          <Send style={{ width: "13px", height: "13px" }} />
                         )}
                         {isUpdating ? "Updating..." : "Deliver Report"}
                       </button>
                     )}
 
                     {sample.status === "REPORT_DELIVERED" && (
-                      <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-                        <CheckCircle className="w-3.5 h-3.5" />
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          fontSize: "12px",
+                          color: "#16A34A",
+                          fontWeight: 500,
+                        }}
+                      >
+                        <CheckCircle
+                          style={{ width: "13px", height: "13px" }}
+                        />
                         Delivered
                         {sample.deliveryMethod && (
-                          <span className="text-gray-400 ml-1">
+                          <span style={{ color: "#9CA3AF", marginLeft: "4px" }}>
                             via {sample.deliveryMethod}
                           </span>
                         )}
@@ -389,13 +576,27 @@ export default function MyHospitalSamplesPage({
                       onClick={() =>
                         setExpandedId(isExpanded ? null : sample.id)
                       }
-                      className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-3 py-2 rounded-xl ml-auto"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        fontSize: "12px",
+                        color: "#6B7280",
+                        background: "#F3F4F6",
+                        border: "none",
+                        padding: "6px 12px",
+                        borderRadius: "10px",
+                        marginLeft: "auto",
+                        cursor: "pointer",
+                      }}
                     >
                       Timeline
                       {isExpanded ? (
-                        <ChevronUp className="w-3.5 h-3.5" />
+                        <ChevronUp style={{ width: "13px", height: "13px" }} />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5" />
+                        <ChevronDown
+                          style={{ width: "13px", height: "13px" }}
+                        />
                       )}
                     </button>
                   </div>
@@ -403,70 +604,123 @@ export default function MyHospitalSamplesPage({
 
                 {/* Expandable timeline */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 bg-gray-50 p-4">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                  <div
+                    style={{
+                      borderTop: "1px solid #F3F4F6",
+                      background: "#FAFAFA",
+                      padding: "16px",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        color: "#9CA3AF",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.05em",
+                        marginBottom: "12px",
+                      }}
+                    >
                       Workflow Timeline
                     </p>
                     <div className="space-y-0">
-                      {WORKFLOW_STAGES.map((stage, idx) => {
-                        const isCompleted = idx <= currentStageIdx;
-                        const isCurrent = idx === currentStageIdx;
+                      {WORKFLOW_STAGES.map((stage, stageIdx) => {
+                        const isCompleted = stageIdx <= currentStageIdx;
+                        const isCurrent = stageIdx === currentStageIdx;
                         const historyEntry = history.find(
                           (h) => h.status === stage,
                         );
 
                         return (
                           <div key={stage} className="flex gap-3">
-                            {/* Connector line */}
                             <div className="flex flex-col items-center">
                               <div
-                                className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                  isCompleted
+                                style={{
+                                  width: "24px",
+                                  height: "24px",
+                                  borderRadius: "50%",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
+                                  background: isCompleted
                                     ? isCurrent
-                                      ? "bg-blue-600 ring-2 ring-blue-200"
-                                      : "bg-emerald-500"
-                                    : "bg-gray-200"
-                                }`}
+                                      ? "#0D47A1"
+                                      : "#16A34A"
+                                    : "#E5E7EB",
+                                  boxShadow: isCurrent
+                                    ? "0 0 0 3px rgba(13,71,161,0.15)"
+                                    : "none",
+                                }}
                               >
                                 {isCompleted ? (
-                                  <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                  <CheckCircle
+                                    style={{
+                                      width: "13px",
+                                      height: "13px",
+                                      color: "white",
+                                    }}
+                                  />
                                 ) : (
-                                  <div className="w-2 h-2 rounded-full bg-gray-400" />
+                                  <div
+                                    style={{
+                                      width: "8px",
+                                      height: "8px",
+                                      borderRadius: "50%",
+                                      background: "#9CA3AF",
+                                    }}
+                                  />
                                 )}
                               </div>
-                              {idx < WORKFLOW_STAGES.length - 1 && (
+                              {stageIdx < WORKFLOW_STAGES.length - 1 && (
                                 <div
-                                  className={`w-0.5 h-8 ${
-                                    idx < currentStageIdx
-                                      ? "bg-emerald-400"
-                                      : "bg-gray-200"
-                                  }`}
+                                  style={{
+                                    width: "2px",
+                                    height: "32px",
+                                    background:
+                                      stageIdx < currentStageIdx
+                                        ? "#16A34A"
+                                        : "#E5E7EB",
+                                  }}
                                 />
                               )}
                             </div>
-
-                            {/* Stage info */}
-                            <div className="pb-4 flex-1">
+                            <div style={{ paddingBottom: "16px", flex: 1 }}>
                               <p
-                                className={`text-xs font-semibold ${
-                                  isCurrent
-                                    ? "text-blue-700"
+                                style={{
+                                  fontSize: "12px",
+                                  fontWeight: 600,
+                                  color: isCurrent
+                                    ? "#0D47A1"
                                     : isCompleted
-                                      ? "text-emerald-700"
-                                      : "text-gray-400"
-                                }`}
+                                      ? "#16A34A"
+                                      : "#9CA3AF",
+                                }}
                               >
                                 {STATUS_LABELS[stage]}
                               </p>
                               {historyEntry && (
-                                <p className="text-xs text-gray-400 mt-0.5">
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#9CA3AF",
+                                    marginTop: "2px",
+                                  }}
+                                >
                                   {new Date(
                                     historyEntry.timestamp,
                                   ).toLocaleString()}
                                 </p>
                               )}
                               {historyEntry?.note && (
-                                <p className="text-xs text-gray-500 mt-0.5 italic">
+                                <p
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#6B7280",
+                                    marginTop: "2px",
+                                    fontStyle: "italic",
+                                  }}
+                                >
                                   {historyEntry.note}
                                 </p>
                               )}

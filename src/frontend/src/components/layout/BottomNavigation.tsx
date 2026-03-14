@@ -62,7 +62,7 @@ export default function BottomNavigation({
       style={{
         background: "#FFFFFF",
         borderTop: "1px solid #E5E7EB",
-        boxShadow: "0 -8px 24px rgba(0,0,0,0.08)",
+        boxShadow: "0 -8px 32px rgba(13,71,161,0.12)",
         position: "fixed",
         bottom: 0,
         left: 0,
@@ -85,7 +85,6 @@ export default function BottomNavigation({
             key={item.path}
             data-ocid={`nav.${item.path.replace(/\//g, "")}.tab`}
             onClick={() => onNavigate(item.path)}
-            className="flex flex-col items-center justify-center py-2 px-1 relative transition-all duration-200"
             style={{
               flex: 1,
               color: isActive ? "#0D47A1" : "#9CA3AF",
@@ -93,41 +92,78 @@ export default function BottomNavigation({
               border: "none",
               cursor: "pointer",
               height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "8px 4px",
+              position: "relative",
+              transition: "all 200ms ease",
             }}
           >
             {/* Pill highlight for active tab */}
             {isActive && (
               <span
-                className="absolute inset-x-2 top-1 bottom-1 rounded-xl"
                 style={{
-                  background: "rgba(13,71,161,0.07)",
+                  position: "absolute",
+                  left: "8px",
+                  right: "8px",
+                  top: "4px",
+                  bottom: "4px",
+                  borderRadius: "12px",
+                  background: "rgba(13,71,161,0.08)",
                   zIndex: 0,
+                  transition: "all 200ms ease",
                 }}
               />
             )}
 
             {/* Icon with badge */}
             <span
-              className="relative flex items-center justify-center transition-all duration-200"
               style={{
-                transform: isActive ? "scale(1.05)" : "scale(1)",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transform: isActive ? "scale(1.08)" : "scale(1)",
                 zIndex: 1,
+                transition: "transform 200ms ease",
               }}
             >
               <IconComponent className="w-[22px] h-[22px]" />
               {item.badgeCount != null && item.badgeCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-6px",
+                    right: "-6px",
+                    minWidth: "16px",
+                    height: "16px",
+                    padding: "0 2px",
+                    borderRadius: "999px",
+                    background: "#EF4444",
+                    color: "white",
+                    fontSize: "9px",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    lineHeight: 1,
+                  }}
+                >
                   {item.badgeCount > 99 ? "99+" : item.badgeCount}
                 </span>
               )}
             </span>
 
             <span
-              className="mt-0.5 leading-tight transition-all duration-200"
               style={{
+                marginTop: "2px",
                 fontSize: "12px",
                 fontWeight: isActive ? 700 : 500,
+                lineHeight: 1.2,
                 zIndex: 1,
+                transition: "all 200ms ease",
               }}
             >
               {item.label}

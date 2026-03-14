@@ -1,71 +1,40 @@
-# XprtLab — Profit Dashboard Real Calculation
+# XprtLab
 
 ## Current State
-
-- `TestOutput` and `TestInput` types do NOT include `labCost` or `doctorCommission` fields.
-- `ProfitDashboardPage` uses hardcoded `generateDemoProfitData()` with fixed numbers; it does not read from actual test or sample data.
-- `AddTestModal` and `EditTestModal` do not have Lab Cost or Doctor Commission fields.
-- `demoStorage.ts` has no test master list — tests are only referenced by ID/name in sample records.
-- There is no profit status indicator (green/yellow/red) in tables.
-- There is no loss detection warning in the Add/Edit Test forms.
+The Phlebotomist panel has multiple screens: AttendancePage, TaskQueuePage, HomeCollectionQueuePage, MyHospitalSamplesPage, AddHospitalSamplePage. The BottomNavigation is already mostly styled (solid white, shadow, active highlight, scale). However:
+- AttendancePage has a plain white header with no gradient, old summary card labels ("Total Samples" etc.), and no hero section
+- HomeCollectionQueuePage header is plain white, no gradient
+- MyHospitalSamplesPage has no gradient header and no PageHeroHeader
+- AddHospitalSamplePage has no search fields for hospitals or tests
+- Button gradients in phlebotomist screens use `from-blue-600 to-cyan-500` instead of the app theme `#0D47A1 → #26A69A`
+- Status badge colors are inconsistent across pages
+- BottomNavigation could benefit from slightly enhanced shadow and transition
 
 ## Requested Changes (Diff)
 
 ### Add
-
-- `TESTS` key to `demoStorage.ts` for a persistent test master list (with `labCost` and `doctorCommissionPct` fields).
-- `getDemoTests()`, `saveDemoTests()`, `addDemoTest()`, `updateDemoTest()` helpers in `demoStorage.ts`.
-- Lab Cost (₹) field to `AddTestModal` — numeric, optional (default 0).
-- Doctor Commission (%) field to `AddTestModal` — numeric 0–100, optional (default 0).
-- Real-time loss detection warning in both modals: if `(labCost + mrp * doctorCommissionPct / 100) > mrp`, show "Warning: This test will generate negative profit."
-- Same two fields and warning logic to `EditTestModal`.
-- `getProfitColor(profitPct: number)` utility: green ≥30%, yellow 10–29%, red <10%.
-- Profit status indicator column / color coding in Test-wise Profit Table rows.
-- Profit status indicator in Hospital Profit Breakdown rows.
-- `computeRealProfitData(filter, tests, samples, hospitals)` pure function that derives all dashboard metrics from live demo data.
-- `ProfitDashboardPage` now uses `computeRealProfitData` when tests data is available, falling back to demo generator otherwise.
+- Gradient hero header to AttendancePage (linear-gradient 135deg, #0D47A1, #26A69A) with white text, title "Start Attendance", subtitle "Mark your attendance to begin today's collections", subtle medical SVG cross pattern at low opacity
+- Hospital search field in AddHospitalSamplePage above the hospital list
+- Test search field in AddHospitalSamplePage above the test list
+- PageHeroHeader to MyHospitalSamplesPage
 
 ### Modify
-
-- `demoStorage.ts`: add `TESTS` key, `DemoTestMaster` interface, seed 10 demo tests (each with `labCost` and `doctorCommissionPct`), export read/write helpers. Seed logic: only seed if key is empty.
-- `AddTestModal`: add `labCost` and `doctorCommission` fields + live warning banner.
-- `EditTestModal`: same fields + warning, pre-populated from test data.
-- `TestManagementPage`: pass `labCost` / `doctorCommission` to modals and display columns in the table.
-- `ProfitDashboardPage`: replace static demo generator with a computed version sourced from demo tests + samples. Use profit status color indicators on table rows. Highlight loss tests in red.
+- AttendancePage: rename section "Today's Summary" → "Today's Collections"; update card labels: Samples→"Samples Collected", Cash→"Cash Collected", UPI→"UPI Collected", Pending→"Payment Pending"; fix any duplicate rendering of the summary section
+- All phlebotomist pages: standardize button gradients to `linear-gradient(135deg, #0D47A1, #26A69A)` (not blue-600 to cyan-500)
+- Status badges across all phlebotomist pages: Assigned→grey, En Route→blue, Collected→teal, Processing→orange, Delivered→green
+- MyHospitalSamplesPage: patient name bold, hospital/test list smaller below, pending amount in red, stronger card shadows
+- HomeCollectionQueuePage: add gradient header matching TaskQueuePage style, clearer primary/secondary button distinction (primary=gradient, secondary=outline)
+- AddHospitalSamplePage billing section: clearly show Total MRP / Discount / Final Amount (bold) / Amount Received / Pending (red); CASH/UPI toggle as rounded gradient-active pills
+- BottomNavigation: add slightly stronger top shadow `0 -8px 32px rgba(13,71,161,0.12)`, ensure smooth 200ms transition on all tab switches
 
 ### Remove
-
-- Nothing removed — existing UI layout of `ProfitDashboardPage` is preserved unchanged.
+- Nothing to remove
 
 ## Implementation Plan
-
-1. Extend `demoStorage.ts`:
-   - Add `TESTS` key.
-   - Add `DemoTestMaster` interface: `{ id, testName, testCode, mrp, labCost, doctorCommissionPct, sampleType, isActive }`.
-   - Seed 10 demo tests matching existing sample test codes (CBC, LFT, RBS, TSH, LIPID, HBA1C, KFT, etc.).
-   - Export `getDemoTests()`, `saveDemoTests()`, `addDemoTest()`, `updateDemoTest()` helpers.
-
-2. Update `AddTestModal`:
-   - Add `labCost: number` (default 0) and `doctorCommission: number` 0–100 (default 0) to form values.
-   - Watch all three numeric fields; compute `commissionAmt = mrp * doctorCommission / 100`, `totalExpense = labCost + commissionAmt`, `profitPerTest = mrp - totalExpense`.
-   - Show warning banner when `profitPerTest < 0`.
-   - When saving in demo mode, also persist to `demoStorage` tests.
-
-3. Update `EditTestModal`:
-   - Same two fields, same live warning logic.
-   - Pre-populate from test record's `labCost` / `doctorCommission` (if available in the object; use 0 default).
-
-4. Add profit utility function in `src/utils/profitUtils.ts`:
-   - `getProfitStatusColor(profitPct: number): 'green' | 'yellow' | 'red'`
-   - `computeProfitPerTest(mrp, labCost, doctorCommissionPct): number`
-   - `computeRealProfitData(filter, tests, samples, hospitals): DemoProfitData`
-
-5. Update `ProfitDashboardPage`:
-   - Import demo tests and samples from `demoStorage`.
-   - Use `computeRealProfitData` to drive dashboard metrics.
-   - Add profit status color dot/badge to each row in Test-wise and Hospital tables.
-   - Highlight negative-profit rows with a red tint.
-
-6. Update `TestManagementPage`:
-   - Show Lab Cost and Doctor Commission columns for superAdmin.
-   - Rows with negative profit highlighted in red.
+1. Update `AttendancePage.tsx` — gradient hero header, renamed section + card labels, fix duplicate summary
+2. Update `HomeCollectionQueuePage.tsx` — gradient page header card, primary/secondary button polish
+3. Update `MyHospitalSamplesPage.tsx` — PageHeroHeader, bold patient names, stronger shadows, red pending, gradient header
+4. Update `AddHospitalSamplePage.tsx` — hospital search field, test search field, billing layout improvements, gradient buttons, CASH/UPI toggle polish
+5. Update `TaskQueuePage.tsx` — align status badge colors to spec
+6. Update `BottomNavigation.tsx` — slightly stronger top shadow, 200ms smooth transitions
+7. All phlebotomist page buttons: standardize to `#0D47A1 → #26A69A` gradient (not blue-600/cyan-500)
