@@ -558,7 +558,7 @@ export default function SuperAdminDashboardPage({
         <div
           className="px-4 py-5"
           style={{
-            background: "linear-gradient(135deg, #0D47A1 0%, #26A69A 100%)",
+            background: "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
             boxShadow: "0 4px 20px rgba(13,71,161,0.2)",
           }}
         >
@@ -722,7 +722,7 @@ export default function SuperAdminDashboardPage({
                     style={{
                       background:
                         chartTab === "revenue"
-                          ? "linear-gradient(135deg, #0D47A1, #1976D2)"
+                          ? "linear-gradient(135deg, #2563EB, #1976D2)"
                           : "transparent",
                       color: chartTab === "revenue" ? "#fff" : "#9CA3AF",
                       boxShadow:
@@ -741,7 +741,7 @@ export default function SuperAdminDashboardPage({
                     style={{
                       background:
                         chartTab === "samples"
-                          ? "linear-gradient(135deg, #0D47A1, #1976D2)"
+                          ? "linear-gradient(135deg, #2563EB, #1976D2)"
                           : "transparent",
                       color: chartTab === "samples" ? "#fff" : "#9CA3AF",
                       boxShadow:
@@ -771,8 +771,8 @@ export default function SuperAdminDashboardPage({
                             x2="1"
                             y2="0"
                           >
-                            <stop offset="0%" stopColor="#0D47A1" />
-                            <stop offset="100%" stopColor="#26A69A" />
+                            <stop offset="0%" stopColor="#2563EB" />
+                            <stop offset="100%" stopColor="#06B6D4" />
                           </linearGradient>
                         </defs>
                         <CartesianGrid
@@ -809,10 +809,10 @@ export default function SuperAdminDashboardPage({
                           dataKey="revenue"
                           stroke="url(#revenueGradient)"
                           strokeWidth={3}
-                          dot={{ fill: "#0D47A1", strokeWidth: 2, r: 4 }}
+                          dot={{ fill: "#2563EB", strokeWidth: 2, r: 4 }}
                           activeDot={{
                             r: 6,
-                            fill: "#26A69A",
+                            fill: "#06B6D4",
                             strokeWidth: 2,
                             stroke: "#fff",
                           }}
@@ -845,12 +845,12 @@ export default function SuperAdminDashboardPage({
                         >
                           <stop
                             offset="0%"
-                            stopColor="#0D47A1"
+                            stopColor="#2563EB"
                             stopOpacity={0.9}
                           />
                           <stop
                             offset="100%"
-                            stopColor="#26A69A"
+                            stopColor="#06B6D4"
                             stopOpacity={0.7}
                           />
                         </linearGradient>
@@ -1044,7 +1044,7 @@ export default function SuperAdminDashboardPage({
                               pageIdx === hospitalPage
                                 ? {
                                     background:
-                                      "linear-gradient(135deg, #0D47A1, #1976D2)",
+                                      "linear-gradient(135deg, #2563EB, #1976D2)",
                                   }
                                 : {}
                             }

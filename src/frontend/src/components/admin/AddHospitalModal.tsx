@@ -277,7 +277,7 @@ export default function AddHospitalModal({
             style={{
               background: addHospital.isPending
                 ? undefined
-                : "linear-gradient(to right, #0D47A1, #26C6DA)",
+                : "linear-gradient(to right, #2563EB, #26C6DA)",
               backgroundColor: addHospital.isPending ? "#9ca3af" : undefined,
             }}
             data-ocid="add-hospital.submit_button"

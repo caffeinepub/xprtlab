@@ -80,7 +80,7 @@ export default function PatientHomePage({ onNavigate }: PatientHomePageProps) {
         <div
           className="rounded-2xl p-5 text-white"
           style={{
-            background: "linear-gradient(135deg, #0D47A1 0%, #26A69A 100%)",
+            background: "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
             boxShadow: "0 8px 24px rgba(13,71,161,0.25)",
           }}
         >

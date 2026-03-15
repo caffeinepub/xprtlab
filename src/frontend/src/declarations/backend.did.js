@@ -84,6 +84,10 @@ export const Settlement = IDL.Record({
   'timestamp' : IDL.Int,
   'amount' : IDL.Nat,
 });
+export const SystemMode = IDL.Variant({
+  'production' : IDL.Null,
+  'test' : IDL.Null,
+});
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -156,6 +160,7 @@ export const idlService = IDL.Service({
       [IDL.Vec(Settlement)],
       ['query'],
     ),
+  'getSystemMode' : IDL.Func([], [SystemMode], ['query']),
   'getTest' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
   'getTestByCode' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
   'getUserProfile' : IDL.Func(
@@ -180,6 +185,7 @@ export const idlService = IDL.Service({
       [],
     ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setSystemMode' : IDL.Func([SystemMode], [], []),
   'setTestStatus' : IDL.Func(
       [IDL.Text, IDL.Bool],
       [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
@@ -276,6 +282,10 @@ export const idlFactory = ({ IDL }) => {
     'timestamp' : IDL.Int,
     'amount' : IDL.Nat,
   });
+  const SystemMode = IDL.Variant({
+    'production' : IDL.Null,
+    'test' : IDL.Null,
+  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -348,6 +358,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Settlement)],
         ['query'],
       ),
+    'getSystemMode' : IDL.Func([], [SystemMode], ['query']),
     'getTest' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
     'getTestByCode' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
     'getUserProfile' : IDL.Func(
@@ -372,6 +383,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setSystemMode' : IDL.Func([SystemMode], [], []),
     'setTestStatus' : IDL.Func(
         [IDL.Text, IDL.Bool],
         [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],

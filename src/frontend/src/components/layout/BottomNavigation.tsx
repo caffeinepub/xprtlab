@@ -87,7 +87,7 @@ export default function BottomNavigation({
             onClick={() => onNavigate(item.path)}
             style={{
               flex: 1,
-              color: isActive ? "#0D47A1" : "#9CA3AF",
+              color: isActive ? "#2563EB" : "#9CA3AF",
               background: "none",
               border: "none",
               cursor: "pointer",

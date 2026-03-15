@@ -211,7 +211,7 @@ export default function MyHospitalSamplesPage({
       {/* Gradient Header */}
       <div
         style={{
-          background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+          background: "linear-gradient(135deg, #2563EB, #06B6D4)",
           padding: "20px",
           marginBottom: "0",
         }}
@@ -489,7 +489,7 @@ export default function MyHospitalSamplesPage({
                           gap: "6px",
                           fontSize: "12px",
                           background:
-                            "linear-gradient(135deg, #0D47A1, #26A69A)",
+                            "linear-gradient(135deg, #2563EB, #06B6D4)",
                           color: "white",
                           border: "none",
                           padding: "8px 12px",
@@ -525,7 +525,7 @@ export default function MyHospitalSamplesPage({
                           gap: "6px",
                           fontSize: "12px",
                           background:
-                            "linear-gradient(135deg, #0D47A1, #26A69A)",
+                            "linear-gradient(135deg, #2563EB, #06B6D4)",
                           color: "white",
                           border: "none",
                           padding: "8px 12px",
@@ -678,9 +678,9 @@ export default function MyHospitalSamplesPage({
                                 fontSize: "12px",
                                 fontWeight: 500,
                                 border: isSelected
-                                  ? "2px solid #0D47A1"
+                                  ? "2px solid #2563EB"
                                   : "1.5px solid #D1D5DB",
-                                background: isSelected ? "#0D47A1" : "#FFFFFF",
+                                background: isSelected ? "#2563EB" : "#FFFFFF",
                                 color: isSelected ? "#FFFFFF" : "#4B5563",
                                 cursor: "pointer",
                                 transition: "all 150ms ease",
@@ -714,7 +714,7 @@ export default function MyHospitalSamplesPage({
                                   flexShrink: 0,
                                   background: isCompleted
                                     ? isCurrent
-                                      ? "#0D47A1"
+                                      ? "#2563EB"
                                       : "#16A34A"
                                     : "#E5E7EB",
                                   boxShadow: isCurrent
@@ -760,7 +760,7 @@ export default function MyHospitalSamplesPage({
                                   fontSize: "12px",
                                   fontWeight: 600,
                                   color: isCurrent
-                                    ? "#0D47A1"
+                                    ? "#2563EB"
                                     : isCompleted
                                       ? "#16A34A"
                                       : "#9CA3AF",

@@ -60,6 +60,10 @@ export enum AppRole {
     labAdmin = "labAdmin",
     phlebotomist = "phlebotomist"
 }
+export enum SystemMode {
+    production = "production",
+    test = "test"
+}
 export enum TestError {
     notFound = "notFound",
     duplicateCode = "duplicateCode"
@@ -98,6 +102,7 @@ export interface backendInterface {
     getHospitalsByPhlebotomist(phlebotomist: Principal): Promise<Array<string>>;
     getPhlebotomistsByHospital(hospitalId: string): Promise<Array<Principal>>;
     getSettlementHistory(hospitalId: string): Promise<Array<Settlement>>;
+    getSystemMode(): Promise<SystemMode>;
     getTest(code: string): Promise<TestOutput | null>;
     getTestByCode(testCode: string): Promise<TestOutput | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -105,6 +110,7 @@ export interface backendInterface {
     markSettlement(hospitalId: string, amount: bigint, settlementType: Variant_Partial_Settled, notes: string | null): Promise<Settlement>;
     removePhlebotomistFromHospital(hospitalId: string, phlebotomist: Principal, removalReason: string): Promise<HospitalPhlebotomistAssignment>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setSystemMode(mode: SystemMode): Promise<void>;
     setTestStatus(testId: string, isActive: boolean): Promise<{
         __kind__: "ok";
         ok: TestOutput;

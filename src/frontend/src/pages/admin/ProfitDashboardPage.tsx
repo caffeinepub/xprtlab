@@ -619,7 +619,7 @@ function FilterBar({ active, onChange }: FilterBarProps) {
           onClick={() => onChange(f.key)}
           className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border ${
             active === f.key
-              ? "bg-gradient-to-r from-[#0D47A1] to-[#26C6DA] text-white border-transparent shadow-sm"
+              ? "bg-gradient-to-r from-[#2563EB] to-[#26C6DA] text-white border-transparent shadow-sm"
               : "bg-white text-muted-foreground border-border hover:border-primary/40"
           }`}
         >

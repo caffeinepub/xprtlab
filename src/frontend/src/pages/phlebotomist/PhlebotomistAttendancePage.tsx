@@ -943,7 +943,7 @@ function StepIndicator({ currentStep }: StepIndicatorProps) {
                     }
                   : idx === stepIndex
                     ? {
-                        background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                        background: "linear-gradient(135deg, #2563EB, #06B6D4)",
                         color: "#FFFFFF",
                         boxShadow: "0 4px 12px rgba(13,71,161,0.3)",
                       }
@@ -960,7 +960,7 @@ function StepIndicator({ currentStep }: StepIndicatorProps) {
               style={{
                 color:
                   idx === stepIndex
-                    ? "#0D47A1"
+                    ? "#2563EB"
                     : idx < stepIndex
                       ? "#22C55E"
                       : "#9CA3AF",

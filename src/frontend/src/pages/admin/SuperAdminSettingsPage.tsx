@@ -1,3 +1,14 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Building2,
@@ -13,7 +24,12 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
+import { useSystemMode } from "../../hooks/useSystemMode";
+
+// biome-ignore lint/correctness/noUnusedVariables: used below
+void Building2;
 
 export interface SuperAdminSettingsPageProps {
   isDemoMode?: boolean;
@@ -210,8 +226,8 @@ function MultiSelect({
                 <div
                   className="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0"
                   style={{
-                    borderColor: selected.includes(opt) ? "#0D47A1" : "#D1D5DB",
-                    background: selected.includes(opt) ? "#0D47A1" : "#fff",
+                    borderColor: selected.includes(opt) ? "#2563EB" : "#D1D5DB",
+                    background: selected.includes(opt) ? "#2563EB" : "#fff",
                   }}
                 >
                   {selected.includes(opt) && (
@@ -275,7 +291,6 @@ const emptyPhlebotomistForm = (): PhlebotomistFormState => ({
   status: "Active",
 });
 
-// Modal wrapper
 function Modal({
   open,
   onClose,
@@ -312,7 +327,6 @@ function Modal({
             "@keyframes modalIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }"
           }
         </style>
-        {/* Sticky header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
           <h3 className="font-bold text-gray-900" style={{ fontSize: "18px" }}>
             {title}
@@ -325,14 +339,12 @@ function Modal({
             <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
-        {/* Scrollable body */}
         <div
           className="overflow-y-auto flex-1 px-6 py-4"
           style={{ maxHeight: "70vh" }}
         >
           {children}
         </div>
-        {/* Sticky footer */}
         <div
           className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 flex-shrink-0 bg-white"
           style={{ borderRadius: "0 0 16px 16px" }}
@@ -352,8 +364,6 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<LabAdminFormState>(emptyLabAdminForm());
   const [error, setError] = useState("");
-
-  const hospitalNames = hospitals.map((h) => h.name);
 
   const openAdd = () => {
     setForm(emptyLabAdminForm());
@@ -387,7 +397,6 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
       return;
     }
     setError("");
-
     if (editingId) {
       const updated = admins.map((a) =>
         a.id === editingId ? { ...a, ...form } : a,
@@ -420,7 +429,6 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
 
   return (
     <div>
-      {/* Header row */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">
           {admins.length} lab admin{admins.length !== 1 ? "s" : ""}
@@ -431,15 +439,14 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
           onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
           style={{
-            background: "linear-gradient(135deg, #0D47A1, #1976D2)",
-            boxShadow: "0 4px 12px rgba(13,71,161,0.3)",
+            background: "linear-gradient(135deg, #2563EB, #1976D2)",
+            boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
           }}
         >
           <Plus className="w-4 h-4" /> Add Lab Admin
         </button>
       </div>
 
-      {/* Table */}
       {admins.length === 0 ? (
         <div
           className="py-14 flex flex-col items-center justify-center text-center"
@@ -458,24 +465,21 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Name
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Assigned Lab
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Mobile
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Status
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Last Login
-                </th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Actions
-                </th>
+                {[
+                  "Name",
+                  "Assigned Lab",
+                  "Mobile",
+                  "Status",
+                  "Last Login",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -491,7 +495,7 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
                         className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{
                           background:
-                            "linear-gradient(135deg, #0D47A1, #1976D2)",
+                            "linear-gradient(135deg, #2563EB, #1976D2)",
                         }}
                       >
                         <span className="text-white text-xs font-bold">
@@ -535,7 +539,6 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
                         data-ocid={`settings.lab_admin_table.edit_button.${idx + 1}`}
                         onClick={() => openEdit(admin)}
                         className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-blue-50 transition-colors"
-                        title="Edit"
                       >
                         <Edit2 className="w-3.5 h-3.5 text-blue-500" />
                       </button>
@@ -544,7 +547,6 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
                         data-ocid={`settings.lab_admin_table.toggle.${idx + 1}`}
                         onClick={() => handleToggleStatus(admin.id)}
                         className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
-                        title={admin.status === "Active" ? "Disable" : "Enable"}
                       >
                         {admin.status === "Active" ? (
                           <UserX className="w-3.5 h-3.5 text-gray-400" />
@@ -561,7 +563,6 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
       <Modal
         open={showModal}
         onClose={() => setShowModal(false)}
@@ -583,7 +584,7 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
               onClick={handleSave}
               className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
               style={{
-                background: "linear-gradient(135deg, #0D47A1, #1976D2)",
+                background: "linear-gradient(135deg, #2563EB, #1976D2)",
               }}
             >
               {editingId ? "Save Changes" : "Add Lab Admin"}
@@ -597,65 +598,53 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
               {error}
             </div>
           )}
-          <div>
-            <p className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Name <span className="text-red-500">*</span>
-            </p>
-            <input
-              data-ocid="settings.lab_admin_modal.input"
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Full name"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
-              style={{ background: "#F7F9FC" }}
-            />
-          </div>
-          <div>
-            <p className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Mobile Number <span className="text-red-500">*</span>
-            </p>
-            <input
-              type="tel"
-              value={form.mobile}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, mobile: e.target.value }))
-              }
-              placeholder="10-digit mobile number"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
-              style={{ background: "#F7F9FC" }}
-            />
-          </div>
-          <div>
-            <p className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Email
-            </p>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, email: e.target.value }))
-              }
-              placeholder="email@example.com"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
-              style={{ background: "#F7F9FC" }}
-            />
-          </div>
-          <div>
-            <p className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Assigned Lab / Branch
-            </p>
-            <input
-              type="text"
-              value={form.assignedLab}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, assignedLab: e.target.value }))
-              }
-              placeholder="Lab or branch name"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
-              style={{ background: "#F7F9FC" }}
-            />
-          </div>
+          {[
+            {
+              label: "Name",
+              key: "name",
+              type: "text",
+              placeholder: "Full name",
+              required: true,
+              ocid: "settings.lab_admin_modal.input",
+            },
+            {
+              label: "Mobile Number",
+              key: "mobile",
+              type: "tel",
+              placeholder: "10-digit mobile number",
+              required: true,
+            },
+            {
+              label: "Email",
+              key: "email",
+              type: "email",
+              placeholder: "email@example.com",
+            },
+            {
+              label: "Assigned Lab / Branch",
+              key: "assignedLab",
+              type: "text",
+              placeholder: "Lab or branch name",
+            },
+          ].map(({ label, key, type, placeholder, required, ocid }) => (
+            <div key={key}>
+              <p className="block text-xs font-semibold text-gray-500 mb-1.5">
+                {label}
+                {required && <span className="text-red-500 ml-0.5">*</span>}
+              </p>
+              <input
+                data-ocid={ocid}
+                type={type}
+                value={(form as any)[key]}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, [key]: e.target.value }))
+                }
+                placeholder={placeholder}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
+                style={{ background: "#F7F9FC" }}
+              />
+            </div>
+          ))}
           <div>
             <p className="block text-xs font-semibold text-gray-500 mb-1.5">
               Login Method
@@ -680,7 +669,7 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
               Assigned Hospitals
             </p>
             <MultiSelect
-              options={hospitalNames}
+              options={hospitals.map((h) => h.name)}
               selected={form.assignedHospitals}
               onChange={(val) =>
                 setForm((f) => ({ ...f, assignedHospitals: val }))
@@ -699,9 +688,9 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
                   onClick={() => setForm((f) => ({ ...f, status: s }))}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-all"
                   style={{
-                    borderColor: form.status === s ? "#0D47A1" : "#E5E7EB",
+                    borderColor: form.status === s ? "#2563EB" : "#E5E7EB",
                     background: form.status === s ? "#EFF6FF" : "#fff",
-                    color: form.status === s ? "#0D47A1" : "#6B7280",
+                    color: form.status === s ? "#2563EB" : "#6B7280",
                   }}
                 >
                   {s === "Active" ? (
@@ -733,8 +722,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
   );
   const [error, setError] = useState("");
 
-  const hospitalNames = hospitals.map((h) => h.name);
-
   const openAdd = () => {
     setForm(emptyPhlebotomistForm());
     setEditingId(null);
@@ -764,7 +751,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
       return;
     }
     setError("");
-
     if (editingId) {
       const updated = phlebs.map((p) =>
         p.id === editingId ? { ...p, ...form } : p,
@@ -808,7 +794,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
     ) as Phlebotomist[];
     setPhlebs(updated);
     savePhlebotomists(updated);
-    // Show feedback using browser alert (toast not available in this scope)
     window.alert(
       "Device reset successfully. Phlebotomist will need to log in again.",
     );
@@ -816,7 +801,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
 
   return (
     <div>
-      {/* Header row */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-500">
           {phlebs.length} phlebotomist{phlebs.length !== 1 ? "s" : ""}
@@ -827,15 +811,14 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
           onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
           style={{
-            background: "linear-gradient(135deg, #0D47A1, #1976D2)",
-            boxShadow: "0 4px 12px rgba(13,71,161,0.3)",
+            background: "linear-gradient(135deg, #2563EB, #1976D2)",
+            boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
           }}
         >
           <Plus className="w-4 h-4" /> Add Phlebotomist
         </button>
       </div>
 
-      {/* Table */}
       {phlebs.length === 0 ? (
         <div
           className="py-14 flex flex-col items-center justify-center text-center"
@@ -856,27 +839,22 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Name
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Mobile
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Assigned Hospital
-                </th>
-                <th className="text-center py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Samples Today
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Last Login
-                </th>
-                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Status
-                </th>
-                <th className="text-right py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                  Actions
-                </th>
+                {[
+                  "Name",
+                  "Mobile",
+                  "Assigned Hospital",
+                  "Samples Today",
+                  "Last Login",
+                  "Status",
+                  "Actions",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left py-3 px-4 text-xs font-semibold text-gray-400 uppercase tracking-wide"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -892,7 +870,7 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
                         className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{
                           background:
-                            "linear-gradient(135deg, #26A69A, #0D47A1)",
+                            "linear-gradient(135deg, #06B6D4, #2563EB)",
                         }}
                       >
                         <span className="text-white text-xs font-bold">
@@ -948,7 +926,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
                         data-ocid={`settings.phlebotomist_table.edit_button.${idx + 1}`}
                         onClick={() => openEdit(p)}
                         className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-blue-50 transition-colors"
-                        title="Edit"
                       >
                         <Edit2 className="w-3.5 h-3.5 text-blue-500" />
                       </button>
@@ -957,7 +934,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
                         data-ocid={`settings.phlebotomist_table.toggle.${idx + 1}`}
                         onClick={() => handleToggleStatus(p.id)}
                         className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
-                        title={p.status === "Active" ? "Disable" : "Enable"}
                       >
                         {p.status === "Active" ? (
                           <UserX className="w-3.5 h-3.5 text-gray-400" />
@@ -970,7 +946,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
                         data-ocid={`settings.phlebotomist_table.reset_button.${idx + 1}`}
                         onClick={() => handleResetDevice(p.id)}
                         className="px-2 py-1 text-xs rounded-lg border border-orange-300 text-orange-600 hover:bg-orange-50 transition-colors"
-                        title="Reset Device"
                       >
                         Reset Device
                       </button>
@@ -983,7 +958,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
       <Modal
         open={showModal}
         onClose={() => setShowModal(false)}
@@ -1005,7 +979,7 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
               onClick={handleSave}
               className="px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
               style={{
-                background: "linear-gradient(135deg, #0D47A1, #1976D2)",
+                background: "linear-gradient(135deg, #2563EB, #1976D2)",
               }}
             >
               {editingId ? "Save Changes" : "Add Phlebotomist"}
@@ -1019,41 +993,47 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
               {error}
             </div>
           )}
-          <div>
-            <p className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Name <span className="text-red-500">*</span>
-            </p>
-            <input
-              data-ocid="settings.phlebotomist_modal.input"
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Full name"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
-              style={{ background: "#F7F9FC" }}
-            />
-          </div>
-          <div>
-            <p className="block text-xs font-semibold text-gray-500 mb-1.5">
-              Mobile Number <span className="text-red-500">*</span>
-            </p>
-            <input
-              type="tel"
-              value={form.mobile}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, mobile: e.target.value }))
-              }
-              placeholder="10-digit mobile number"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
-              style={{ background: "#F7F9FC" }}
-            />
-          </div>
+          {[
+            {
+              label: "Name",
+              key: "name",
+              type: "text",
+              placeholder: "Full name",
+              required: true,
+              ocid: "settings.phlebotomist_modal.input",
+            },
+            {
+              label: "Mobile Number",
+              key: "mobile",
+              type: "tel",
+              placeholder: "10-digit mobile number",
+              required: true,
+            },
+          ].map(({ label, key, type, placeholder, required, ocid }) => (
+            <div key={key}>
+              <p className="block text-xs font-semibold text-gray-500 mb-1.5">
+                {label}
+                {required && <span className="text-red-500 ml-0.5">*</span>}
+              </p>
+              <input
+                data-ocid={ocid}
+                type={type}
+                value={(form as any)[key]}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, [key]: e.target.value }))
+                }
+                placeholder={placeholder}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm"
+                style={{ background: "#F7F9FC" }}
+              />
+            </div>
+          ))}
           <div>
             <p className="block text-xs font-semibold text-gray-500 mb-1.5">
               Assign Hospitals
             </p>
             <MultiSelect
-              options={hospitalNames}
+              options={hospitals.map((h) => h.name)}
               selected={form.assignedHospitals}
               onChange={(val) =>
                 setForm((f) => ({ ...f, assignedHospitals: val }))
@@ -1072,9 +1052,9 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
                   onClick={() => setForm((f) => ({ ...f, status: s }))}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold transition-all"
                   style={{
-                    borderColor: form.status === s ? "#0D47A1" : "#E5E7EB",
+                    borderColor: form.status === s ? "#2563EB" : "#E5E7EB",
                     background: form.status === s ? "#EFF6FF" : "#fff",
-                    color: form.status === s ? "#0D47A1" : "#6B7280",
+                    color: form.status === s ? "#2563EB" : "#6B7280",
                   }}
                 >
                   {s === "Active" ? (
@@ -1093,7 +1073,179 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// ─── System Mode Section ──────────────────────────────────────────────────────
+
+function SystemModeSection() {
+  const { systemMode, isTestMode, setSystemMode } = useSystemMode();
+  const [saving, setSaving] = useState(false);
+
+  const handleSetMode = async (mode: "test" | "production") => {
+    setSaving(true);
+    try {
+      await setSystemMode(mode);
+      if (mode === "test") {
+        try {
+          const phleboRaw = localStorage.getItem("xpertlab_phlebotomists");
+          const phlebos: any[] = phleboRaw ? JSON.parse(phleboRaw) : [];
+          if (!phlebos.find((p: any) => p.id === "test-phlebo-1")) {
+            phlebos.push({
+              id: "test-phlebo-1",
+              name: "Test Phlebo",
+              mobile: "9999999999",
+              assignedHospitals: ["Vijaya Hospital"],
+              status: "Active",
+              samplesToday: 0,
+              lastLogin: "Never",
+              isTestAccount: true,
+            });
+            localStorage.setItem(
+              "xpertlab_phlebotomists",
+              JSON.stringify(phlebos),
+            );
+          }
+          const labRaw = localStorage.getItem("xpertlab_lab_admins");
+          const labs: any[] = labRaw ? JSON.parse(labRaw) : [];
+          if (!labs.find((l: any) => l.id === "test-lab-admin-1")) {
+            labs.push({
+              id: "test-lab-admin-1",
+              name: "Test Lab Admin",
+              mobile: "8888888888",
+              email: "test@lab.com",
+              assignedLab: "Test Lab",
+              loginMethod: "OTP",
+              assignedHospitals: ["Vijaya Hospital"],
+              status: "Active",
+              lastLogin: "Never",
+              isTestAccount: true,
+            });
+            localStorage.setItem("xpertlab_lab_admins", JSON.stringify(labs));
+          }
+          localStorage.setItem(
+            "xpertlab_test_super_admin",
+            JSON.stringify({ mobile: "7777777777", role: "superAdmin" }),
+          );
+        } catch {
+          /* noop */
+        }
+        toast.success("TEST MODE enabled. Test accounts created.");
+      } else {
+        toast.success("PRODUCTION MODE enabled. OTP 123456 is disabled.");
+      }
+    } catch {
+      toast.error("Failed to update system mode. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleResetTestData = () => {
+    localStorage.removeItem("xpertlab_hospital_samples");
+    localStorage.removeItem("xpertlab_home_collection");
+    toast.success("Test data reset successfully.");
+  };
+
+  return (
+    <div
+      className="bg-white rounded-2xl p-6 mb-6"
+      style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <Shield className="w-5 h-5 text-blue-600" />
+        <h2 className="font-bold text-gray-900" style={{ fontSize: "16px" }}>
+          System Mode
+        </h2>
+      </div>
+      <p className="text-sm text-gray-500 mb-4">
+        Control whether the system operates in test or production mode.
+      </p>
+
+      <div className="flex gap-3 mb-4">
+        <button
+          type="button"
+          data-ocid="system_mode.test_button"
+          disabled={saving}
+          onClick={() => handleSetMode("test")}
+          className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm border-2 transition-all"
+          style={
+            isTestMode
+              ? {
+                  background: "linear-gradient(135deg, #2563EB, #06B6D4)",
+                  color: "#fff",
+                  borderColor: "transparent",
+                  boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+                }
+              : { background: "#fff", color: "#6B7280", borderColor: "#E5E7EB" }
+          }
+        >
+          TEST MODE
+        </button>
+        <button
+          type="button"
+          data-ocid="system_mode.production_button"
+          disabled={saving}
+          onClick={() => handleSetMode("production")}
+          className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm border-2 transition-all"
+          style={
+            systemMode === "production"
+              ? {
+                  background: "linear-gradient(135deg, #2563EB, #06B6D4)",
+                  color: "#fff",
+                  borderColor: "transparent",
+                  boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+                }
+              : { background: "#fff", color: "#6B7280", borderColor: "#E5E7EB" }
+          }
+        >
+          PRODUCTION MODE
+        </button>
+      </div>
+
+      <div className="text-xs text-gray-500 mb-5">
+        {isTestMode &&
+          "TEST MODE active — OTP 123456 is enabled, test accounts are available, demo banner is hidden."}
+        {systemMode === "production" &&
+          "PRODUCTION MODE active — OTP 123456 is disabled. Real SMS required."}
+        {systemMode === "demo" &&
+          "Default demo mode — OTP 123456 works, demo banner is visible."}
+      </div>
+
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button
+            type="button"
+            data-ocid="system_mode.reset_button"
+            className="text-sm font-semibold border-2 border-red-200 text-red-600 rounded-xl px-4 py-2 hover:bg-red-50 transition-colors"
+          >
+            Reset Test Data
+          </button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Test Data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all hospital samples and home
+              collection records. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-ocid="system_mode.reset_cancel_button">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-ocid="system_mode.reset_confirm_button"
+              onClick={handleResetTestData}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Reset Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function SuperAdminSettingsPage({
   isDemoMode = false,
@@ -1108,17 +1260,16 @@ export default function SuperAdminSettingsPage({
     >
       <div className="max-w-5xl mx-auto px-4 pt-4">
         <PageHeroHeader
-          title="User Management"
-          description="Manage lab admins and phlebotomists for your platform"
+          title="Settings"
+          description="System configuration and user management"
         />
       </div>
 
-      {/* Gradient header */}
       <div
         className="px-4 py-5"
         style={{
-          background: "linear-gradient(135deg, #0D47A1 0%, #26A69A 100%)",
-          boxShadow: "0 4px 20px rgba(13,71,161,0.2)",
+          background: "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
+          boxShadow: "0 4px 20px rgba(37,99,235,0.2)",
         }}
       >
         <div className="max-w-5xl mx-auto flex items-center gap-3">
@@ -1135,16 +1286,18 @@ export default function SuperAdminSettingsPage({
           </div>
           <div>
             <h1 className="font-bold text-white" style={{ fontSize: "20px" }}>
-              User Management
+              Settings
             </h1>
             <p className="text-white/70" style={{ fontSize: "12px" }}>
-              Lab Admins & Phlebotomists
+              System Mode &amp; User Management
             </p>
           </div>
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
+        <SystemModeSection />
+
         <Tabs defaultValue="lab-admins">
           <TabsList
             className="mb-6 bg-white border border-gray-100 p-1 rounded-xl"
@@ -1153,14 +1306,14 @@ export default function SuperAdminSettingsPage({
             <TabsTrigger
               value="lab-admins"
               data-ocid="settings.lab_admins.tab"
-              className="rounded-lg text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#0D47A1] data-[state=active]:to-[#1976D2] data-[state=active]:text-white data-[state=active]:shadow-sm"
+              className="rounded-lg text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#2563EB] data-[state=active]:to-[#1976D2] data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
               <Shield className="w-4 h-4 mr-1.5" /> Lab Admins
             </TabsTrigger>
             <TabsTrigger
               value="phlebotomists"
               data-ocid="settings.phlebotomists.tab"
-              className="rounded-lg text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#0D47A1] data-[state=active]:to-[#1976D2] data-[state=active]:text-white data-[state=active]:shadow-sm"
+              className="rounded-lg text-sm font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#2563EB] data-[state=active]:to-[#1976D2] data-[state=active]:text-white data-[state=active]:shadow-sm"
             >
               <User className="w-4 h-4 mr-1.5" /> Phlebotomists
             </TabsTrigger>

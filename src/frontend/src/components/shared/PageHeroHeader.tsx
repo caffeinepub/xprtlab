@@ -68,7 +68,7 @@ export default function PageHeroHeader({
             style={{
               height: "44px",
               borderRadius: "12px",
-              background: "linear-gradient(135deg, #0D47A1, #1976D2)",
+              background: "linear-gradient(135deg, #2563EB, #1976D2)",
               color: "white",
               fontWeight: 600,
               padding: "0 16px",

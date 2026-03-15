@@ -41,6 +41,8 @@ export interface Settlement {
   'timestamp' : bigint,
   'amount' : bigint,
 }
+export type SystemMode = { 'production' : null } |
+  { 'test' : null };
 export type TestError = { 'notFound' : null } |
   { 'duplicateCode' : null };
 export interface TestInput {
@@ -123,6 +125,7 @@ export interface _SERVICE {
   'getHospitalsByPhlebotomist' : ActorMethod<[Principal], Array<string>>,
   'getPhlebotomistsByHospital' : ActorMethod<[string], Array<Principal>>,
   'getSettlementHistory' : ActorMethod<[string], Array<Settlement>>,
+  'getSystemMode' : ActorMethod<[], SystemMode>,
   'getTest' : ActorMethod<[string], [] | [TestOutput]>,
   'getTestByCode' : ActorMethod<[string], [] | [TestOutput]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
@@ -142,6 +145,7 @@ export interface _SERVICE {
     HospitalPhlebotomistAssignment
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setSystemMode' : ActorMethod<[SystemMode], undefined>,
   'setTestStatus' : ActorMethod<
     [string, boolean],
     { 'ok' : TestOutput } |

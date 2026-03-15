@@ -52,9 +52,9 @@ export default {
         success: 'oklch(var(--success) / <alpha-value>)',
         warning: 'oklch(var(--warning) / <alpha-value>)',
         brand: {
-          deep:  '#0D47A1',
+          deep:  '#2563EB',
           blue:  '#1976D2',
-          teal:  '#26A69A',
+          teal:  '#06B6D4',
           cyan:  '#26C6DA',
         },
       },
@@ -76,9 +76,9 @@ export default {
         'step-active':  '0 4px 12px rgba(13, 71, 161, 0.3)',
       },
       backgroundImage: {
-        'gradient-brand':   'linear-gradient(135deg, #0D47A1 0%, #1976D2 100%)',
-        'gradient-brand-h': 'linear-gradient(90deg, #0D47A1 0%, #26A69A 100%)',
-        'gradient-teal':    'linear-gradient(135deg, #0D47A1 0%, #26A69A 100%)',
+        'gradient-brand':   'linear-gradient(135deg, #2563EB 0%, #1976D2 100%)',
+        'gradient-brand-h': 'linear-gradient(90deg, #2563EB 0%, #06B6D4 100%)',
+        'gradient-teal':    'linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)',
       },
       keyframes: {
         'accordion-down': {

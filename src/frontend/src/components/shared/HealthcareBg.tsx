@@ -40,7 +40,7 @@ export default function HealthcareBg({
               <polyline
                 points="0,40 20,40 30,15 40,65 50,40 70,40 80,20 90,60 100,40 120,40 130,10 140,70 150,40 170,40 180,25 190,55 200,40"
                 fill="none"
-                stroke="#0D47A1"
+                stroke="#2563EB"
                 strokeWidth="1.5"
               />
             </pattern>
@@ -74,9 +74,9 @@ export default function HealthcareBg({
               height="60"
               patternUnits="userSpaceOnUse"
             >
-              <circle cx="30" cy="30" r="2" fill="#26A69A" />
-              <circle cx="0" cy="0" r="1.5" fill="#0D47A1" />
-              <circle cx="60" cy="60" r="1.5" fill="#0D47A1" />
+              <circle cx="30" cy="30" r="2" fill="#06B6D4" />
+              <circle cx="0" cy="0" r="1.5" fill="#2563EB" />
+              <circle cx="60" cy="60" r="1.5" fill="#2563EB" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#minimal-bg)" />
@@ -111,18 +111,18 @@ export default function HealthcareBg({
             {/* Medical cross */}
             <path
               d="M44 30 L44 40 L34 40 L34 48 L44 48 L44 58 L52 58 L52 48 L62 48 L62 40 L52 40 L52 30 Z"
-              fill="#0D47A1"
+              fill="#2563EB"
             />
             {/* Accent circles */}
-            <circle cx="10" cy="10" r="4" fill="#26A69A" opacity="0.6" />
-            <circle cx="90" cy="90" r="4" fill="#26A69A" opacity="0.6" />
-            <circle cx="10" cy="90" r="2.5" fill="#0D47A1" opacity="0.4" />
-            <circle cx="90" cy="10" r="2.5" fill="#0D47A1" opacity="0.4" />
+            <circle cx="10" cy="10" r="4" fill="#06B6D4" opacity="0.6" />
+            <circle cx="90" cy="90" r="4" fill="#06B6D4" opacity="0.6" />
+            <circle cx="10" cy="90" r="2.5" fill="#2563EB" opacity="0.4" />
+            <circle cx="90" cy="10" r="2.5" fill="#2563EB" opacity="0.4" />
             {/* DNA-like dots */}
-            <circle cx="25" cy="70" r="2" fill="#26A69A" opacity="0.5" />
-            <circle cx="35" cy="80" r="2" fill="#0D47A1" opacity="0.5" />
-            <circle cx="75" cy="20" r="2" fill="#26A69A" opacity="0.5" />
-            <circle cx="85" cy="30" r="2" fill="#0D47A1" opacity="0.5" />
+            <circle cx="25" cy="70" r="2" fill="#06B6D4" opacity="0.5" />
+            <circle cx="35" cy="80" r="2" fill="#2563EB" opacity="0.5" />
+            <circle cx="75" cy="20" r="2" fill="#06B6D4" opacity="0.5" />
+            <circle cx="85" cy="30" r="2" fill="#2563EB" opacity="0.5" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#medical-bg)" />

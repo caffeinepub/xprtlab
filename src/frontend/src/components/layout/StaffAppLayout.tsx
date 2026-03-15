@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { useSystemMode } from "../../hooks/useSystemMode";
 import { getDemoHomeCollections } from "../../utils/demoData";
 import BottomNavigation, { type NavItem } from "./BottomNavigation";
 
@@ -100,6 +101,7 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
   onExitDemo,
 }) => {
   const isSuperAdmin = roleLabel === "Super Admin";
+  const { systemMode } = useSystemMode();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: currentPath intentionally used to force recompute
   const pendingCount = React.useMemo(() => {
@@ -140,7 +142,7 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Demo mode banner */}
-      {isDemoMode && (
+      {isDemoMode && systemMode !== "test" && systemMode !== "production" && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
           <span className="text-xs text-amber-700 font-medium">
             🎭 Demo Mode — data is not saved to the blockchain
@@ -260,7 +262,7 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
             className="text-xs font-semibold px-3 py-1 rounded-full border flex-shrink-0"
             style={{
               background: "rgba(13,71,161,0.06)",
-              color: "#0D47A1",
+              color: "#2563EB",
               borderColor: "rgba(13,71,161,0.18)",
             }}
           >

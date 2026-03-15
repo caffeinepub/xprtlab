@@ -1,5 +1,6 @@
 import { BarChart3, FlaskConical, Shield } from "lucide-react";
 import type React from "react";
+import { useSystemMode } from "../../hooks/useSystemMode";
 import type { AppRole } from "../../types/models";
 import HealthcareBg from "../shared/HealthcareBg";
 import OTPLoginScreen from "./OTPLoginScreen";
@@ -11,6 +12,15 @@ interface StaffLoginScreenProps {
 export default function StaffLoginScreen({
   onDemoMode,
 }: StaffLoginScreenProps) {
+  const { systemMode, isTestMode } = useSystemMode();
+
+  // Demo role buttons only show when NOT in test mode and NOT in production mode
+  const showDemoButtons =
+    !isTestMode && systemMode !== "production" && !!onDemoMode;
+
+  // OTP 123456 works in demo mode and test mode; disabled only in production
+  const isDemoMode = systemMode !== "production";
+
   const demoRoles: {
     role: AppRole;
     label: string;
@@ -76,7 +86,7 @@ export default function StaffLoginScreen({
         <div className="flex flex-col items-center mb-6">
           <div
             className="bg-white rounded-2xl px-5 py-3.5 shadow-md mb-4"
-            style={{ boxShadow: "0 8px 24px rgba(13,71,161,0.10)" }}
+            style={{ boxShadow: "0 8px 24px rgba(37,99,235,0.10)" }}
           >
             <img
               src="/assets/logo.png"
@@ -102,10 +112,13 @@ export default function StaffLoginScreen({
           className="bg-white rounded-2xl p-6 space-y-5"
           style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
         >
-          <OTPLoginScreen isDemoMode={true} onSuccess={handleOTPSuccess} />
+          <OTPLoginScreen
+            isDemoMode={isDemoMode}
+            onSuccess={handleOTPSuccess}
+          />
 
-          {/* Demo Mode Role Picker */}
-          {onDemoMode && (
+          {/* Demo Mode Role Picker - hidden in test/production mode */}
+          {showDemoButtons && (
             <>
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-200" />
@@ -124,7 +137,7 @@ export default function StaffLoginScreen({
                       <button
                         type="button"
                         key={role}
-                        onClick={() => onDemoMode(role)}
+                        onClick={() => onDemoMode!(role)}
                         data-ocid={`login.demo_button.${idx + 1}`}
                         className="flex flex-col items-center gap-1.5 p-3 rounded-xl border font-semibold text-xs transition-all hover:opacity-80 active:scale-95"
                         style={{ color, background: bg, borderColor: border }}

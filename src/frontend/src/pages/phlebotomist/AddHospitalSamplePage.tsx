@@ -250,7 +250,7 @@ export default function AddHospitalSamplePage({
               onClick={() => onNavigate?.("my-samples")}
               style={{
                 width: "100%",
-                background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                background: "linear-gradient(135deg, #2563EB, #06B6D4)",
                 color: "white",
                 padding: "12px",
                 borderRadius: "12px",
@@ -342,7 +342,7 @@ export default function AddHospitalSamplePage({
             }}
           >
             <Building2
-              style={{ width: "16px", height: "16px", color: "#0D47A1" }}
+              style={{ width: "16px", height: "16px", color: "#2563EB" }}
             />
             <p
               style={{
@@ -402,7 +402,7 @@ export default function AddHospitalSamplePage({
                     borderRadius: "12px",
                     border:
                       selectedHospitalId === h.id
-                        ? "2px solid #0D47A1"
+                        ? "2px solid #2563EB"
                         : "2px solid #E5E7EB",
                     background:
                       selectedHospitalId === h.id ? "#EFF6FF" : "white",
@@ -445,7 +445,7 @@ export default function AddHospitalSamplePage({
               marginBottom: "12px",
             }}
           >
-            <User style={{ width: "16px", height: "16px", color: "#0D47A1" }} />
+            <User style={{ width: "16px", height: "16px", color: "#2563EB" }} />
             <p
               style={{
                 fontSize: "14px",
@@ -534,7 +534,7 @@ export default function AddHospitalSamplePage({
             }}
           >
             <TestTube
-              style={{ width: "16px", height: "16px", color: "#0D47A1" }}
+              style={{ width: "16px", height: "16px", color: "#2563EB" }}
             />
             <p
               style={{
@@ -601,7 +601,7 @@ export default function AddHospitalSamplePage({
                       padding: "12px",
                       borderRadius: "12px",
                       border: isSelected
-                        ? "2px solid #0D47A1"
+                        ? "2px solid #2563EB"
                         : "2px solid #E5E7EB",
                       background: isSelected ? "#EFF6FF" : "white",
                       cursor: "pointer",
@@ -651,7 +651,7 @@ export default function AddHospitalSamplePage({
                           style={{
                             width: "16px",
                             height: "16px",
-                            color: "#0D47A1",
+                            color: "#2563EB",
                           }}
                         />
                       ) : (
@@ -683,7 +683,7 @@ export default function AddHospitalSamplePage({
               }}
             >
               <IndianRupee
-                style={{ width: "16px", height: "16px", color: "#0D47A1" }}
+                style={{ width: "16px", height: "16px", color: "#2563EB" }}
               />
               <p
                 style={{
@@ -771,7 +771,7 @@ export default function AddHospitalSamplePage({
                   style={{
                     fontSize: "16px",
                     fontWeight: 700,
-                    color: "#0D47A1",
+                    color: "#2563EB",
                   }}
                 >
                   Final Amount
@@ -780,7 +780,7 @@ export default function AddHospitalSamplePage({
                   style={{
                     fontSize: "18px",
                     fontWeight: 700,
-                    color: "#0D47A1",
+                    color: "#2563EB",
                   }}
                 >
                   ₹{finalAmount}
@@ -874,7 +874,7 @@ export default function AddHospitalSamplePage({
                       transition: "all 150ms ease",
                       background:
                         paymentMode === mode
-                          ? "linear-gradient(135deg, #0D47A1, #26A69A)"
+                          ? "linear-gradient(135deg, #2563EB, #06B6D4)"
                           : "white",
                       color: paymentMode === mode ? "white" : "#374151",
                       boxShadow:
@@ -899,7 +899,7 @@ export default function AddHospitalSamplePage({
           data-ocid="add_sample.submit_button"
           style={{
             width: "100%",
-            background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+            background: "linear-gradient(135deg, #2563EB, #06B6D4)",
             color: "white",
             padding: "14px",
             borderRadius: "16px",

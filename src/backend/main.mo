@@ -13,6 +13,8 @@ import MixinAuthorization "authorization/MixinAuthorization";
 
 
 actor {
+  public type SystemMode = { #test; #production };
+
   public type AppRole = {
     #patient;
     #phlebotomist;
@@ -268,6 +270,9 @@ actor {
   // BLOB STORAGE (do not remove)
   include MixinStorage();
 
+  // SYSTEM MODE PERSISTENCE
+  var currentSystemMode : SystemMode = #production;
+
   // ROLES & PERMISSION MAP initialization
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -343,7 +348,6 @@ actor {
   };
 
   func phlebotomistCanAccessSample(_caller : Principal, _sample : HospitalSample) : Bool {
-    // This function's logic was not required for current implementation
     false;
   };
 
@@ -905,5 +909,21 @@ actor {
       }
     );
     filtered.toArray();
+  };
+
+  // SYSTEM MODE MANAGEMENT
+
+  public shared ({ caller }) func setSystemMode(mode : SystemMode) : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can change system mode");
+    };
+    currentSystemMode := mode;
+  };
+
+  public query ({ caller }) func getSystemMode() : async SystemMode {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can view system mode");
+    };
+    currentSystemMode;
   };
 };

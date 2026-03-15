@@ -161,7 +161,7 @@ export default function HospitalManagementPage({
       <div
         className="px-4 py-4 mb-4"
         style={{
-          background: "linear-gradient(135deg, #0D47A1 0%, #26A69A 100%)",
+          background: "linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)",
         }}
       >
         <div className="max-w-5xl mx-auto flex items-center gap-3">
@@ -440,7 +440,7 @@ export default function HospitalManagementPage({
                 disabled={isBusy}
                 className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-60"
                 style={{
-                  background: "linear-gradient(135deg,#0D47A1,#1976D2)",
+                  background: "linear-gradient(135deg,#2563EB,#1976D2)",
                 }}
                 data-ocid="hospitals.modal.submit_button"
               >

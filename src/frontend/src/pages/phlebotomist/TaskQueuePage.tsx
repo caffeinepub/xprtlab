@@ -133,7 +133,7 @@ export default function TaskQueuePage({
           <div
             className="px-4 pt-5 pb-4"
             style={{
-              background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+              background: "linear-gradient(135deg, #2563EB, #06B6D4)",
               boxShadow: "0 4px 16px rgba(13,71,161,0.2)",
             }}
           >
@@ -190,7 +190,7 @@ export default function TaskQueuePage({
         <div
           className="px-4 pt-5 pb-5"
           style={{
-            background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+            background: "linear-gradient(135deg, #2563EB, #06B6D4)",
             boxShadow: "0 4px 20px rgba(13,71,161,0.2)",
           }}
         >

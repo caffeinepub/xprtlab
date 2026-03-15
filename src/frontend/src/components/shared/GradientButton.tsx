@@ -38,8 +38,8 @@ export default function GradientButton({
         )}
         style={{
           ...sizeStyles[size],
-          borderColor: "#0D47A1",
-          color: "#0D47A1",
+          borderColor: "#2563EB",
+          color: "#2563EB",
           background: "transparent",
           ...(props.style ?? {}),
         }}
@@ -66,7 +66,7 @@ export default function GradientButton({
         background:
           disabled || loading
             ? "#9CA3AF"
-            : "linear-gradient(135deg, #0D47A1 0%, #1976D2 100%)",
+            : "linear-gradient(135deg, #2563EB 0%, #1976D2 100%)",
         color: "#FFFFFF",
         border: "none",
         cursor: disabled || loading ? "not-allowed" : "pointer",

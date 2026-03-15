@@ -51,7 +51,7 @@ export default function AttendancePage() {
       label: "Samples Collected",
       value: totalSamples.toString(),
       icon: FlaskConical,
-      color: "#0D47A1",
+      color: "#2563EB",
       bg: "#EFF6FF",
     },
     {
@@ -131,7 +131,7 @@ export default function AttendancePage() {
       {/* Gradient Hero Header */}
       <div
         style={{
-          background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+          background: "linear-gradient(135deg, #2563EB, #06B6D4)",
           borderRadius: "0 0 24px 24px",
           padding: "28px 20px 32px",
           marginBottom: "20px",

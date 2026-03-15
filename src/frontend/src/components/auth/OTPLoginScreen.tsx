@@ -259,7 +259,7 @@ export default function OTPLoginScreen({
             data-ocid="otp.send_otp.primary_button"
             className="w-full h-12 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
             style={{
-              background: "linear-gradient(135deg, #0D47A1, #26C6DA)",
+              background: "linear-gradient(135deg, #2563EB, #26C6DA)",
             }}
           >
             {isLoading ? (
@@ -310,11 +310,11 @@ export default function OTPLoginScreen({
                 className="w-10 h-12 text-center text-lg font-bold rounded-xl border-2 bg-gray-50 transition-all focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
                 style={{
                   borderColor: digit
-                    ? "#0D47A1"
+                    ? "#2563EB"
                     : error
                       ? "#EF4444"
                       : "#E5E7EB",
-                  color: "#0D47A1",
+                  color: "#2563EB",
                 }}
               />
             ))}
@@ -355,7 +355,7 @@ export default function OTPLoginScreen({
                 otpExpiry === 0 ||
                 attempts >= MAX_ATTEMPTS
                   ? "#9CA3AF"
-                  : "linear-gradient(135deg, #0D47A1, #26C6DA)",
+                  : "linear-gradient(135deg, #2563EB, #26C6DA)",
             }}
           >
             {isLoading ? (
@@ -394,7 +394,7 @@ export default function OTPLoginScreen({
               data-ocid="otp.resend.button"
               className="text-xs font-semibold transition-colors disabled:cursor-not-allowed"
               style={{
-                color: resendCooldown > 0 ? "#9CA3AF" : "#0D47A1",
+                color: resendCooldown > 0 ? "#9CA3AF" : "#2563EB",
               }}
             >
               {resendCooldown > 0

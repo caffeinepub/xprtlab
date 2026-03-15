@@ -60,7 +60,7 @@ export default function PatientLoginScreen({
       className="relative min-h-screen flex flex-col"
       style={{
         background:
-          "linear-gradient(160deg, #0D47A1 0%, #1565C0 40%, #26A69A 100%)",
+          "linear-gradient(160deg, #2563EB 0%, #1565C0 40%, #06B6D4 100%)",
       }}
     >
       <HealthcareBg variant="ecg" opacity={0.04} />
@@ -125,7 +125,7 @@ export default function PatientLoginScreen({
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md"
                 style={{
-                  background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+                  background: "linear-gradient(135deg, #2563EB, #06B6D4)",
                 }}
               >
                 <Heart className="w-7 h-7 text-white" />

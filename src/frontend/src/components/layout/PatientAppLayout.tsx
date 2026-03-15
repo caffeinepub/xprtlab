@@ -43,7 +43,7 @@ export default function PatientAppLayout({
             className="text-xs font-semibold px-3 py-1 rounded-full border"
             style={{
               background: "rgba(13,71,161,0.06)",
-              color: "#0D47A1",
+              color: "#2563EB",
               borderColor: "rgba(13,71,161,0.18)",
             }}
           >
@@ -77,7 +77,7 @@ export default function PatientAppLayout({
                 className={cn(
                   "relative flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 min-w-0",
                 )}
-                style={{ color: isActive ? "#0D47A1" : "#9CA3AF" }}
+                style={{ color: isActive ? "#2563EB" : "#9CA3AF" }}
               >
                 {isActive && (
                   <span
@@ -96,7 +96,7 @@ export default function PatientAppLayout({
                 <span
                   className="text-[10px] font-semibold leading-tight truncate max-w-[56px]"
                   style={{
-                    color: isActive ? "#0D47A1" : "#6B7280",
+                    color: isActive ? "#2563EB" : "#6B7280",
                     fontWeight: isActive ? 700 : 500,
                   }}
                 >

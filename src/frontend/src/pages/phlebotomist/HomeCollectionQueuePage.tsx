@@ -147,7 +147,7 @@ export default function HomeCollectionQueuePage({
         {/* Gradient Header Card */}
         <div
           style={{
-            background: "linear-gradient(135deg, #0D47A1, #26A69A)",
+            background: "linear-gradient(135deg, #2563EB, #06B6D4)",
             borderRadius: "16px",
             padding: "20px",
             marginBottom: "16px",
@@ -485,8 +485,8 @@ export default function HomeCollectionQueuePage({
                             gap: "6px",
                             fontSize: "12px",
                             background: "white",
-                            color: "#0D47A1",
-                            border: "1.5px solid #0D47A1",
+                            color: "#2563EB",
+                            border: "1.5px solid #2563EB",
                             padding: "6px 12px",
                             borderRadius: "10px",
                             fontWeight: 600,
@@ -535,7 +535,7 @@ export default function HomeCollectionQueuePage({
                           gap: "6px",
                           fontSize: "12px",
                           background:
-                            "linear-gradient(135deg, #0D47A1, #26A69A)",
+                            "linear-gradient(135deg, #2563EB, #06B6D4)",
                           color: "white",
                           border: "none",
                           padding: "6px 12px",

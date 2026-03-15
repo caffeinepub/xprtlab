@@ -1,73 +1,36 @@
-# XprtLab
+# XpertLab – Phase 1: TEST_MODE, Browser Permissions, Gradient Update
 
 ## Current State
 
-The Super Admin panel includes:
-- `AuditLogsPage.tsx`: Shows log entries with search, date range, and status filter tabs. No per-field dropdowns for phlebotomist/hospital/action type. No CSV export.
-- `PhlebotomistCollectionsModule.tsx`: Shows columns: Phlebotomist, Samples, Total Collected, Cash, UPI, Credit, Pending. No Deposit Status column, no status update UI.
-- `SuperAdminDashboardPage.tsx`: Shows 9 metric cards and revenue/samples chart. No settlement alert card.
-- `TestManagementPage.tsx`: Shows test table with Lab Cost and Commission % columns. No Profit column. Commission stored as percentage.
-- `RevenueSettlementsPage.tsx`: Has 4 tabs — Daily Overview, Hospital Ledger, Phlebotomist, Settlements. Tab navigation uses `activeTab` state.
-- Sample detail views exist in phlebotomist panel. No delivery method tracking stored on sample records.
-- `SuperAdminSettingsPage.tsx`: Contains User Management with Lab Admins and Phlebotomists sections. Phlebotomist management lacks "Reset Device" action.
+- Super Admin Settings page has User Management (Lab Admins + Phlebotomists) but no System Mode section.
+- `StaffLoginScreen.tsx` has `isDemoMode={true}` hardcoded, always showing demo UI and quick-role buttons.
+- Demo banner and quick-role buttons are always visible on the staff login screen.
+- Gradient across all panels uses `#0D47A1 → #26A69A`.
+- Camera/location permissions are used but may lack proper error handling for browser API prompts.
+- Backend (Motoko) has no `setSystemMode` / `getSystemMode` method; TEST_MODE was previously stored nowhere (not persisted).
 
 ## Requested Changes (Diff)
 
 ### Add
-- **Audit Logs**: Phlebotomist dropdown filter, Hospital dropdown filter, Action Type dropdown filter, Download CSV button
-- **Phlebotomist Collections table**: Deposit Status column with 3 states (Not Submitted=red, Partially Submitted=amber, Submitted=green); Super Admin can update status; store `updatedBy` and `updatedAt` per row
-- **Dashboard**: Persistent settlement alert card showing count of phlebotomists with Deposit Status = Not Submitted; clicking navigates to Revenue & Settlements → phlebotomist tab
-- **Test Management**: Profit column calculated as `MRP - Lab Cost - Commission` (Commission as flat ₹ value); green if positive, red if negative
-- **Sample detail view**: Delivery Method field (WhatsApp / Email / App Download) stored as `sample.deliveryMethod` on the sample record in demo storage
-- **Phlebotomist Management (Settings)**: Reset Device action per phlebotomist (clears device binding, forces re-login)
-- **Page header icons**: Add emoji/icon to Dashboard, Hospital Management, Test Management, Revenue & Settlements, Audit Logs, Lab Admins page headers
+- `setSystemMode(mode: SystemMode): Promise<void>` and `getSystemMode(): Promise<SystemMode>` to Motoko backend, where `SystemMode` is `"test"` or `"production"`.
+- System Mode section in Super Admin → Settings with TEST MODE / PRODUCTION MODE toggle, reading/writing via backend API.
+- Auto-seed logic: when TEST_MODE is enabled, check localStorage for test accounts (Test Phlebo 9999999999, Test Lab Admin 8888888888, Super Admin 7777777777 assigned to Vijaya Hospital); create them if missing.
+- Browser permission utility (`usePermissions` hook or inline guards) for camera (`getUserMedia`), location (`Geolocation API`), and file upload — with graceful denial messages, PWA-compatible.
 
 ### Modify
-- `AuditLogsPage.tsx`: Add phlebotomist, hospital, and action type dropdown filters alongside existing search/date filters; add Download CSV button
-- `PhlebotomistCollectionsModule.tsx`: Add Deposit Status column with color-coded badge; add inline dropdown to update status; persist `depositStatus`, `updatedBy`, `updatedAt` per phlebotomist in demo storage
-- `SuperAdminDashboardPage.tsx`: Add amber alert card above metric cards; reads deposit status from demo storage to count unsubmitted phlebotomists
-- `TestManagementPage.tsx`: Add Profit column; treat stored commission as flat ₹ (fall back to computing from % if only % stored); color-code green/red
-- Sample detail components: Add Delivery Method selector that saves to sample record
-- `SuperAdminSettingsPage.tsx`: Add Reset Device button in phlebotomist list; clears device ID in demo storage
+- `StaffLoginScreen.tsx`: make `isDemoMode` prop dynamic based on system mode flag fetched from backend; hide demo banner and quick-role buttons when in TEST or PRODUCTION mode.
+- All global gradient references: replace `#0D47A1` → `#2563EB` and `#26A69A` → `#06B6D4` across all panel CSS, inline styles, Tailwind config, and component gradient strings (headers, active nav tabs, primary buttons, card accents).
+- `PhlebotomistAttendancePage.tsx`: use `navigator.mediaDevices.getUserMedia` with proper permission prompt and error handling for selfie capture.
+- `AttendancePage.tsx` / GPS steps: use `navigator.geolocation.getCurrentPosition` with proper permission prompt, timeout, and error messages.
 
 ### Remove
-- Nothing removed
+- Nothing removed permanently; demo banner and role buttons are conditionally hidden (not deleted) based on system mode.
 
 ## Implementation Plan
 
-1. **demoStorage utils**: Add `depositStatus`, `updatedBy`, `updatedAt` fields to phlebotomist collection records; add `deliveryMethod` field to sample records; add `deviceId` field to phlebotomist records for device reset.
-
-2. **AuditLogsPage.tsx**: 
-   - Derive unique phlebotomist IDs, hospital IDs, and action types from log data for dropdown options
-   - Add three `<select>` dropdowns (Phlebotomist, Hospital, Action Type) to filter section
-   - Wire dropdowns to filter the log entries
-   - Add Download CSV button that exports filtered rows as CSV file download
-
-3. **PhlebotomistCollectionsModule.tsx**:
-   - Add Deposit Status column with colored badge pill
-   - Add inline `<select>` per row to update status (Not Submitted / Partially Submitted / Submitted)
-   - Persist status updates to demo storage with `updatedBy: 'Super Admin'` and `updatedAt: Date.now()`
-   - Show `updatedAt` timestamp below status badge
-
-4. **SuperAdminDashboardPage.tsx**:
-   - Read phlebotomist collection deposit statuses from demo storage
-   - Count phlebotomists with status = Not Submitted
-   - Render persistent amber alert card if count > 0: "⚠ X phlebotomists have not submitted today's collections"
-   - Card onClick sets Revenue tab active (via `onNavigate` prop or tab state)
-
-5. **TestManagementPage.tsx**:
-   - Add Profit column after existing columns
-   - Formula: `profit = mrp - labCost - commission` where commission is treated as flat ₹ (use `doctorCommission` field directly as ₹ amount)
-   - Green text if profit > 0, red if ≤ 0
-
-6. **Sample detail views** (phlebotomist MySamples / sample detail):
-   - Add Delivery Method section showing 3 pill options: WhatsApp, Email, App Download
-   - On select, save `deliveryMethod` to the sample record in demo storage
-   - Show currently selected method highlighted
-
-7. **SuperAdminSettingsPage.tsx** (Phlebotomist section):
-   - Add Reset Device button per phlebotomist row
-   - On click, show confirmation; on confirm, clear `deviceId` field in demo storage for that phlebotomist
-   - Show success toast: "Device reset. Phlebotomist will need to log in again."
-
-8. **Page header icons**: Add emoji icons to page section headers for Dashboard (📊), Hospital Management (🏥), Test Management (🧪), Revenue & Settlements (💰), Audit Logs (🛡), Lab Admins (👥)
+1. **Backend**: Add `setSystemMode` and `getSystemMode` Motoko methods. SystemMode type = variant `#test` / `#production`. Stored in a stable var.
+2. **System Mode UI** (SuperAdminSettingsPage): New "System Mode" section at top of Settings. Pill toggle: TEST MODE / PRODUCTION MODE. On toggle, call `backend.setSystemMode(...)`. On page load, call `backend.getSystemMode()` to hydrate UI.
+3. **Demo UI conditional rendering**: Fetch system mode from backend (or fall back to localStorage cache) on app load. Store in React context or a lightweight hook `useSystemMode`. When mode is `test` or `production`, set `isDemoMode=false` on `StaffLoginScreen`, hiding demo banner and quick-role buttons.
+4. **Test account auto-seed**: When Super Admin switches to TEST MODE, check `xpertlab_phlebotomists` and `xpertlab_lab_admins` in localStorage; insert test accounts if not present. Test OTP `123456` already works via existing demo OTP logic when `isDemoMode=true` equivalent; ensure test accounts are allowed OTP 123456 in TEST MODE.
+5. **Browser permissions**: Add `useCameraPermission` and `useLocationPermission` utility hooks with `getUserMedia` / `geolocation` prompts, graceful denied error messages, and retry buttons. Apply to selfie capture and GPS steps in attendance flows.
+6. **Gradient replacement**: Global find/replace `#0D47A1` → `#2563EB` and `#26A69A` → `#06B6D4` in all component files, inline styles, and any CSS/Tailwind config. Update `index.css` CSS variables if defined there.
