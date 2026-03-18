@@ -1,36 +1,47 @@
-# XpertLab – Phase 1: TEST_MODE, Browser Permissions, Gradient Update
+# XpertLab — Phase 2: UI + Role Control + Profile
 
 ## Current State
-
-- Super Admin Settings page has User Management (Lab Admins + Phlebotomists) but no System Mode section.
-- `StaffLoginScreen.tsx` has `isDemoMode={true}` hardcoded, always showing demo UI and quick-role buttons.
-- Demo banner and quick-role buttons are always visible on the staff login screen.
-- Gradient across all panels uses `#0D47A1 → #26A69A`.
-- Camera/location permissions are used but may lack proper error handling for browser API prompts.
-- Backend (Motoko) has no `setSystemMode` / `getSystemMode` method; TEST_MODE was previously stored nowhere (not persisted).
+- StaffProfilePage exists at `src/frontend/src/pages/staff/StaffProfilePage.tsx` with name/mobile/role/hospital fields and password update, accessible via profile icon in `StaffAppLayout`
+- StaffAppLayout header has UserCircle icon that navigates to `staff-profile` — profile page already wired
+- StaffProfilePage does NOT have a Logout button
+- BottomNavigation uses gradient pill for active tab with white icons — already styled with `#2563EB → #06B6D4`
+- Role-based access is partially enforced in StaffApp.tsx (switch/case with AccessDenied), but nav items for phlebotomist still include "Sample" and "My Samples" which could allow hospital/test access via page navigation
+- Phlebotomist nav: Home, Tasks, Visits, Sample, My Samples — no hospital/test tabs (good)
+- No frontend role guard on AddHospitalSamplePage, HospitalManagementPage, TestManagementPage to hide "Add" buttons for unauthorized roles
+- Modals in HospitalManagementPage and TestManagementPage may have hidden buttons on mobile (no max-height/overflow-y/sticky footer)
+- PhlebotomistAttendancePage GPS accuracy limit may still be set to 150m — needs to be 4000m
+- Selfie capture button visibility may be low contrast on white background
+- authToken not consistently sent in API calls for Add Hospital / Add Test
 
 ## Requested Changes (Diff)
 
 ### Add
-- `setSystemMode(mode: SystemMode): Promise<void>` and `getSystemMode(): Promise<SystemMode>` to Motoko backend, where `SystemMode` is `"test"` or `"production"`.
-- System Mode section in Super Admin → Settings with TEST MODE / PRODUCTION MODE toggle, reading/writing via backend API.
-- Auto-seed logic: when TEST_MODE is enabled, check localStorage for test accounts (Test Phlebo 9999999999, Test Lab Admin 8888888888, Super Admin 7777777777 assigned to Vijaya Hospital); create them if missing.
-- Browser permission utility (`usePermissions` hook or inline guards) for camera (`getUserMedia`), location (`Geolocation API`), and file upload — with graceful denial messages, PWA-compatible.
+- Logout button in StaffProfilePage: clear `localStorage` key `xpertlab_session` (and `session`) then call `onNavigate('logout')` or trigger logout callback
+- LogOut handler in StaffApp that resets demoMode and redirects to login
 
 ### Modify
-- `StaffLoginScreen.tsx`: make `isDemoMode` prop dynamic based on system mode flag fetched from backend; hide demo banner and quick-role buttons when in TEST or PRODUCTION mode.
-- All global gradient references: replace `#0D47A1` → `#2563EB` and `#26A69A` → `#06B6D4` across all panel CSS, inline styles, Tailwind config, and component gradient strings (headers, active nav tabs, primary buttons, card accents).
-- `PhlebotomistAttendancePage.tsx`: use `navigator.mediaDevices.getUserMedia` with proper permission prompt and error handling for selfie capture.
-- `AttendancePage.tsx` / GPS steps: use `navigator.geolocation.getCurrentPosition` with proper permission prompt, timeout, and error messages.
+- StaffProfilePage: add Logout button (red/destructive style) below the Go Back button
+- StaffApp: add `logout` navigation case that calls `clearSession()` and resets state
+- Role-based UI restrictions:
+  - Phlebotomist: hide "Add Hospital" and "Add Test" buttons, hide hospital management pages, hide admin-only nav items if any
+  - Lab Admin: hide "Add Hospital" button (view-only for hospitals), can view tests but not add
+  - Super Admin: full access unchanged
+- Pass `role` prop down to HospitalManagementPage and TestManagementPage to conditionally show/hide add/edit buttons
+- All modals (TestManagementPage modal, HospitalManagementPage modal): add `max-height: 90vh`, `overflow-y: auto` to modal body, and `position: sticky; bottom: 0; background: white` to buttons container
+- PhlebotomistAttendancePage GPS accuracy: change threshold from 150 to 4000 meters
+- Selfie capture button: increase contrast — use solid gradient background `#2563EB → #06B6D4` with white text, add `box-shadow`, ensure visible over white
+- BottomNavigation: confirm gradient `#2563EB → #06B6D4` with active tab pill highlight (already done, verify and ensure it applies to all 3 staff roles)
+- Ensure authToken from session is read and passed as header in createHospital / createTest API calls
 
 ### Remove
-- Nothing removed permanently; demo banner and role buttons are conditionally hidden (not deleted) based on system mode.
+- Nothing removed
 
 ## Implementation Plan
-
-1. **Backend**: Add `setSystemMode` and `getSystemMode` Motoko methods. SystemMode type = variant `#test` / `#production`. Stored in a stable var.
-2. **System Mode UI** (SuperAdminSettingsPage): New "System Mode" section at top of Settings. Pill toggle: TEST MODE / PRODUCTION MODE. On toggle, call `backend.setSystemMode(...)`. On page load, call `backend.getSystemMode()` to hydrate UI.
-3. **Demo UI conditional rendering**: Fetch system mode from backend (or fall back to localStorage cache) on app load. Store in React context or a lightweight hook `useSystemMode`. When mode is `test` or `production`, set `isDemoMode=false` on `StaffLoginScreen`, hiding demo banner and quick-role buttons.
-4. **Test account auto-seed**: When Super Admin switches to TEST MODE, check `xpertlab_phlebotomists` and `xpertlab_lab_admins` in localStorage; insert test accounts if not present. Test OTP `123456` already works via existing demo OTP logic when `isDemoMode=true` equivalent; ensure test accounts are allowed OTP 123456 in TEST MODE.
-5. **Browser permissions**: Add `useCameraPermission` and `useLocationPermission` utility hooks with `getUserMedia` / `geolocation` prompts, graceful denied error messages, and retry buttons. Apply to selfie capture and GPS steps in attendance flows.
-6. **Gradient replacement**: Global find/replace `#0D47A1` → `#2563EB` and `#26A69A` → `#06B6D4` in all component files, inline styles, and any CSS/Tailwind config. Update `index.css` CSS variables if defined there.
+1. **StaffProfilePage** — add Logout button that clears session and calls logout callback
+2. **StaffApp** — add `logout` nav case that calls `clearSession()` + resets all state to log out
+3. **Role-based UI** — pass `role` to HospitalManagementPage and TestManagementPage; hide Add/Edit buttons for Phlebotomist (no access) and Lab Admin (view-only for hospitals); also hide in AddHospitalSamplePage if needed
+4. **Modal scrollability** — in TestManagementPage and HospitalManagementPage modals add `maxHeight: '90vh'`, `overflowY: 'auto'` to modal content; make button footer `position: sticky; bottom: 0; background: #fff; padding: 12px 0; zIndex: 1`
+5. **GPS accuracy** — in PhlebotomistAttendancePage find accuracy check and change `<= 150` (or similar) to `<= 4000`
+6. **Selfie button** — find selfie capture button in PhlebotomistAttendancePage/AttendancePage; apply gradient background, white text, shadow for visibility
+7. **authToken in API calls** — read `xpertlab_session` from localStorage and pass `authToken` in API headers for createHospital and createTest
+8. **Navigation gradient** — verify BottomNavigation active pill uses `#2563EB → #06B6D4` (already implemented, just confirm no regression)

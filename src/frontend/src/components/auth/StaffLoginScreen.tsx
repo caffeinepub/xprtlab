@@ -1,7 +1,14 @@
 import { BarChart3, FlaskConical, Shield } from "lucide-react";
 import type React from "react";
+import { useState } from "react";
 import { useSystemMode } from "../../hooks/useSystemMode";
+import { getUserByMobile } from "../../services/backendService";
 import type { AppRole } from "../../types/models";
+import {
+  getRegisteredUser,
+  initializeDemoStorage,
+  saveSession,
+} from "../../utils/demoStorage";
 import HealthcareBg from "../shared/HealthcareBg";
 import OTPLoginScreen from "./OTPLoginScreen";
 
@@ -13,6 +20,7 @@ export default function StaffLoginScreen({
   onDemoMode,
 }: StaffLoginScreenProps) {
   const { systemMode, isTestMode } = useSystemMode();
+  const [authError, setAuthError] = useState("");
 
   // Demo role buttons only show when NOT in test mode and NOT in production mode
   const showDemoButtons =
@@ -55,7 +63,82 @@ export default function StaffLoginScreen({
     },
   ];
 
-  const handleOTPSuccess = (_mobile: string) => {
+  const handleOTPSuccess = async (mobile: string) => {
+    setAuthError("");
+    const mode = localStorage.getItem("xpertlab_system_mode") ?? "demo";
+
+    if (mode === "test") {
+      // In TEST_MODE: check backend first, then fall back to local registered users
+      try {
+        const backendUser = await getUserByMobile(mobile);
+        if (backendUser) {
+          saveSession({
+            userId: mobile,
+            mobile,
+            role: backendUser.role as
+              | "phlebotomist"
+              | "labAdmin"
+              | "superAdmin"
+              | "patient",
+            name: backendUser.name,
+            loginAt: Date.now(),
+          });
+          if (onDemoMode) {
+            onDemoMode(backendUser.role as AppRole);
+          }
+          return;
+        }
+      } catch (e) {
+        console.error(
+          "[Login] Backend getUserByMobile failed, falling back to local:",
+          e,
+        );
+      }
+
+      // Fallback: check local registered users (seeded test accounts)
+      initializeDemoStorage();
+      const user = getRegisteredUser(mobile);
+      if (!user) {
+        setAuthError("Account not found. Please contact administrator.");
+        return;
+      }
+      if (!user.isActive) {
+        setAuthError(
+          "Your account has been disabled. Please contact administrator.",
+        );
+        return;
+      }
+      saveSession({
+        userId: user.id,
+        mobile,
+        role: user.role,
+        name: user.name,
+        loginAt: Date.now(),
+      });
+      if (onDemoMode) {
+        onDemoMode(user.role as AppRole);
+      }
+      return;
+    }
+
+    // Demo/production mode: try to find registered user first, fallback to phlebotomist
+    initializeDemoStorage();
+    const user = getRegisteredUser(mobile);
+    if (user) {
+      saveSession({
+        userId: user.id,
+        mobile,
+        role: user.role,
+        name: user.name,
+        loginAt: Date.now(),
+      });
+      if (onDemoMode) {
+        onDemoMode(user.role as AppRole);
+      }
+      return;
+    }
+
+    // Fallback for demo mode: use stored demo_user or default to phlebotomist
     try {
       const stored = localStorage.getItem("xpertlab_demo_user");
       if (stored) {
@@ -116,6 +199,12 @@ export default function StaffLoginScreen({
             isDemoMode={isDemoMode}
             onSuccess={handleOTPSuccess}
           />
+
+          {authError && (
+            <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <p className="text-xs text-red-700 font-medium">{authError}</p>
+            </div>
+          )}
 
           {/* Demo Mode Role Picker - hidden in test/production mode */}
           {showDemoButtons && (

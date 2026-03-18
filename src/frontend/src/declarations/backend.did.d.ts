@@ -14,6 +14,22 @@ export type AppRole = { 'patient' : null } |
   { 'superAdmin' : null } |
   { 'labAdmin' : null } |
   { 'phlebotomist' : null };
+export interface AppUser {
+  'name' : string,
+  'createdAt' : bigint,
+  'role' : string,
+  'assignedHospitalId' : [] | [string],
+  'isActive' : boolean,
+  'mobile' : string,
+}
+export interface DashboardMetrics {
+  'pendingReports' : bigint,
+  'revenueToday' : bigint,
+  'samplesToday' : bigint,
+  'samplesTotal' : bigint,
+  'collectionsToday' : bigint,
+  'activeHospitals' : bigint,
+}
 export interface Hospital {
   'id' : string,
   'area' : string,
@@ -32,6 +48,35 @@ export interface HospitalPhlebotomistAssignment {
   'removedAt' : [] | [bigint],
   'removalReason' : [] | [string],
   'phlebotomist' : Principal,
+}
+export interface SampleInput {
+  'tests' : Array<[] | [SampleTestItem]>,
+  'deliveryMethod' : [] | [string],
+  'hospitalId' : string,
+  'totalAmount' : bigint,
+  'patientName' : string,
+  'paymentType' : string,
+  'createdByMobile' : string,
+  'phone' : string,
+}
+export interface SampleRecord {
+  'status' : string,
+  'tests' : Array<SampleTestItem>,
+  'createdAt' : bigint,
+  'deliveryMethod' : [] | [string],
+  'hospitalId' : string,
+  'totalAmount' : bigint,
+  'patientName' : string,
+  'paymentType' : string,
+  'createdByMobile' : string,
+  'phone' : string,
+  'sampleId' : string,
+}
+export interface SampleTestItem {
+  'testCode' : string,
+  'testName' : string,
+  'price' : bigint,
+  'testId' : string,
 }
 export interface Settlement {
   'settlementType' : { 'Partial' : null } |
@@ -115,19 +160,28 @@ export interface _SERVICE {
     HospitalPhlebotomistAssignment
   >,
   'bulkAddTests' : ActorMethod<[Array<TestInput>], Array<TestOutput>>,
+  'createSample' : ActorMethod<[SampleInput], string>,
+  'deleteAllSampleData' : ActorMethod<[], bigint>,
+  'deleteTestUser' : ActorMethod<[string], boolean>,
   'disableHospital' : ActorMethod<[string], Hospital>,
   'disableTest' : ActorMethod<[string], TestOutput>,
+  'getAllAppUsers' : ActorMethod<[], Array<AppUser>>,
+  'getAllSamples' : ActorMethod<[], Array<SampleRecord>>,
   'getAllTests' : ActorMethod<[], Array<TestOutput>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getDashboardMetrics' : ActorMethod<[], DashboardMetrics>,
   'getHospitalById' : ActorMethod<[string], Hospital>,
   'getHospitals' : ActorMethod<[[] | [string]], Array<Hospital>>,
   'getHospitalsByPhlebotomist' : ActorMethod<[Principal], Array<string>>,
   'getPhlebotomistsByHospital' : ActorMethod<[string], Array<Principal>>,
+  'getSamplesByHospital' : ActorMethod<[string], Array<SampleRecord>>,
+  'getSamplesByMobile' : ActorMethod<[string], Array<SampleRecord>>,
   'getSettlementHistory' : ActorMethod<[string], Array<Settlement>>,
   'getSystemMode' : ActorMethod<[], SystemMode>,
   'getTest' : ActorMethod<[string], [] | [TestOutput]>,
   'getTestByCode' : ActorMethod<[string], [] | [TestOutput]>,
+  'getUserByMobile' : ActorMethod<[string], [] | [AppUser]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'markSettlement' : ActorMethod<
@@ -140,11 +194,16 @@ export interface _SERVICE {
     ],
     Settlement
   >,
+  'registerAppUser' : ActorMethod<
+    [string, string, string, [] | [string]],
+    AppUser
+  >,
   'removePhlebotomistFromHospital' : ActorMethod<
     [string, Principal, string],
     HospitalPhlebotomistAssignment
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'seedTestUsers' : ActorMethod<[], bigint>,
   'setSystemMode' : ActorMethod<[SystemMode], undefined>,
   'setTestStatus' : ActorMethod<
     [string, boolean],
@@ -154,6 +213,11 @@ export interface _SERVICE {
   'updateHospital' : ActorMethod<
     [string, string, string, string, string, string],
     Hospital
+  >,
+  'updateSampleStatus' : ActorMethod<
+    [string, string],
+    { 'ok' : null } |
+      { 'notFound' : null }
   >,
   'updateTest' : ActorMethod<
     [string, TestInput],

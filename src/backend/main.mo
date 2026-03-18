@@ -1,16 +1,16 @@
 import List "mo:core/List";
 import Time "mo:core/Time";
-import Runtime "mo:core/Runtime";
 import Map "mo:core/Map";
+import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
+import Nat "mo:core/Nat";
 import Text "mo:core/Text";
+import Order "mo:core/Order";
 import Storage "blob-storage/Storage";
-
 
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-
 
 actor {
   public type SystemMode = { #test; #production };
@@ -148,7 +148,6 @@ actor {
     #REPORT_READY;
     #REPORT_DELIVERED;
   };
-
   public type HospitalSample = {
     patientName : Text;
     phone : Text;
@@ -267,6 +266,12 @@ actor {
     notes : ?Text;
   };
 
+  public type SampleError = {
+    #validData;
+    #invalidData;
+    #unexpected;
+  };
+
   // BLOB STORAGE (do not remove)
   include MixinStorage();
 
@@ -375,6 +380,14 @@ actor {
     };
     if (not (AccessControl.isAdmin(accessControlState, caller) or isLabAdmin or isSuperAdmin)) {
       Runtime.trap("Unauthorized: " # errMsg);
+    };
+  };
+
+  func compareByCreatedAt(a : SampleRecord, b : SampleRecord) : Order.Order {
+    if (a.createdAt < b.createdAt) { #less } else if (a.createdAt > b.createdAt) {
+      #greater;
+    } else {
+      #equal;
     };
   };
 
@@ -925,5 +938,321 @@ actor {
       Runtime.trap("Unauthorized: Only authenticated users can view system mode");
     };
     currentSystemMode;
+  };
+
+  /////////////////////// SAMPLES ///////////////////////
+  public type SampleRecord = {
+    sampleId : Text;
+    createdByMobile : Text;
+    hospitalId : Text;
+    tests : [SampleTestItem];
+    totalAmount : Nat;
+    paymentType : Text;
+    status : Text;
+    createdAt : Int;
+    patientName : Text;
+    phone : Text;
+    deliveryMethod : ?Text;
+  };
+
+  public type SampleTestItem = {
+    testId : Text;
+    testName : Text;
+    testCode : Text;
+    price : Nat;
+  };
+
+  public type SampleInput = {
+    createdByMobile : Text;
+    hospitalId : Text;
+    tests : [?SampleTestItem];
+    totalAmount : Nat;
+    paymentType : Text;
+    patientName : Text;
+    phone : Text;
+    deliveryMethod : ?Text;
+  };
+
+  public type AppUser = {
+    mobile : Text;
+    name : Text;
+    role : Text;
+    assignedHospitalId : ?Text;
+    isActive : Bool;
+    createdAt : Int;
+  };
+
+  public type DashboardMetrics = {
+    samplesTotal : Nat;
+    samplesToday : Nat;
+    revenueToday : Nat;
+    activeHospitals : Nat;
+    pendingReports : Nat;
+    collectionsToday : Nat;
+  };
+
+  // New persistent maps for samples, daily counters, and users
+  let samples = Map.empty<Text, SampleRecord>();
+  let dailyCounters = Map.empty<Text, Nat>();
+  var users = Map.empty<Text, AppUser>();
+
+  public shared ({ caller }) func createSample(input : SampleInput) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can create samples");
+    };
+
+    let sampleId = await generateSampleId();
+
+    let validatedTests = input.tests.filter(
+      func(testOpt) {
+        switch (testOpt) {
+          case (null) { false };
+          case (?_test) { true };
+        };
+      }
+    ).map(
+      func(testOpt) {
+        testOpt.get({ testId = ""; testName = ""; testCode = ""; price = 0 });
+      }
+    );
+
+    let sample : SampleRecord = {
+      sampleId;
+      createdByMobile = input.createdByMobile;
+      hospitalId = input.hospitalId;
+      tests = validatedTests;
+      totalAmount = input.totalAmount;
+      paymentType = input.paymentType;
+      status = "COLLECTED";
+      createdAt = Time.now();
+      patientName = input.patientName;
+      phone = input.phone;
+      deliveryMethod = input.deliveryMethod;
+    };
+
+    samples.add(sampleId, sample);
+    sampleId;
+  };
+
+  func generateSampleId() : async Text {
+    let currentDate = Time.now().toText();
+
+    let currentCount = switch (dailyCounters.get(currentDate)) {
+      case (null) { 0 };
+      case (?count) { count };
+    };
+    let newCount = currentCount + 1;
+    dailyCounters.add(currentDate, newCount);
+
+    let counterStr = createCounterStr(newCount);
+    "XRPT-" # currentDate # "-" # counterStr;
+  };
+
+  func createCounterStr(count : Nat) : Text {
+    let countText = count.toText();
+    let countLen = countText.size();
+
+    let zerosNeeded = if (countLen >= 4) { 0 } else { 4 - countLen };
+    var zeros = "";
+    var i = 0;
+    while (i < zerosNeeded) {
+      zeros #= "0";
+      i += 1;
+    };
+    zeros # countText;
+  };
+
+  func filterSamplesByMobile(mobile : Text) : [SampleRecord] {
+    let filteredList = List.empty<SampleRecord>();
+    samples.forEach(
+      func(v) {
+        let sample = v.1;
+        if (sample.createdByMobile == mobile) {
+          filteredList.add(sample);
+        };
+      }
+    );
+    filteredList.toArray().sort(compareByCreatedAt);
+  };
+
+  func filterSamplesByHospital(hospitalId : Text) : [SampleRecord] {
+    let filteredList = List.empty<SampleRecord>();
+    samples.forEach(
+      func(v) {
+        let sample = v.1;
+        if (sample.hospitalId == hospitalId) {
+          filteredList.add(sample);
+        };
+      }
+    );
+    filteredList.toArray().sort(compareByCreatedAt);
+  };
+
+  public query ({ caller }) func getSamplesByMobile(mobile : Text) : async [SampleRecord] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can view samples");
+    };
+    // Users can only view their own samples (matched by mobile in their profile)
+    // Admins can view any samples
+    if (not isAdminOrSuperAdmin(caller)) {
+      switch (userProfiles.get(caller)) {
+        case (null) { Runtime.trap("Unauthorized: User profile not found") };
+        case (?profile) {
+          if (profile.phone != mobile) {
+            Runtime.trap("Unauthorized: Can only view your own samples");
+          };
+        };
+      };
+    };
+
+    filterSamplesByMobile(mobile);
+  };
+
+  public query ({ caller }) func getSamplesByHospital(hospitalId : Text) : async [SampleRecord] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can view samples");
+    };
+
+    filterSamplesByHospital(hospitalId);
+  };
+
+  public query ({ caller }) func getAllSamples() : async [SampleRecord] {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can get all samples");
+    let allSamples = List.empty<SampleRecord>();
+    samples.forEach(
+      func(v) {
+        let sample = v.1;
+        allSamples.add(sample);
+      }
+    );
+    allSamples.toArray().sort(compareByCreatedAt);
+  };
+
+  public shared ({ caller }) func updateSampleStatus(sampleId : Text, status : Text) : async { #ok; #notFound } {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update sample status");
+    };
+
+    switch (samples.get(sampleId)) {
+      case (null) { #notFound };
+      case (?sample) {
+        let updatedSample : SampleRecord = {
+          sample with status;
+        };
+        samples.add(sampleId, updatedSample);
+        #ok;
+      };
+    };
+  };
+
+  public shared ({ caller }) func registerAppUser(mobile : Text, name : Text, role : Text, assignedHospitalId : ?Text) : async AppUser {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can register app users");
+    let user : AppUser = {
+      mobile;
+      name;
+      role;
+      assignedHospitalId;
+      isActive = true;
+      createdAt = Time.now();
+    };
+    users.add(mobile, user);
+    user;
+  };
+
+  public query ({ caller }) func getUserByMobile(mobile : Text) : async ?AppUser {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can get user data");
+    };
+    users.get(mobile);
+  };
+
+  public query ({ caller }) func getAllAppUsers() : async [AppUser] {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can get all app users");
+    let usersList = List.empty<AppUser>();
+    users.forEach(
+      func(v) {
+        let user = v.1;
+        usersList.add(user);
+      }
+    );
+    usersList.toArray();
+  };
+
+  public shared ({ caller }) func seedTestUsers() : async Nat {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can seed test users");
+    let testUsers : [AppUser] = [
+      { mobile = "9999990001"; name = "Test User 1"; role = "phlebotomist"; assignedHospitalId = null; isActive = true; createdAt = Time.now() },
+      { mobile = "9999990002"; name = "Test User 2"; role = "labAdmin"; assignedHospitalId = null; isActive = true; createdAt = Time.now() },
+      { mobile = "9999990003"; name = "Test User 3"; role = "patient"; assignedHospitalId = null; isActive = true; createdAt = Time.now() },
+    ];
+
+    var addedCount : Nat = 0;
+
+    for (testUser in testUsers.values()) {
+      if (not users.containsKey(testUser.mobile)) {
+        users.add(testUser.mobile, testUser);
+        addedCount += 1;
+      };
+    };
+
+    addedCount;
+  };
+
+  public shared ({ caller }) func deleteTestUser(mobile : Text) : async Bool {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can delete test users");
+    users.remove(mobile);
+    true;
+  };
+
+  public query ({ caller }) func getDashboardMetrics() : async DashboardMetrics {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can get dashboard metrics");
+    };
+
+    let currentDate = Time.now().toText();
+    var samplesToday = 0;
+    var revenueToday = 0;
+    var pendingReports = 0;
+    var collectionsToday = 0;
+
+    var activeHospitals = 0;
+    hospitals.forEach(
+      func(_k, hospital) {
+        if (hospital.isActive) { activeHospitals += 1 };
+      }
+    );
+
+    samples.forEach(
+      func(_k, sample) {
+        if (sample.createdAt.toText() == currentDate) {
+          samplesToday += 1;
+          revenueToday += sample.totalAmount;
+          collectionsToday += sample.totalAmount;
+        };
+
+        if (sample.status != "DELIVERED") {
+          pendingReports += 1;
+        };
+      }
+    );
+
+    // Potential enhancements:
+    let metrics : DashboardMetrics = {
+      samplesTotal = samples.size();
+      samplesToday;
+      revenueToday;
+      activeHospitals;
+      pendingReports;
+      collectionsToday;
+    };
+
+    metrics;
+  };
+
+  public shared ({ caller }) func deleteAllSampleData() : async Nat {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can delete all sample data");
+    let deletedCount = samples.size();
+    samples.clear();
+    deletedCount;
   };
 };

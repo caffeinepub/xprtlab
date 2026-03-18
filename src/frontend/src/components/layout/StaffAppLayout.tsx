@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, UserCircle } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useSystemMode } from "../../hooks/useSystemMode";
 import { getDemoHomeCollections } from "../../utils/demoData";
@@ -165,7 +165,7 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
         style={{
           background: "#FFFFFF",
           borderBottom: "1px solid #E5E7EB",
-          boxShadow: "0 2px 12px rgba(13,71,161,0.06)",
+          boxShadow: "0 2px 12px rgba(37,99,235,0.06)",
         }}
       >
         <div className="flex items-center gap-2.5 flex-shrink-0">
@@ -257,18 +257,29 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
           </div>
         )}
 
-        {roleLabel && (
-          <span
-            className="text-xs font-semibold px-3 py-1 rounded-full border flex-shrink-0"
-            style={{
-              background: "rgba(13,71,161,0.06)",
-              color: "#2563EB",
-              borderColor: "rgba(13,71,161,0.18)",
-            }}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {roleLabel && (
+            <span
+              className="text-xs font-semibold px-3 py-1 rounded-full border"
+              style={{
+                background: "rgba(37,99,235,0.06)",
+                color: "#2563EB",
+                borderColor: "rgba(37,99,235,0.18)",
+              }}
+            >
+              {roleLabel}
+            </span>
+          )}
+          <button
+            type="button"
+            data-ocid="header.profile.button"
+            onClick={() => onNavigate("staff-profile")}
+            className="p-1.5 rounded-full transition-colors hover:bg-blue-50"
+            title="My Profile"
           >
-            {roleLabel}
-          </span>
-        )}
+            <UserCircle className="w-6 h-6" style={{ color: "#2563EB" }} />
+          </button>
+        </div>
       </header>
 
       {/* Main content */}

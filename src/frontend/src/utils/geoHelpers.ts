@@ -3,7 +3,7 @@
  */
 
 /** Maximum acceptable GPS accuracy in meters */
-export const MAX_GPS_ACCURACY_METERS = 150;
+export const MAX_GPS_ACCURACY_METERS = 4000;
 
 /**
  * Validates that the GPS accuracy reading is within the acceptable threshold.
@@ -48,37 +48,20 @@ export function haversineDistance(
 
 /**
  * Heuristic mock/spoofed location detection.
- *
- * Flags a location as potentially mocked when:
- * - Coordinates are exactly (0, 0) — the null island
- * - Accuracy is suspiciously perfect (< 1 m) — common in emulators
- * - Coordinates are whole numbers (e.g. 37.0, -122.0) — typical fake values
  */
 export function detectMockLocation(
   latitude: number,
   longitude: number,
   accuracy: number,
 ): boolean {
-  // Null island
   if (latitude === 0 && longitude === 0) return true;
-
-  // Suspiciously perfect accuracy (emulator default)
   if (accuracy < 1) return true;
-
-  // Whole-number coordinates are a common sign of a mocked location
   if (Number.isInteger(latitude) && Number.isInteger(longitude)) return true;
-
   return false;
 }
 
 /**
  * Checks whether a coordinate is within a circular geofence.
- *
- * @param lat         Current latitude
- * @param lon         Current longitude
- * @param centerLat   Geofence centre latitude
- * @param centerLon   Geofence centre longitude
- * @param radiusMeters Geofence radius in metres
  */
 export function isWithinGeofence(
   lat: number,
@@ -92,7 +75,6 @@ export function isWithinGeofence(
 
 /**
  * Detects an implausible speed jump between two consecutive GPS readings.
- * Returns true if the implied speed exceeds maxSpeedKmh (default 200 km/h).
  */
 export function detectSpeedJump(
   prevLat: number,

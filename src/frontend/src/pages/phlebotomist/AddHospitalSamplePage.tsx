@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
+import { createSample } from "../../services/backendService";
 import {
   DEMO_PHLEBO_ID,
   type DemoHospital,
@@ -82,6 +83,7 @@ export default function AddHospitalSamplePage({
   const [paymentMode, setPaymentMode] = useState<"CASH" | "UPI">("CASH");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [backendSampleId, setBackendSampleId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -176,6 +178,40 @@ export default function AddHospitalSamplePage({
       addDemoSample(newSample);
     }
 
+    // Also write to backend (dual-write pattern)
+    try {
+      const session = (() => {
+        try {
+          const s = localStorage.getItem("xpertlab_session");
+          return s ? JSON.parse(s) : null;
+        } catch {
+          return null;
+        }
+      })();
+      const createdByMobile = session?.mobileNumber ?? session?.mobile ?? "";
+      const sampleInput = {
+        patientName: patientName.trim(),
+        phone: phone.trim(),
+        hospitalId: selectedHospitalId,
+        tests: selectedTests.map((t) => ({
+          testId: t.testId,
+          testName: t.testName,
+          testCode: t.testCode,
+          price: BigInt(Math.round(t.price)),
+        })),
+        totalAmount: BigInt(Math.round(finalAmount)),
+        paymentType: paymentMode,
+        createdByMobile,
+        deliveryMethod: undefined,
+      };
+      const sampleId = await createSample(sampleInput);
+      if (sampleId) {
+        setBackendSampleId(sampleId);
+      }
+    } catch (e) {
+      console.error("[AddSample] Backend write failed, using local only:", e);
+    }
+
     setIsSubmitting(false);
     setIsSuccess(true);
   };
@@ -239,11 +275,30 @@ export default function AddHospitalSamplePage({
             Sample Added!
           </h2>
           <p
-            style={{ color: "#6B7280", fontSize: "14px", marginBottom: "24px" }}
+            style={{
+              color: "#6B7280",
+              fontSize: "14px",
+              marginBottom: backendSampleId ? "8px" : "24px",
+            }}
           >
             Sample for <strong>{patientName}</strong> has been recorded
             successfully.
           </p>
+          {backendSampleId && (
+            <p
+              style={{
+                color: "#2563EB",
+                fontSize: "13px",
+                fontWeight: 600,
+                marginBottom: "24px",
+                background: "#EFF6FF",
+                borderRadius: "8px",
+                padding: "8px 12px",
+              }}
+            >
+              Sample ID: {backendSampleId}
+            </p>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <button
               type="button"

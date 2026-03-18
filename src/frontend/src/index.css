@@ -162,7 +162,7 @@
 
   /* ── Buttons ──────────────────────────────────────────────────────────────── */
   .btn-gradient {
-    background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+    background: linear-gradient(135deg, #2563eb 0%, #06b6d4 100%);
     color: white;
     border-radius: 12px;
     height: 48px;
@@ -177,7 +177,7 @@
   }
 
   .btn-gradient:hover {
-    box-shadow: 0 6px 20px rgba(13, 71, 161, 0.4);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
     transform: translateY(-1px);
   }
 

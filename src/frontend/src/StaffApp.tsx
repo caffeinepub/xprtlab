@@ -8,7 +8,11 @@ import ErrorBoundary from "./components/shared/ErrorBoundary";
 import LoadingScreen from "./components/shared/LoadingScreen";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
-import { initializeDemoStorage } from "./utils/demoStorage";
+import {
+  clearSession,
+  getSession,
+  initializeDemoStorage,
+} from "./utils/demoStorage";
 
 type AppRole = "patient" | "phlebotomist" | "labAdmin" | "superAdmin";
 
@@ -48,7 +52,6 @@ const AdminAttendancePage = lazy(
   () => import("./pages/admin/AdminAttendancePage"),
 );
 const SecurityLogsPage = lazy(() => import("./pages/admin/SecurityLogsPage"));
-const ProfilePage = lazy(() => import("./pages/patient/ProfilePage"));
 const TestManagementPage = lazy(
   () => import("./pages/admin/TestManagementPage"),
 );
@@ -70,6 +73,10 @@ const ProfitDashboardPage = lazy(
 const SuperAdminSettingsPage = lazy(
   () => import("./pages/admin/SuperAdminSettingsPage"),
 );
+const StaffProfilePage = lazy(() => import("./pages/staff/StaffProfilePage"));
+const TasksManagementPage = lazy(
+  () => import("./pages/admin/TasksManagementPage"),
+);
 
 function getNavItems(role: AppRole): NavItem[] {
   if (role === "phlebotomist") {
@@ -90,7 +97,7 @@ function getNavItems(role: AppRole): NavItem[] {
         icon: "FlaskConical",
       },
       { label: "Reports", path: "admin-reports", icon: "FileText" },
-      { label: "Hospitals", path: "hospital-management", icon: "Building2" },
+      { label: "Tasks", path: "tasks-management", icon: "ClipboardList" },
       { label: "Settings", path: "test-management", icon: "LayoutDashboard" },
     ];
   }
@@ -102,7 +109,7 @@ function getNavItems(role: AppRole): NavItem[] {
         icon: "LayoutDashboard",
       },
       { label: "Tests", path: "test-management", icon: "TestTube" },
-      { label: "Hospitals", path: "hospital-management", icon: "Building2" },
+      { label: "Tasks", path: "tasks-management", icon: "ClipboardList" },
       { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
       { label: "Settings", path: "super-admin-settings", icon: "Settings" },
     ];
@@ -149,6 +156,18 @@ export default function StaffApp() {
   const [pageParams, setPageParams] = useState<Record<string, string>>({});
 
   const demoInitializedRef = useRef(false);
+
+  // Restore session on page load
+  useEffect(() => {
+    const session = getSession();
+    if (session) {
+      initializeDemoStorage();
+      setDemoMode(true);
+      setDemoRole(session.role as AppRole);
+      setCurrentPage(getDefaultPage(session.role as AppRole));
+    }
+  }, []); // only on mount
+
   useEffect(() => {
     if (demoMode && !demoInitializedRef.current) {
       demoInitializedRef.current = true;
@@ -176,6 +195,16 @@ export default function StaffApp() {
   }, [userProfile, demoMode, demoRole, currentPage]);
 
   const handleNavigate = (page: string, params?: Record<string, string>) => {
+    if (page === "logout") {
+      clearSession();
+      setDemoMode(false);
+      setDemoRole("phlebotomist");
+      setCurrentPage("");
+      setPageParams({});
+      demoInitializedRef.current = false;
+      queryClient.clear();
+      return;
+    }
     setCurrentPage(page);
     setPageParams(params ?? {});
   };
@@ -314,13 +343,14 @@ export default function StaffApp() {
         return (
           <AccessDenied message="You do not have permission to access Settings." />
         );
+      case "tasks-management":
+        if (effectiveRole === "superAdmin" || effectiveRole === "labAdmin") {
+          return <TasksManagementPage role={effectiveRole} />;
+        }
+        return <AccessDenied message="No permission to access Tasks." />;
+      case "staff-profile":
       case "profile":
-        return (
-          <ProfilePage
-            onNavigate={handleNavigate}
-            currentUserRole={effectiveRole}
-          />
-        );
+        return <StaffProfilePage onNavigate={handleNavigate} />;
       default:
         if (effectiveRole === "phlebotomist")
           return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
@@ -348,6 +378,7 @@ export default function StaffApp() {
         roleLabel={getRoleLabel(effectiveRole)}
         isDemoMode={demoMode}
         onExitDemo={() => {
+          clearSession();
           setDemoMode(false);
           setDemoRole("phlebotomist");
           setCurrentPage("");

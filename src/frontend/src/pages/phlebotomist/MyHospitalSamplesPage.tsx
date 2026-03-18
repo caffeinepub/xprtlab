@@ -14,6 +14,7 @@ import {
 import React, { useState, useEffect, useCallback } from "react";
 import DeliveryMethodSelectionDialog from "../../components/shared/DeliveryMethodSelectionDialog";
 import WhatsAppShareConfirmDialog from "../../components/shared/WhatsAppShareConfirmDialog";
+import { getSamplesByMobile } from "../../services/backendService";
 import type { DeliveryMethod } from "../../types/models";
 import {
   DEMO_PHLEBO_ID,
@@ -110,7 +111,59 @@ export default function MyHospitalSamplesPage({
     return h?.name ?? hospitalId;
   };
 
-  const loadSamples = useCallback(() => {
+  const loadSamples = useCallback(async () => {
+    // Try backend first; fall back to demo localStorage
+    const session = (() => {
+      try {
+        const s = localStorage.getItem("xpertlab_session");
+        return s ? JSON.parse(s) : null;
+      } catch {
+        return null;
+      }
+    })();
+    const mobile = session?.mobileNumber ?? session?.mobile ?? "";
+    if (mobile) {
+      try {
+        const backendSamples = await getSamplesByMobile(mobile);
+        if (backendSamples && backendSamples.length > 0) {
+          // Convert SampleRecord[] to DemoSample[] shape for display
+          const converted: DemoSample[] = backendSamples.map((s) => ({
+            id: s.sampleId,
+            patientName: s.patientName,
+            phone: s.phone,
+            hospitalId: s.hospitalId,
+            phlebotomistId: mobile,
+            tests: s.tests.map((t) => ({
+              testId: t.testId,
+              testName: t.testName,
+              testCode: t.testCode,
+              price: Number(t.price),
+            })),
+            totalMrp: Number(s.totalAmount),
+            discountAmount: 0,
+            maxAllowedDiscount: 0,
+            finalAmount: Number(s.totalAmount),
+            amountReceived: Number(s.totalAmount),
+            pendingAmount: 0,
+            paymentMode: s.paymentType as "CASH" | "UPI" | "CREDIT",
+            billingLocked: false,
+            createdByRole: "phlebotomist",
+            updatedByAdmin: false,
+            createdAt: Number(s.createdAt),
+            status: (s.status as DemoSample["status"]) ?? "SAMPLE_COLLECTED",
+            statusHistory: [],
+          }));
+          setSamples(converted);
+          return;
+        }
+      } catch (e) {
+        console.error(
+          "[MyHospitalSamples] Backend fetch failed, using local:",
+          e,
+        );
+      }
+    }
+    // Fallback: demo localStorage
     if (isDemoMode) {
       const data = getDemoSamples(DEMO_PHLEBO_ID);
       setSamples(data);
@@ -118,13 +171,12 @@ export default function MyHospitalSamplesPage({
   }, [isDemoMode]);
 
   useEffect(() => {
-    loadSamples();
+    void loadSamples();
   }, [loadSamples]);
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    loadSamples();
-    setTimeout(() => setIsRefreshing(false), 600);
+    loadSamples().finally(() => setTimeout(() => setIsRefreshing(false), 600));
   };
 
   const handleMarkDispatched = async (sampleId: string) => {

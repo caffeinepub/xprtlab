@@ -488,7 +488,13 @@ function SelfieStep({ onSuccess }: SelfieStepProps) {
             type="button"
             onClick={handleCapture}
             disabled={!videoReady || isCapturing || cameraLoading}
-            className="btn-gradient w-full py-4 rounded-2xl text-white font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              background: "linear-gradient(135deg, #2563EB, #06B6D4)",
+              color: "white",
+              border: "none",
+              boxShadow: "0 4px 16px rgba(37,99,235,0.35)",
+            }}
           >
             {isCapturing ? (
               <>

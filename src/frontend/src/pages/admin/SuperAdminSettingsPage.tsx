@@ -27,8 +27,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useSystemMode } from "../../hooks/useSystemMode";
+import { deleteAllSampleData } from "../../services/backendService";
 
-// biome-ignore lint/correctness/noUnusedVariables: used below
 void Building2;
 
 export interface SuperAdminSettingsPageProps {
@@ -1138,9 +1138,21 @@ function SystemModeSection() {
     }
   };
 
-  const handleResetTestData = () => {
+  const handleResetTestData = async () => {
+    try {
+      // Call backend to delete all sample data
+      await deleteAllSampleData();
+    } catch (e) {
+      console.error(
+        "[Settings] Backend reset failed, continuing with local reset:",
+        e,
+      );
+    }
+    // Also clear demo localStorage keys
     localStorage.removeItem("xpertlab_hospital_samples");
     localStorage.removeItem("xpertlab_home_collection");
+    localStorage.removeItem("demo_samples");
+    localStorage.removeItem("demo_status_history");
     toast.success("Test data reset successfully.");
   };
 

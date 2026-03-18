@@ -1,5 +1,4 @@
 import {
-  AlertCircle,
   CheckCircle,
   ClipboardList,
   Clock,
@@ -9,7 +8,6 @@ import {
 } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
 import HealthcareBg from "../../components/shared/HealthcareBg";
-import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import {
   type DemoHomeCollection,
   type DemoSample,
@@ -21,6 +19,19 @@ interface TaskQueuePageProps {
   isDemoMode?: boolean;
   role?: string;
   onNavigate?: (path: string) => void;
+}
+
+interface AssignedTask {
+  id: string;
+  patientName: string;
+  phone: string;
+  address: string;
+  tests: string;
+  assignedPhlebotomistMobile: string;
+  visitTime: string;
+  priority: string;
+  status: string;
+  createdAt: string;
 }
 
 type TaskItem =
@@ -57,16 +68,120 @@ function getTaskStatusLabel(status: string): string {
   }
 }
 
+function AssignedTaskCard({
+  task,
+  idx,
+}: {
+  task: AssignedTask;
+  idx: number;
+}) {
+  const statusStyles: Record<string, { bg: string; color: string }> = {
+    Assigned: { bg: "#F3F4F6", color: "#6B7280" },
+    "In Progress": { bg: "#DBEAFE", color: "#1D4ED8" },
+    Completed: { bg: "#D1FAE5", color: "#065F46" },
+  };
+  const s = statusStyles[task.status] ?? { bg: "#F3F4F6", color: "#6B7280" };
+  const isUrgent = task.priority === "Urgent";
+  return (
+    <div
+      data-ocid={`taskqueue.item.${idx + 1}`}
+      style={{
+        background: "white",
+        borderRadius: 16,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+        padding: 16,
+        borderLeft: isUrgent ? "4px solid #DC2626" : "4px solid #2563EB",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 15, color: "#111827" }}>
+          {task.patientName}
+        </div>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            padding: "3px 10px",
+            borderRadius: 20,
+            background: s.bg,
+            color: s.color,
+          }}
+        >
+          {task.status}
+        </span>
+      </div>
+      {task.phone && (
+        <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>
+          Phone: {task.phone}
+        </div>
+      )}
+      {task.address && (
+        <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>
+          Address: {task.address}
+        </div>
+      )}
+      {task.tests && (
+        <div style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>
+          Tests: {task.tests}
+        </div>
+      )}
+      {task.visitTime && (
+        <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 6 }}>
+          Visit: {new Date(task.visitTime).toLocaleString()}
+        </div>
+      )}
+      {isUrgent && (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#DC2626",
+          }}
+        >
+          URGENT
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TaskQueuePage({
   isDemoMode = false,
-  onNavigate,
 }: TaskQueuePageProps) {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [assignedTasks, setAssignedTasks] = useState<AssignedTask[]>([]);
+
+  // Load tasks assigned from admin
+  const loadAssignedTasks = useCallback(() => {
+    try {
+      const sessionRaw = localStorage.getItem("xpertlab_session");
+      const session = sessionRaw ? JSON.parse(sessionRaw) : null;
+      const myMobile = session?.mobileNumber ?? "";
+      const raw = localStorage.getItem("xpertlab_tasks");
+      const all: AssignedTask[] = raw ? JSON.parse(raw) : [];
+      setAssignedTasks(
+        all.filter((t) => t.assignedPhlebotomistMobile === myMobile),
+      );
+    } catch {
+      setAssignedTasks([]);
+    }
+  }, []);
 
   const loadTasks = useCallback(() => {
-    if (!isDemoMode) return;
+    loadAssignedTasks();
+    if (!isDemoMode) {
+      setLastUpdated(new Date());
+      return;
+    }
 
     const homeCollections = getDemoHomeCollections();
     const pendingCollections = homeCollections.filter(
@@ -97,17 +212,16 @@ export default function TaskQueuePage({
 
     setTasks(combined);
     setLastUpdated(new Date());
-  }, [isDemoMode]);
+  }, [isDemoMode, loadAssignedTasks]);
 
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
 
   useEffect(() => {
-    if (!isDemoMode) return;
     const interval = setInterval(loadTasks, 30_000);
     return () => clearInterval(interval);
-  }, [isDemoMode, loadTasks]);
+  }, [loadTasks]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -123,25 +237,19 @@ export default function TaskQueuePage({
       >
         <HealthcareBg variant="minimal" opacity={0.04} />
         <div className="relative z-10">
-          <div className="px-4 pt-4">
-            <PageHeroHeader
-              title="My Tasks"
-              description="View and manage your assigned collection tasks"
-            />
-          </div>
           {/* Header */}
           <div
             className="px-4 pt-5 pb-4"
             style={{
               background: "linear-gradient(135deg, #2563EB, #06B6D4)",
-              boxShadow: "0 4px 16px rgba(13,71,161,0.2)",
+              boxShadow: "0 4px 16px rgba(37,99,235,0.2)",
             }}
           >
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-bold text-white">Task Queue</h1>
+                <h1 className="text-xl font-bold text-white">My Tasks</h1>
                 <p className="text-xs text-white/70 mt-0.5">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
+                  Your assigned patient visits
                 </p>
               </div>
               <button
@@ -156,17 +264,26 @@ export default function TaskQueuePage({
               </button>
             </div>
           </div>
-          <div className="p-4">
-            <div
-              className="bg-white rounded-2xl p-8 text-center"
-              style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
-            >
-              <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">No tasks yet.</p>
-              <p className="text-gray-400 text-sm mt-1">
-                Stay available — new assignments will appear automatically.
-              </p>
-            </div>
+          <div className="p-4 space-y-3">
+            {assignedTasks.length === 0 ? (
+              <div
+                data-ocid="taskqueue.empty_state"
+                className="bg-white rounded-2xl p-8 text-center"
+                style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+              >
+                <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">
+                  No tasks assigned yet.
+                </p>
+                <p className="text-gray-400 text-sm mt-1">
+                  Stay available — new assignments will appear here.
+                </p>
+              </div>
+            ) : (
+              assignedTasks.map((task, idx) => (
+                <AssignedTaskCard key={task.id} task={task} idx={idx} />
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -184,34 +301,24 @@ export default function TaskQueuePage({
       style={{ background: "#F7F9FC" }}
     >
       <HealthcareBg variant="minimal" opacity={0.04} />
-
       <div className="relative z-10">
-        {/* Gradient Header */}
+        {/* Header */}
         <div
-          className="px-4 pt-5 pb-5"
           style={{
             background: "linear-gradient(135deg, #2563EB, #06B6D4)",
-            boxShadow: "0 4px 20px rgba(13,71,161,0.2)",
+            padding: "20px 16px 16px",
           }}
         >
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold text-white">Task Queue</h1>
-                  {pendingCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                      {pendingCount}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-white/70 mt-0.5">
-                  Last updated: {lastUpdated.toLocaleTimeString()}
-                </p>
-              </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-white">Task Queue</h1>
+              <p className="text-xs text-white/70 mt-0.5">
+                {pendingCount} pending tasks
+              </p>
             </div>
             <button
               type="button"
+              data-ocid="taskqueue.refresh.button"
               onClick={handleRefresh}
               className="flex items-center gap-1.5 text-xs text-white/80 bg-white/20 px-3 py-1.5 rounded-full hover:bg-white/30 transition-colors"
             >
@@ -223,126 +330,111 @@ export default function TaskQueuePage({
           </div>
         </div>
 
-        {/* Summary cards */}
-        <div className="px-4 pt-4">
-          <div
-            className="bg-white rounded-2xl p-4 mb-4"
-            style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
-          >
-            <p
-              className="font-semibold text-gray-500 uppercase tracking-wide mb-3"
-              style={{ fontSize: "12px" }}
+        {/* Assigned tasks section */}
+        {assignedTasks.length > 0 && (
+          <div className="px-4 pt-4">
+            <h2
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#374151",
+                marginBottom: 10,
+              }}
             >
-              Active Tasks
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl p-3" style={{ background: "#EFF6FF" }}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div
-                    className="bg-blue-100 flex items-center justify-center"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
-                  <span className="text-xs font-semibold text-blue-700">
-                    Home Visits
-                  </span>
-                </div>
-                <p className="text-2xl font-bold text-blue-700">
-                  {tasks.filter((t) => t.kind === "homeCollection").length}
-                </p>
-              </div>
-              <div className="rounded-xl p-3" style={{ background: "#F0FDFA" }}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div
-                    className="bg-teal-100 flex items-center justify-center"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "8px",
-                    }}
-                  >
-                    <TestTube className="w-3.5 h-3.5 text-teal-600" />
-                  </div>
-                  <span className="text-xs font-semibold text-teal-700">
-                    Hospital Samples
-                  </span>
-                </div>
-                <p className="text-2xl font-bold text-teal-700">
-                  {tasks.filter((t) => t.kind === "hospitalSample").length}
-                </p>
-              </div>
+              Admin Assigned Tasks
+            </h2>
+            <div className="space-y-3">
+              {assignedTasks.map((task, idx) => (
+                <AssignedTaskCard key={task.id} task={task} idx={idx} />
+              ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Task list */}
-        <div className="px-4 space-y-3">
+        {/* Demo tasks */}
+        <div className="p-4">
           {tasks.length === 0 ? (
             <div
+              data-ocid="taskqueue.empty_state"
               className="bg-white rounded-2xl p-8 text-center"
               style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
-              data-ocid="task_queue.empty_state"
             >
               <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">No tasks yet.</p>
+              <p className="text-gray-500 font-medium">All tasks completed!</p>
               <p className="text-gray-400 text-sm mt-1">
-                Stay available — new assignments will appear automatically.
+                Last updated: {lastUpdated.toLocaleTimeString()}
               </p>
             </div>
           ) : (
-            tasks.map((task, idx) => {
-              if (task.kind === "homeCollection") {
-                const hc = task.data;
-                const statusStyle = getTaskStatusColor(hc.status);
-                return (
-                  <div
-                    key={`hc-${hc.id}`}
-                    data-ocid={`task_queue.item.${idx + 1}`}
-                    className="bg-white rounded-2xl p-4 transition-all duration-200"
-                    style={{
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                      borderRadius: "16px",
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.boxShadow =
-                        "0 12px 32px rgba(13,71,161,0.12)";
-                      (e.currentTarget as HTMLDivElement).style.transform =
-                        "translateY(-1px)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLDivElement).style.boxShadow =
-                        "0 8px 24px rgba(0,0,0,0.08)";
-                      (e.currentTarget as HTMLDivElement).style.transform = "";
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className="bg-blue-50 flex items-center justify-center flex-shrink-0"
-                          style={{
-                            width: "42px",
-                            height: "42px",
-                            borderRadius: "12px",
-                          }}
-                        >
-                          <MapPin className="w-5 h-5 text-blue-600" />
-                        </div>
+            <div className="space-y-3">
+              {tasks.map((item, idx) => {
+                if (item.kind === "homeCollection") {
+                  const hc = item.data;
+                  const statusStyle = getTaskStatusColor(hc.status);
+                  return (
+                    <div
+                      key={hc.id}
+                      data-ocid={`taskqueue.item.${idx + 1}`}
+                      className="bg-white rounded-2xl p-4"
+                      style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+                    >
+                      <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-                            Home Visit
-                          </p>
-                          <p
-                            className="font-semibold text-gray-900"
-                            style={{ fontSize: "15px" }}
-                          >
+                          <p className="font-semibold text-gray-800 text-sm">
                             {hc.patientName}
                           </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Home Collection
+                          </p>
                         </div>
+                        <span
+                          className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                          style={{
+                            background: statusStyle.bg,
+                            color: statusStyle.text,
+                          }}
+                        >
+                          {getTaskStatusLabel(hc.status)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{hc.address}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+                        <TestTube className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">
+                          {hc.tests
+                            .map((t: { testName: string }) => t.testName)
+                            .join(", ")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
+                        <Clock className="w-3 h-3 flex-shrink-0" />
+                        <span>
+                          {new Date(hc.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                const s = item.data;
+                const statusStyle = getTaskStatusColor(s.status);
+                return (
+                  <div
+                    key={s.id}
+                    data-ocid={`taskqueue.item.${idx + 1}`}
+                    className="bg-white rounded-2xl p-4"
+                    style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm">
+                          {s.patientName}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Hospital Sample
+                        </p>
                       </div>
                       <span
                         className="text-xs font-semibold px-2.5 py-1 rounded-full"
@@ -351,137 +443,27 @@ export default function TaskQueuePage({
                           color: statusStyle.text,
                         }}
                       >
-                        {getTaskStatusLabel(hc.status)}
+                        {getTaskStatusLabel(s.status)}
                       </span>
                     </div>
-                    <div className="flex items-start gap-1.5 mb-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-gray-600 leading-relaxed">
-                        {hc.address}
-                      </p>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <TestTube className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">
+                        {s.tests
+                          .map((t: { testName: string }) => t.testName)
+                          .join(", ")}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-500">{hc.slot}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {hc.tests.map((t) => (
-                          <span
-                            key={t.testId}
-                            className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-                          >
-                            {t.testCode}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-1">
+                      <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                      <span>Sample #{s.sampleId ?? s.id.slice(-6)}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => onNavigate?.("home-collection")}
-                      className="mt-3 w-full text-xs text-blue-600 font-semibold bg-blue-50 py-2 rounded-xl transition-colors hover:bg-blue-100"
-                    >
-                      View Details →
-                    </button>
                   </div>
                 );
-              }
-
-              const s = task.data;
-              return (
-                <div
-                  key={`s-${s.id}`}
-                  data-ocid={`task_queue.item.${idx + 1}`}
-                  className="bg-white rounded-2xl p-4 transition-all duration-200"
-                  style={{
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                    borderRadius: "16px",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.boxShadow =
-                      "0 12px 32px rgba(13,71,161,0.12)";
-                    (e.currentTarget as HTMLDivElement).style.transform =
-                      "translateY(-1px)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLDivElement).style.boxShadow =
-                      "0 8px 24px rgba(0,0,0,0.08)";
-                    (e.currentTarget as HTMLDivElement).style.transform = "";
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className="bg-teal-50 flex items-center justify-center flex-shrink-0"
-                        style={{
-                          width: "42px",
-                          height: "42px",
-                          borderRadius: "12px",
-                        }}
-                      >
-                        <TestTube className="w-5 h-5 text-teal-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide">
-                          Hospital Sample
-                        </p>
-                        <p
-                          className="font-semibold text-gray-900"
-                          style={{ fontSize: "15px" }}
-                        >
-                          {s.patientName}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700">
-                      {s.status === "SAMPLE_COLLECTED"
-                        ? "Collected"
-                        : "Dispatched"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="text-xs text-gray-500">
-                      {s.paymentMode} · ₹{s.finalAmount}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {s.tests.map((t) => (
-                      <span
-                        key={t.testId}
-                        className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-                      >
-                        {t.testCode}
-                      </span>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate?.("my-samples")}
-                    className="w-full text-xs text-teal-600 font-semibold bg-teal-50 py-2 rounded-xl transition-colors hover:bg-teal-100"
-                  >
-                    View Sample →
-                  </button>
-                </div>
-              );
-            })
+              })}
+            </div>
           )}
         </div>
-
-        {tasks.length > 0 && (
-          <div className="px-4 mt-4 pb-2">
-            <div
-              className="flex items-center gap-2 text-xs text-green-600 bg-green-50 rounded-xl p-3"
-              style={{ borderRadius: "12px" }}
-            >
-              <CheckCircle className="w-4 h-4" />
-              <span>
-                You have {tasks.length} active task
-                {tasks.length !== 1 ? "s" : ""} today
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

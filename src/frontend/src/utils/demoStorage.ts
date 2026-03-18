@@ -22,12 +22,15 @@ export const KEYS = {
   HOSPITALS: "demo_hospitals",
   SETTLEMENTS: "demo_settlements",
   TESTS: "demo_tests",
+  REGISTERED_USERS: "xpertlab_registered_users",
+  SESSION: "xpertlab_session",
 } as const;
 
 // ─── Demo IDs ─────────────────────────────────────────────────────────────────
 export const DEMO_PHLEBO_ID = "demo-phlebo-001";
 export const DEMO_HOSPITAL_ID_1 = "demo-hospital-001";
 export const DEMO_HOSPITAL_ID_2 = "demo-hospital-002";
+export const DEMO_HOSPITAL_ID_3 = "demo-hospital-vijaya";
 export const DEMO_USER_ID = "demo-patient-001";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -77,6 +80,7 @@ export interface DemoHomeCollection {
 
 export interface DemoSample {
   id: string;
+  sampleId?: string; // XRPT-YYYYMMDD-XXXX format
   patientName: string;
   phone: string;
   hospitalId: string;
@@ -166,6 +170,24 @@ export interface DemoTestMaster {
   isActive: boolean;
 }
 
+export interface RegisteredUser {
+  id: string;
+  name: string;
+  mobile: string;
+  role: "phlebotomist" | "labAdmin" | "superAdmin" | "patient";
+  hospitalIds?: string[];
+  isActive: boolean;
+  isTestAccount?: boolean;
+}
+
+export interface XpertLabSession {
+  userId: string;
+  mobile: string;
+  role: "phlebotomist" | "labAdmin" | "superAdmin" | "patient";
+  name: string;
+  loginAt: number;
+}
+
 // ─── Safe read/write helpers ──────────────────────────────────────────────────
 
 function safeRead<T>(key: string): T[] | null {
@@ -218,6 +240,38 @@ function buildDefaultUsers(): DemoUser[] {
   ];
 }
 
+function buildDefaultRegisteredUsers(): RegisteredUser[] {
+  return [
+    {
+      id: "test-phlebo-001",
+      name: "Test Phlebo",
+      mobile: "9999999999",
+      role: "phlebotomist",
+      hospitalIds: [DEMO_HOSPITAL_ID_3],
+      isActive: true,
+      isTestAccount: true,
+    },
+    {
+      id: "test-labadmin-001",
+      name: "Test Lab Admin",
+      mobile: "8888888888",
+      role: "labAdmin",
+      hospitalIds: [DEMO_HOSPITAL_ID_3],
+      isActive: true,
+      isTestAccount: true,
+    },
+    {
+      id: "test-superadmin-001",
+      name: "Super Admin",
+      mobile: "7777777777",
+      role: "superAdmin",
+      hospitalIds: [],
+      isActive: true,
+      isTestAccount: true,
+    },
+  ];
+}
+
 function buildDefaultHospitals(): DemoHospital[] {
   return [
     {
@@ -239,6 +293,16 @@ function buildDefaultHospitals(): DemoHospital[] {
       contactNumber: "022-87654321",
       isActive: true,
       createdAt: Date.now() - 20 * 24 * 60 * 60 * 1000,
+    },
+    {
+      id: DEMO_HOSPITAL_ID_3,
+      name: "Vijaya Hospital",
+      city: "Hyderabad",
+      address: "Road No. 1, Banjara Hills, Hyderabad - 500034",
+      area: "Banjara Hills",
+      contactNumber: "040-23456789",
+      isActive: true,
+      createdAt: Date.now() - 15 * 24 * 60 * 60 * 1000,
     },
   ];
 }
@@ -369,6 +433,7 @@ function buildDefaultSamples(): DemoSample[] {
   return [
     {
       id: "sample-001",
+      sampleId: "XRPT-20260301-0001",
       patientName: "Ramesh Gupta",
       phone: "9001122334",
       hospitalId: DEMO_HOSPITAL_ID_1,
@@ -404,6 +469,7 @@ function buildDefaultSamples(): DemoSample[] {
     },
     {
       id: "sample-002",
+      sampleId: "XRPT-20260301-0002",
       patientName: "Sunita Patil",
       phone: "9112233445",
       hospitalId: DEMO_HOSPITAL_ID_1,
@@ -451,6 +517,7 @@ function buildDefaultSamples(): DemoSample[] {
     },
     {
       id: "sample-003",
+      sampleId: "XRPT-20260302-0001",
       patientName: "Mohan Verma",
       phone: "9223344556",
       hospitalId: DEMO_HOSPITAL_ID_2,
@@ -504,6 +571,7 @@ function buildDefaultSamples(): DemoSample[] {
     },
     {
       id: "sample-004",
+      sampleId: "XRPT-20260314-0001",
       patientName: "Geeta Nair",
       phone: "9334455667",
       hospitalId: DEMO_HOSPITAL_ID_2,
@@ -557,6 +625,7 @@ function buildDefaultSamples(): DemoSample[] {
     },
     {
       id: "sample-005",
+      sampleId: "XRPT-20260314-0002",
       patientName: "Arun Sharma",
       phone: "9445566778",
       hospitalId: DEMO_HOSPITAL_ID_1,
@@ -627,6 +696,7 @@ function buildDefaultSamples(): DemoSample[] {
     // Additional samples for better revenue data (today's samples)
     {
       id: "sample-006",
+      sampleId: "XRPT-20260316-0001",
       patientName: "Kavita Joshi",
       phone: "9876501006",
       hospitalId: DEMO_HOSPITAL_ID_1,
@@ -670,6 +740,7 @@ function buildDefaultSamples(): DemoSample[] {
     },
     {
       id: "sample-007",
+      sampleId: "XRPT-20260316-0002",
       patientName: "Mohan Das",
       phone: "9876501007",
       hospitalId: DEMO_HOSPITAL_ID_2,
@@ -712,6 +783,7 @@ function buildDefaultSamples(): DemoSample[] {
     },
     {
       id: "sample-008",
+      sampleId: "XRPT-20260313-0001",
       patientName: "Deepa Rao",
       phone: "9876501008",
       hospitalId: DEMO_HOSPITAL_ID_1,
@@ -1061,6 +1133,7 @@ export function initializeDemoStorage(): void {
   seedIfEmpty(KEYS.DELIVERY_TRACKING, buildDefaultDeliveryTracking());
   seedIfEmpty(KEYS.SETTLEMENTS, buildDefaultSettlements());
   seedIfEmpty(KEYS.TESTS, buildDefaultTestMasters());
+  seedIfEmpty(KEYS.REGISTERED_USERS, buildDefaultRegisteredUsers());
 }
 
 // ─── Read helpers ─────────────────────────────────────────────────────────────
@@ -1112,9 +1185,18 @@ export function getDemoSamples(phlebotomistId?: string): DemoSample[] {
   return all.filter((s) => s.phlebotomistId === phlebotomistId);
 }
 
+export function getLabAdminSamples(hospitalIds: string[]): DemoSample[] {
+  const all = safeRead<DemoSample>(KEYS.SAMPLES) ?? [];
+  if (!hospitalIds.length) return all;
+  return all.filter((s) => hospitalIds.includes(s.hospitalId));
+}
+
 export function addDemoSample(sample: DemoSample): void {
   const all = safeRead<DemoSample>(KEYS.SAMPLES) ?? [];
-  all.push(sample);
+  const withId: DemoSample = sample.sampleId
+    ? sample
+    : { ...sample, sampleId: generateSampleId() };
+  all.push(withId);
   safeWrite(KEYS.SAMPLES, all);
 }
 
@@ -1243,4 +1325,81 @@ export function updateDemoTestMaster(
       : t,
   );
   safeWrite(KEYS.TESTS, updated);
+}
+
+// ─── Registered Users helpers ─────────────────────────────────────────────────
+
+export function getRegisteredUser(mobile: string): RegisteredUser | null {
+  const all = safeRead<RegisteredUser>(KEYS.REGISTERED_USERS) ?? [];
+  return all.find((u) => u.mobile === mobile) ?? null;
+}
+
+export function getAllRegisteredUsers(): RegisteredUser[] {
+  return safeRead<RegisteredUser>(KEYS.REGISTERED_USERS) ?? [];
+}
+
+export function addRegisteredUser(user: RegisteredUser): void {
+  const all = getAllRegisteredUsers();
+  const exists = all.some((u) => u.mobile === user.mobile);
+  if (!exists) {
+    all.push(user);
+    safeWrite(KEYS.REGISTERED_USERS, all);
+  }
+}
+
+// ─── Session helpers ─────────────────────────────────────────────────────────
+
+export function saveSession(session: XpertLabSession): void {
+  try {
+    localStorage.setItem(KEYS.SESSION, JSON.stringify(session));
+  } catch {
+    // ignore
+  }
+}
+
+export function getSession(): XpertLabSession | null {
+  try {
+    const raw = localStorage.getItem(KEYS.SESSION);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as XpertLabSession;
+    // Sessions expire after 8 hours
+    if (Date.now() - parsed.loginAt > 8 * 60 * 60 * 1000) {
+      localStorage.removeItem(KEYS.SESSION);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSession(): void {
+  try {
+    localStorage.removeItem(KEYS.SESSION);
+  } catch {
+    // ignore
+  }
+}
+
+// ─── Sample ID generation ─────────────────────────────────────────────────────
+
+export function generateSampleId(): string {
+  const now = new Date();
+  const dateStr =
+    now.getFullYear().toString() +
+    (now.getMonth() + 1).toString().padStart(2, "0") +
+    now.getDate().toString().padStart(2, "0");
+
+  const COUNTER_KEY = `xrpt_counter_${dateStr}`;
+  try {
+    const current = Number.parseInt(
+      localStorage.getItem(COUNTER_KEY) ?? "0",
+      10,
+    );
+    const next = current + 1;
+    localStorage.setItem(COUNTER_KEY, next.toString());
+    return `XRPT-${dateStr}-${next.toString().padStart(4, "0")}`;
+  } catch {
+    return `XRPT-${dateStr}-${Math.floor(Math.random() * 9000 + 1000)}`;
+  }
 }

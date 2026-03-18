@@ -18,7 +18,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -33,6 +33,7 @@ import {
 import HealthcareBg from "../../components/shared/HealthcareBg";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests, useHospitals } from "../../hooks/useQueries";
+import { getDashboardMetrics } from "../../services/backendService";
 import { getDemoSamples } from "../../utils/demoStorage";
 import { formatCurrency } from "../../utils/formatters";
 
@@ -450,10 +451,29 @@ export default function SuperAdminDashboardPage({
 }: SuperAdminDashboardPageProps) {
   const [hospitalPage, setHospitalPage] = useState(0);
   const [chartTab, setChartTab] = useState<"revenue" | "samples">("revenue");
+  const [backendMetrics, setBackendMetrics] = useState<{
+    revenueToday: number;
+    samplesToday: number;
+    activeHospitals: number;
+    pendingReports: number;
+    collectionsToday: number;
+  } | null>(null);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isDemoMode) return;
+    setMetricsLoading(true);
+    getDashboardMetrics()
+      .then((m) => {
+        if (m) setBackendMetrics(m);
+      })
+      .finally(() => setMetricsLoading(false));
+  }, [isDemoMode]);
 
   const { data: hospitals = [] } = useHospitals();
   const { data: allTests = [] } = useGetAllTests();
   void allTests;
+  void metricsLoading;
 
   const demoData = useMemo(() => generateDemoDashboardData(), []);
 
@@ -471,21 +491,22 @@ export default function SuperAdminDashboardPage({
         samplesInProcessing: demoData.samplesInProcessing,
       };
     }
-    const activeHospitals = (hospitals as { isActive: boolean }[]).filter(
-      (h) => h.isActive,
-    ).length;
+    // Use live backend metrics if available, fallback to hospital count from query
+    const activeHospitals = backendMetrics
+      ? backendMetrics.activeHospitals
+      : (hospitals as { isActive: boolean }[]).filter((h) => h.isActive).length;
     return {
-      revenueToday: 0,
+      revenueToday: backendMetrics?.revenueToday ?? 0,
       revenueMonth: 0,
-      samplesToday: 0,
+      samplesToday: backendMetrics?.samplesToday ?? 0,
       activeHospitals,
       activePhlebotomists: 0,
-      pendingReports: 0,
-      collectionsToday: 0,
+      pendingReports: backendMetrics?.pendingReports ?? 0,
+      collectionsToday: backendMetrics?.collectionsToday ?? 0,
       pendingPayments: 0,
       samplesInProcessing: 0,
     };
-  }, [isDemoMode, demoData, hospitals]);
+  }, [isDemoMode, demoData, hospitals, backendMetrics]);
 
   const revenueChartData = useMemo(() => {
     if (isDemoMode) return demoData.revenueChart;
