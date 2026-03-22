@@ -1,7 +1,6 @@
 import { Search, UserCircle } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useSystemMode } from "../../hooks/useSystemMode";
-import { getDemoHomeCollections } from "../../utils/demoData";
 import BottomNavigation, { type NavItem } from "./BottomNavigation";
 
 interface StaffAppLayoutProps {
@@ -105,8 +104,7 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: currentPath intentionally used to force recompute
   const pendingCount = React.useMemo(() => {
-    const collections = getDemoHomeCollections();
-    return collections.filter((c) => c.status !== "COMPLETED").length;
+    return 0;
   }, [currentPath]);
 
   const navItemsWithBadge: NavItem[] = navItems.map((item) => {

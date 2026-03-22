@@ -22,11 +22,25 @@ export interface SampleTestItem {
 }
 export interface TestOutput {
     id: string;
+    mrp: bigint;
+    lab_cost: bigint;
     code: string;
     name: string;
     sampleType: string;
     isActive: boolean;
+    commission_amount: bigint;
+    profit: bigint;
     price: bigint;
+}
+export type Principal = Principal;
+export interface AppTask {
+    status: string;
+    patient_name: string;
+    hospital_id: string;
+    task_id: string;
+    created_at: bigint;
+    assigned_by: string;
+    assigned_to_mobile: string;
 }
 export interface HospitalPhlebotomistAssignment {
     assignedAt: bigint;
@@ -46,10 +60,14 @@ export interface AppUser {
     mobile: string;
 }
 export interface TestInput {
+    mrp: bigint;
+    lab_cost: bigint;
     code: string;
     name: string;
     sampleType: string;
     isActive: boolean;
+    commission_amount: bigint;
+    profit: bigint;
     price: bigint;
 }
 export interface SampleInput {
@@ -142,12 +160,16 @@ export interface backendInterface {
     assignPhlebotomistToHospital(hospitalId: string, phlebotomist: Principal): Promise<HospitalPhlebotomistAssignment>;
     bulkAddTests(testInputs: Array<TestInput>): Promise<Array<TestOutput>>;
     createSample(input: SampleInput): Promise<string>;
+    createTask(assigned_to_mobile: string, assigned_by: string, hospital_id: string, patient_name: string, status: string): Promise<AppTask>;
+    deleteAllData(): Promise<void>;
     deleteAllSampleData(): Promise<bigint>;
+    deleteAllTasks(): Promise<bigint>;
     deleteTestUser(mobile: string): Promise<boolean>;
     disableHospital(id: string): Promise<Hospital>;
     disableTest(code: string): Promise<TestOutput>;
     getAllAppUsers(): Promise<Array<AppUser>>;
     getAllSamples(): Promise<Array<SampleRecord>>;
+    getAllTasks(): Promise<Array<AppTask>>;
     getAllTests(): Promise<Array<TestOutput>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
@@ -160,6 +182,7 @@ export interface backendInterface {
     getSamplesByMobile(mobile: string): Promise<Array<SampleRecord>>;
     getSettlementHistory(hospitalId: string): Promise<Array<Settlement>>;
     getSystemMode(): Promise<SystemMode>;
+    getTasksByUser(mobile: string): Promise<Array<AppTask>>;
     getTest(code: string): Promise<TestOutput | null>;
     getTestByCode(testCode: string): Promise<TestOutput | null>;
     getUserByMobile(mobile: string): Promise<AppUser | null>;

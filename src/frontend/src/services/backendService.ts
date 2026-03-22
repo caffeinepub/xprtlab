@@ -1,11 +1,20 @@
 /**
  * backendService.ts
  *
- * Unified backend service that wraps all Motoko canister calls.
- * All functions have try/catch and return null/empty array on error.
+ * Unified backend service — single source of truth.
+ * ALL business data reads/writes go through here.
+ * localStorage is used ONLY for session tokens.
  */
 
-import type { SampleInput } from "../backend.d";
+import type {
+  AppTask,
+  AppUser,
+  Hospital,
+  SampleInput,
+  SampleRecord,
+  TestInput,
+  TestOutput,
+} from "../backend.d";
 import { createActorWithConfig } from "../config";
 
 let _actorPromise: ReturnType<typeof createActorWithConfig> | null = null;
@@ -17,7 +26,6 @@ async function getActor() {
   return _actorPromise;
 }
 
-// Invalidate cached actor (call if something goes wrong)
 export function resetActorCache() {
   _actorPromise = null;
 }
@@ -29,15 +37,16 @@ export async function createSample(
 ): Promise<string | null> {
   try {
     const actor = await getActor();
-    const result = await actor.createSample(sampleData);
-    return result;
+    return await actor.createSample(sampleData);
   } catch (e) {
     console.error("[backendService] createSample failed:", e);
     return null;
   }
 }
 
-export async function getSamplesByMobile(mobile: string) {
+export async function getSamplesByMobile(
+  mobile: string,
+): Promise<SampleRecord[]> {
   try {
     const actor = await getActor();
     return await actor.getSamplesByMobile(mobile);
@@ -47,7 +56,9 @@ export async function getSamplesByMobile(mobile: string) {
   }
 }
 
-export async function getSamplesByHospital(hospitalId: string) {
+export async function getSamplesByHospital(
+  hospitalId: string,
+): Promise<SampleRecord[]> {
   try {
     const actor = await getActor();
     return await actor.getSamplesByHospital(hospitalId);
@@ -57,7 +68,7 @@ export async function getSamplesByHospital(hospitalId: string) {
   }
 }
 
-export async function getAllSamples() {
+export async function getAllSamples(): Promise<SampleRecord[]> {
   try {
     const actor = await getActor();
     return await actor.getAllSamples();
@@ -84,6 +95,211 @@ export async function deleteAllSampleData(): Promise<bigint | null> {
   } catch (e) {
     console.error("[backendService] deleteAllSampleData failed:", e);
     return null;
+  }
+}
+
+// ─── Hospitals ───────────────────────────────────────────────────────────────
+
+export async function getHospitals(search?: string): Promise<Hospital[]> {
+  try {
+    const actor = await getActor();
+    return await actor.getHospitals(search ?? null);
+  } catch (e) {
+    console.error("[backendService] getHospitals failed:", e);
+    return [];
+  }
+}
+
+export async function addHospital(
+  name: string,
+  city: string,
+  address: string,
+  area: string,
+  contactNumber: string,
+): Promise<Hospital | null> {
+  try {
+    const actor = await getActor();
+    return await actor.addHospital(name, city, address, area, contactNumber);
+  } catch (e) {
+    console.error("[backendService] addHospital failed:", e);
+    return null;
+  }
+}
+
+export async function updateHospital(
+  id: string,
+  name: string,
+  city: string,
+  address: string,
+  area: string,
+  contactNumber: string,
+): Promise<Hospital | null> {
+  try {
+    const actor = await getActor();
+    return await actor.updateHospital(
+      id,
+      name,
+      city,
+      address,
+      area,
+      contactNumber,
+    );
+  } catch (e) {
+    console.error("[backendService] updateHospital failed:", e);
+    return null;
+  }
+}
+
+export async function disableHospital(id: string): Promise<Hospital | null> {
+  try {
+    const actor = await getActor();
+    return await actor.disableHospital(id);
+  } catch (e) {
+    console.error("[backendService] disableHospital failed:", e);
+    return null;
+  }
+}
+
+// ─── Tests ───────────────────────────────────────────────────────────────────
+
+export async function getTests(): Promise<TestOutput[]> {
+  try {
+    const actor = await getActor();
+    return await actor.getAllTests();
+  } catch (e) {
+    console.error("[backendService] getTests failed:", e);
+    return [];
+  }
+}
+
+export async function createTest(input: TestInput) {
+  // Read session for debug logging (ICP canister uses identity, not Bearer tokens)
+  let sessionAuthToken: string | null = null;
+  try {
+    const rawSession = localStorage.getItem("xpertlab_session");
+    if (rawSession) {
+      const session = JSON.parse(rawSession);
+      sessionAuthToken = session?.authToken ?? null;
+    }
+  } catch {
+    // ignore parse errors
+  }
+
+  console.log("Creating test with payload:", {
+    name: input.name,
+    code: input.code,
+    sample_type: input.sampleType,
+    mrp: Number(input.mrp),
+    lab_cost: Number(input.lab_cost),
+    commission_amount: Number(input.commission_amount),
+    profit: Number(input.profit),
+  });
+  console.log("Auth token:", sessionAuthToken ?? "(none — using ICP identity)");
+
+  try {
+    const actor = await getActor();
+    const result = await actor.addTest(input);
+    return result;
+  } catch (e) {
+    console.error("[backendService] createTest failed:", e);
+    throw e;
+  }
+}
+
+export async function updateTest(code: string, input: TestInput) {
+  try {
+    const actor = await getActor();
+    return await actor.updateTest(code, input);
+  } catch (e) {
+    console.error("[backendService] updateTest failed:", e);
+    return null;
+  }
+}
+
+export async function disableTest(code: string) {
+  try {
+    const actor = await getActor();
+    return await actor.disableTest(code);
+  } catch (e) {
+    console.error("[backendService] disableTest failed:", e);
+    return null;
+  }
+}
+
+export async function setTestStatus(testId: string, isActive: boolean) {
+  try {
+    const actor = await getActor();
+    return await actor.setTestStatus(testId, isActive);
+  } catch (e) {
+    console.error("[backendService] setTestStatus failed:", e);
+    return null;
+  }
+}
+
+// ─── Tasks ───────────────────────────────────────────────────────────────────
+
+export async function createTask(
+  assigned_to_mobile: string,
+  assigned_by: string,
+  hospital_id: string,
+  patient_name: string,
+  status = "assigned",
+): Promise<AppTask | null> {
+  try {
+    const actor = await getActor();
+    return await actor.createTask(
+      assigned_to_mobile,
+      assigned_by,
+      hospital_id,
+      patient_name,
+      status,
+    );
+  } catch (e) {
+    console.error("[backendService] createTask failed:", e);
+    return null;
+  }
+}
+
+export async function getTasksByUser(mobile: string): Promise<AppTask[]> {
+  try {
+    const actor = await getActor();
+    return await actor.getTasksByUser(mobile);
+  } catch (e) {
+    console.error("[backendService] getTasksByUser failed:", e);
+    return [];
+  }
+}
+
+export async function getAllTasks(): Promise<AppTask[]> {
+  try {
+    const actor = await getActor();
+    return await actor.getAllTasks();
+  } catch (e) {
+    console.error("[backendService] getAllTasks failed:", e);
+    return [];
+  }
+}
+
+export async function deleteAllTasks(): Promise<bigint | null> {
+  try {
+    const actor = await getActor();
+    return await actor.deleteAllTasks();
+  } catch (e) {
+    console.error("[backendService] deleteAllTasks failed:", e);
+    return null;
+  }
+}
+
+// ─── Reset All Data ──────────────────────────────────────────────────────────
+
+export async function deleteAllData(): Promise<boolean> {
+  try {
+    const actor = await getActor();
+    await actor.deleteAllData();
+    return true;
+  } catch (e) {
+    console.error("[backendService] deleteAllData failed:", e);
+    return false;
   }
 }
 
@@ -118,17 +334,18 @@ export async function getDashboardMetrics(): Promise<DashboardMetricsJS | null> 
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 
-export async function getUserByMobile(mobile: string) {
+export async function getUserByMobile(mobile: string): Promise<AppUser | null> {
   try {
     const actor = await getActor();
-    return await actor.getUserByMobile(mobile);
+    const result = await actor.getUserByMobile(mobile);
+    return result ?? null;
   } catch (e) {
     console.error("[backendService] getUserByMobile failed:", e);
     return null;
   }
 }
 
-export async function getAllAppUsers() {
+export async function getAllAppUsers(): Promise<AppUser[]> {
   try {
     const actor = await getActor();
     return await actor.getAllAppUsers();
@@ -143,7 +360,7 @@ export async function registerAppUser(
   name: string,
   role: string,
   assignedHospitalId: string | null,
-) {
+): Promise<AppUser | null> {
   try {
     const actor = await getActor();
     return await actor.registerAppUser(mobile, name, role, assignedHospitalId);

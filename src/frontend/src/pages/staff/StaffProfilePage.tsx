@@ -7,6 +7,7 @@ interface Session {
   mobileNumber?: string;
   role?: string;
   name?: string;
+  loginType?: string;
 }
 
 function getInitials(name: string): string {
@@ -117,9 +118,12 @@ export default function StaffProfilePage({
 
   const handleLogout = () => {
     if (!window.confirm("Are you sure you want to log out?")) return;
-    localStorage.removeItem("xpertlab_session");
-    localStorage.removeItem("session");
-    onNavigate?.("logout");
+    try {
+      localStorage.clear();
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.replace("/");
   };
 
   return (

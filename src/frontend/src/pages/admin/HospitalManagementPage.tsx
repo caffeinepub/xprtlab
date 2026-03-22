@@ -16,7 +16,6 @@ import {
   MapPin,
   Pencil,
   Phone,
-  Plus,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -57,6 +56,7 @@ export default function HospitalManagementPage({
   onNavigate: _onNavigate,
 }: HospitalManagementPageProps) {
   const isSuperAdmin = role === "superAdmin";
+  const canAdd = role === "superAdmin" || role === "labAdmin";
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -152,8 +152,8 @@ export default function HospitalManagementPage({
         <PageHeroHeader
           title="🏥 Hospital Management"
           description="Manage hospitals, assignments, and phlebotomist coverage"
-          actionLabel={isSuperAdmin ? "+ Add Hospital" : undefined}
-          onAction={isSuperAdmin ? openAdd : undefined}
+          actionLabel={canAdd ? "+ Add Hospital" : undefined}
+          onAction={canAdd ? openAdd : undefined}
         />
       </div>
 
@@ -180,6 +180,29 @@ export default function HospitalManagementPage({
       </div>
 
       <div className="max-w-5xl mx-auto px-4 space-y-4">
+        {/* Standalone Add Hospital button — always visible for canAdd roles */}
+        {canAdd && (
+          <div className="flex justify-end mb-2">
+            <button
+              type="button"
+              onClick={openAdd}
+              data-ocid="hospitals.primary_button"
+              style={{
+                background: "linear-gradient(135deg,#2563EB,#06B6D4)",
+                color: "#fff",
+                padding: "10px 20px",
+                borderRadius: "12px",
+                fontWeight: 600,
+                fontSize: "14px",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              + Add Hospital
+            </button>
+          </div>
+        )}
+
         {/* Search + refresh */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -364,7 +387,10 @@ export default function HospitalManagementPage({
             </div>
 
             {/* Modal Body */}
-            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
+            <div
+              className="overflow-y-auto flex-1 px-6 py-4 space-y-4"
+              style={{ paddingBottom: "80px" }}
+            >
               {formError && (
                 <div
                   className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3"
@@ -424,8 +450,16 @@ export default function HospitalManagementPage({
               ))}
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+            {/* Modal Footer — sticky so buttons stay visible */}
+            <div
+              className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100"
+              style={{
+                position: "sticky",
+                bottom: 0,
+                background: "#fff",
+                zIndex: 10,
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setShowModal(false)}

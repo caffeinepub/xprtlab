@@ -14,6 +14,15 @@ export type AppRole = { 'patient' : null } |
   { 'superAdmin' : null } |
   { 'labAdmin' : null } |
   { 'phlebotomist' : null };
+export interface AppTask {
+  'status' : string,
+  'patient_name' : string,
+  'hospital_id' : string,
+  'task_id' : string,
+  'created_at' : bigint,
+  'assigned_by' : string,
+  'assigned_to_mobile' : string,
+}
 export interface AppUser {
   'name' : string,
   'createdAt' : bigint,
@@ -49,6 +58,7 @@ export interface HospitalPhlebotomistAssignment {
   'removalReason' : [] | [string],
   'phlebotomist' : Principal,
 }
+export type Principal = Principal;
 export interface SampleInput {
   'tests' : Array<[] | [SampleTestItem]>,
   'deliveryMethod' : [] | [string],
@@ -91,18 +101,26 @@ export type SystemMode = { 'production' : null } |
 export type TestError = { 'notFound' : null } |
   { 'duplicateCode' : null };
 export interface TestInput {
+  'mrp' : bigint,
+  'lab_cost' : bigint,
   'code' : string,
   'name' : string,
   'sampleType' : string,
   'isActive' : boolean,
+  'commission_amount' : bigint,
+  'profit' : bigint,
   'price' : bigint,
 }
 export interface TestOutput {
   'id' : string,
+  'mrp' : bigint,
+  'lab_cost' : bigint,
   'code' : string,
   'name' : string,
   'sampleType' : string,
   'isActive' : boolean,
+  'commission_amount' : bigint,
+  'profit' : bigint,
   'price' : bigint,
 }
 export interface UserProfile {
@@ -161,12 +179,16 @@ export interface _SERVICE {
   >,
   'bulkAddTests' : ActorMethod<[Array<TestInput>], Array<TestOutput>>,
   'createSample' : ActorMethod<[SampleInput], string>,
+  'createTask' : ActorMethod<[string, string, string, string, string], AppTask>,
+  'deleteAllData' : ActorMethod<[], undefined>,
   'deleteAllSampleData' : ActorMethod<[], bigint>,
+  'deleteAllTasks' : ActorMethod<[], bigint>,
   'deleteTestUser' : ActorMethod<[string], boolean>,
   'disableHospital' : ActorMethod<[string], Hospital>,
   'disableTest' : ActorMethod<[string], TestOutput>,
   'getAllAppUsers' : ActorMethod<[], Array<AppUser>>,
   'getAllSamples' : ActorMethod<[], Array<SampleRecord>>,
+  'getAllTasks' : ActorMethod<[], Array<AppTask>>,
   'getAllTests' : ActorMethod<[], Array<TestOutput>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
@@ -179,6 +201,7 @@ export interface _SERVICE {
   'getSamplesByMobile' : ActorMethod<[string], Array<SampleRecord>>,
   'getSettlementHistory' : ActorMethod<[string], Array<Settlement>>,
   'getSystemMode' : ActorMethod<[], SystemMode>,
+  'getTasksByUser' : ActorMethod<[string], Array<AppTask>>,
   'getTest' : ActorMethod<[string], [] | [TestOutput]>,
   'getTestByCode' : ActorMethod<[string], [] | [TestOutput]>,
   'getUserByMobile' : ActorMethod<[string], [] | [AppUser]>,

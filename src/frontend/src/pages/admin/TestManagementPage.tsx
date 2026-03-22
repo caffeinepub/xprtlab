@@ -270,11 +270,16 @@ export default function TestManagementPage({ role }: TestManagementPageProps) {
           skippedDuplicates++;
           continue;
         }
+        const mrpBig = BigInt(Math.round(row.mrp));
         validInputs.push({
           name: row.testName,
           code: row.testCode,
           sampleType: row.sampleType,
-          price: BigInt(Math.round(row.mrp)),
+          price: mrpBig,
+          mrp: mrpBig,
+          lab_cost: BigInt(0),
+          commission_amount: BigInt(0),
+          profit: mrpBig,
           isActive: true,
         });
       }

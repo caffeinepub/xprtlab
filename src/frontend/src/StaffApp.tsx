@@ -8,11 +8,7 @@ import ErrorBoundary from "./components/shared/ErrorBoundary";
 import LoadingScreen from "./components/shared/LoadingScreen";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
-import {
-  clearSession,
-  getSession,
-  initializeDemoStorage,
-} from "./utils/demoStorage";
+import { getSession } from "./utils/sessionUtils";
 
 type AppRole = "patient" | "phlebotomist" | "labAdmin" | "superAdmin";
 
@@ -90,15 +86,19 @@ function getNavItems(role: AppRole): NavItem[] {
   }
   if (role === "labAdmin") {
     return [
-      { label: "Home", path: "admin-bookings", icon: "Home" },
+      {
+        label: "Dashboard",
+        path: "admin-bookings",
+        icon: "LayoutDashboard",
+      },
+      { label: "Hospitals", path: "hospital-management", icon: "Building2" },
+      { label: "Tests", path: "test-management", icon: "TestTube" },
       {
         label: "Samples",
         path: "admin-hospital-samples",
         icon: "FlaskConical",
       },
-      { label: "Reports", path: "admin-reports", icon: "FileText" },
-      { label: "Tasks", path: "tasks-management", icon: "ClipboardList" },
-      { label: "Settings", path: "test-management", icon: "LayoutDashboard" },
+      { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
     ];
   }
   if (role === "superAdmin") {
@@ -109,7 +109,7 @@ function getNavItems(role: AppRole): NavItem[] {
         icon: "LayoutDashboard",
       },
       { label: "Tests", path: "test-management", icon: "TestTube" },
-      { label: "Tasks", path: "tasks-management", icon: "ClipboardList" },
+      { label: "Hospitals", path: "hospital-management", icon: "Building2" },
       { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
       { label: "Settings", path: "super-admin-settings", icon: "Settings" },
     ];
@@ -146,34 +146,51 @@ function AccessDenied({ message }: { message: string }) {
 }
 
 export default function StaffApp() {
-  const { identity, isInitializing } = useInternetIdentity();
+  const {
+    identity,
+    isInitializing,
+    clear: clearIISession,
+  } = useInternetIdentity();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity;
 
-  const [demoMode, setDemoMode] = useState(false);
-  const [demoRole, setDemoRole] = useState<AppRole>("phlebotomist");
+  const [sessionRole, setSessionRole] = useState<AppRole | null>(null);
   const [currentPage, setCurrentPage] = useState<string>("");
   const [pageParams, setPageParams] = useState<Record<string, string>>({});
 
-  const demoInitializedRef = useRef(false);
+  const _initRef = useRef(false);
 
-  // Restore session on page load
+  // Hard logout: clear all storage, clear II session, hard navigate to "/"
+  const handleLogout = () => {
+    try {
+      localStorage.clear();
+      clearIISession();
+    } catch (e) {
+      console.error(e);
+    }
+    window.location.replace("/");
+  };
+
+  // Restore session on page load — but NOT on the login/selector page
   useEffect(() => {
+    const path = window.location.pathname;
+    console.log("SESSION ON LOAD:", localStorage.getItem("xpertlab_session"));
+    console.log("CURRENT PATH:", path);
+
+    // Do not auto-restore session when on the root or login path
+    if (path === "/" || path === "/login") return;
+
     const session = getSession();
     if (session) {
-      initializeDemoStorage();
-      setDemoMode(true);
-      setDemoRole(session.role as AppRole);
-      setCurrentPage(getDefaultPage(session.role as AppRole));
+      // Identity login always forces superAdmin role
+      const role: AppRole =
+        session.loginType === "identity"
+          ? "superAdmin"
+          : (session.role as AppRole);
+      setSessionRole(role);
+      setCurrentPage(getDefaultPage(role));
     }
-  }, []); // only on mount
-
-  useEffect(() => {
-    if (demoMode && !demoInitializedRef.current) {
-      demoInitializedRef.current = true;
-      initializeDemoStorage();
-    }
-  }, [demoMode]);
+  }, []);
 
   const {
     data: userProfile,
@@ -181,28 +198,21 @@ export default function StaffApp() {
     isFetched: profileFetched,
   } = useGetCallerUserProfile();
 
-  const effectiveRole: AppRole = demoMode
-    ? demoRole
-    : ((userProfile?.appRole as AppRole) ?? "phlebotomist");
+  // Effective role: session-based role takes priority (for OTP logins),
+  // then ICP user profile, then fall back to labAdmin as least-privileged
+  const effectiveRole: AppRole =
+    sessionRole ?? (userProfile?.appRole as AppRole) ?? "labAdmin";
 
   useEffect(() => {
     if (currentPage) return;
-    const role = demoMode
-      ? demoRole
-      : (userProfile?.appRole as AppRole | undefined);
+    const role = sessionRole ?? (userProfile?.appRole as AppRole | undefined);
     if (!role) return;
     setCurrentPage(getDefaultPage(role));
-  }, [userProfile, demoMode, demoRole, currentPage]);
+  }, [userProfile, sessionRole, currentPage]);
 
   const handleNavigate = (page: string, params?: Record<string, string>) => {
     if (page === "logout") {
-      clearSession();
-      setDemoMode(false);
-      setDemoRole("phlebotomist");
-      setCurrentPage("");
-      setPageParams({});
-      demoInitializedRef.current = false;
-      queryClient.clear();
+      handleLogout();
       return;
     }
     setCurrentPage(page);
@@ -210,22 +220,21 @@ export default function StaffApp() {
   };
 
   const showProfileSetup =
-    !demoMode &&
+    !sessionRole &&
     isAuthenticated &&
     !profileLoading &&
     profileFetched &&
     userProfile === null;
 
-  if (!demoMode && isInitializing)
+  // Show loading only for ICP-auth flow (not session-based)
+  if (!sessionRole && isInitializing)
     return <LoadingScreen message="Initializing..." />;
 
-  if (!demoMode && !isAuthenticated) {
+  if (!sessionRole && !isAuthenticated) {
     return (
       <StaffLoginScreen
-        onDemoMode={(role) => {
-          setDemoMode(true);
-          setDemoRole(role as AppRole);
-          setCurrentPage(getDefaultPage(role as AppRole));
+        onDemoMode={() => {
+          // no-op: demo mode is disabled
         }}
       />
     );
@@ -234,26 +243,26 @@ export default function StaffApp() {
   const renderPage = () => {
     switch (currentPage) {
       case "super-admin-dashboard":
-        return <SuperAdminDashboardPage isDemoMode={demoMode} />;
+        return <SuperAdminDashboardPage isDemoMode={false} />;
       case "phlebotomist-attendance":
         return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
       case "tasks":
       case "task-queue":
         return (
           <TaskQueuePage
-            isDemoMode={demoMode}
+            isDemoMode={false}
             role={effectiveRole}
             onNavigate={handleNavigate}
           />
         );
       case "home-collections":
       case "home-collection-queue":
-        return <HomeCollectionQueuePage isDemoMode={demoMode} />;
+        return <HomeCollectionQueuePage isDemoMode={false} />;
       case "hospital-sample-entry":
-        return <AddHospitalSamplePage isDemoMode={demoMode} />;
+        return <AddHospitalSamplePage isDemoMode={false} />;
       case "my-hospital-samples":
         return (
-          <MyHospitalSamplesPage isDemoMode={demoMode} role={effectiveRole} />
+          <MyHospitalSamplesPage isDemoMode={false} role={effectiveRole} />
         );
       case "scan-qr":
         return <ScanCampQRPage />;
@@ -313,11 +322,11 @@ export default function StaffApp() {
           <AccessDenied message="You do not have permission to view hospital details." />
         );
       case "revenue-settlements":
-        if (effectiveRole === "superAdmin") {
+        if (effectiveRole === "superAdmin" || effectiveRole === "labAdmin") {
           return (
             <RevenueSettlementsPage
               onNavigate={handleNavigate}
-              isDemoMode={demoMode}
+              isDemoMode={false}
             />
           );
         }
@@ -326,7 +335,7 @@ export default function StaffApp() {
         );
       case "profit-dashboard":
         if (effectiveRole === "superAdmin") {
-          return <ProfitDashboardPage isDemoMode={demoMode} />;
+          return <ProfitDashboardPage isDemoMode={false} />;
         }
         return (
           <AccessDenied message="You do not have permission to access the Profit Dashboard." />
@@ -335,7 +344,7 @@ export default function StaffApp() {
         if (effectiveRole === "superAdmin") {
           return (
             <SuperAdminSettingsPage
-              isDemoMode={demoMode}
+              isDemoMode={false}
               onNavigate={handleNavigate}
             />
           );
@@ -355,7 +364,7 @@ export default function StaffApp() {
         if (effectiveRole === "phlebotomist")
           return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
         if (effectiveRole === "superAdmin")
-          return <SuperAdminDashboardPage isDemoMode={demoMode} />;
+          return <SuperAdminDashboardPage isDemoMode={false} />;
         return <AdminBookingsPage onNavigate={handleNavigate} />;
     }
   };
@@ -376,16 +385,8 @@ export default function StaffApp() {
         onNavigate={handleNavigate}
         navItems={getNavItems(effectiveRole)}
         roleLabel={getRoleLabel(effectiveRole)}
-        isDemoMode={demoMode}
-        onExitDemo={() => {
-          clearSession();
-          setDemoMode(false);
-          setDemoRole("phlebotomist");
-          setCurrentPage("");
-          setPageParams({});
-          demoInitializedRef.current = false;
-          queryClient.clear();
-        }}
+        isDemoMode={false}
+        onExitDemo={handleLogout}
       >
         <ErrorBoundary>
           <Suspense fallback={<LoadingScreen message="Loading page..." />}>

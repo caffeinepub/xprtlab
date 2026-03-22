@@ -5,8 +5,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { TestError } from "../../backend";
 import { useAddTest } from "../../hooks/useQueries";
-import { addDemoTestMaster } from "../../utils/demoStorage";
-import { computeProfitPerTest } from "../../utils/profitUtils";
+import { getSession } from "../../utils/sessionUtils";
 
 interface AddTestFormValues {
   name: string;
@@ -51,6 +50,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
   const watchedLabCost = watch("labCost");
   const watchedDoctorCommission = watch("doctorCommission");
 
+  // Commission % → ₹ amount conversion for preview
   const commissionAmt =
     (watchedMrp ?? 0) * ((watchedDoctorCommission ?? 0) / 100);
   const profitPerTest =
@@ -70,14 +70,50 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
   }, [open]);
 
   const onSubmit = async (values: AddTestFormValues) => {
+    console.log("Submit clicked - onSubmit fired");
+    // ── Role check: only super_admin can add tests ──────────────────────────
+    const session = getSession();
+    if (!session || session.role !== "superAdmin") {
+      toast.error("Only Super Admin can add test");
+      return;
+    }
+
+    const mrpVal = Math.round(values.mrp);
+    const labCostVal = Math.round(values.labCost ?? 0);
+    // Convert commission % → flat ₹ amount
+    const commissionVal = Math.round(
+      (mrpVal * (values.doctorCommission ?? 0)) / 100,
+    );
+    const profitVal = mrpVal - labCostVal - commissionVal;
+
+    const payload = {
+      name: values.name.trim(),
+      code: values.code.trim().toUpperCase(),
+      sampleType: values.sampleType.trim(),
+      price: BigInt(mrpVal),
+      mrp: BigInt(mrpVal),
+      lab_cost: BigInt(labCostVal),
+      commission_amount: BigInt(commissionVal),
+      profit: BigInt(profitVal),
+      isActive: values.isActive,
+    };
+
+    console.log("Creating test with payload:", {
+      name: payload.name,
+      code: payload.code,
+      sample_type: payload.sampleType,
+      mrp: mrpVal,
+      lab_cost: labCostVal,
+      commission_amount: commissionVal,
+      profit: profitVal,
+    });
+    console.log(
+      "Auth token:",
+      `${session.userId} (${session.role}) — ICP identity auth`,
+    );
+
     try {
-      const result = await addTest.mutateAsync({
-        name: values.name.trim(),
-        code: values.code.trim().toUpperCase(),
-        sampleType: values.sampleType.trim(),
-        price: BigInt(Math.round(values.mrp)),
-        isActive: values.isActive,
-      });
+      const result = await addTest.mutateAsync(payload);
 
       if (result.__kind__ === "err") {
         if (result.err === TestError.duplicateCode) {
@@ -85,30 +121,28 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
             type: "manual",
             message: "Test code already exists.",
           });
+          toast.error("Test code already exists. Use a different code.");
           return;
         }
-        toast.error("Failed to add test. Please try again.");
+        const errMsg =
+          typeof result.err === "string"
+            ? result.err
+            : JSON.stringify(result.err);
+        toast.error(`Failed to add test: ${errMsg}`);
         return;
       }
-
-      // Persist labCost & doctorCommission to demo storage
-      const code = values.code.trim().toUpperCase();
-      addDemoTestMaster({
-        id: code,
-        testName: values.name.trim(),
-        testCode: code,
-        mrp: values.mrp,
-        labCost: values.labCost ?? 0,
-        doctorCommissionPct: values.doctorCommission ?? 0,
-        sampleType: values.sampleType.trim(),
-        isActive: values.isActive,
-      });
 
       toast.success(`Test "${values.name}" added successfully`);
       reset();
       onClose();
-    } catch (err: any) {
-      const msg = err?.message ?? String(err);
+    } catch (err: unknown) {
+      console.error(err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : typeof err === "string"
+            ? err
+            : JSON.stringify(err);
       toast.error(`Failed to add test: ${msg}`);
     }
   };
@@ -178,7 +212,11 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
           id="add-test-form"
           onSubmit={handleSubmit(onSubmit)}
           className="flex-1 overflow-y-auto px-6 py-5 space-y-5"
-          style={{ overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+          style={{
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+            paddingBottom: "80px",
+          }}
         >
           {/* Error Banner */}
           {hasGeneralError && (
@@ -356,7 +394,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
               min={0}
               max={100}
               step={0.01}
-              placeholder="e.g. 50"
+              placeholder="e.g. 10"
               className="w-full rounded-xl border-2 border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               {...register("doctorCommission", {
                 min: { value: 0, message: "Commission must be 0 or more" },
@@ -409,7 +447,10 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
         </form>
 
         {/* Sticky Footer with Action Buttons */}
-        <div className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-gray-100 bg-white">
+        <div
+          className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-gray-100 bg-white"
+          style={{ position: "sticky", bottom: 0, zIndex: 10 }}
+        >
           <button
             type="button"
             onClick={handleClose}
@@ -420,8 +461,11 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
             Cancel
           </button>
           <button
-            type="submit"
-            form="add-test-form"
+            type="button"
+            onClick={() => {
+              console.log("Submit clicked");
+              handleSubmit(onSubmit)();
+            }}
             disabled={addTest.isPending}
             className="flex-[2] flex items-center justify-center gap-2 h-10 rounded-xl font-bold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed disabled:hover:scale-100"
             style={{

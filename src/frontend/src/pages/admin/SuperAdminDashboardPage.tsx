@@ -34,7 +34,6 @@ import HealthcareBg from "../../components/shared/HealthcareBg";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests, useHospitals } from "../../hooks/useQueries";
 import { getDashboardMetrics } from "../../services/backendService";
-import { getDemoSamples } from "../../utils/demoStorage";
 import { formatCurrency } from "../../utils/formatters";
 
 function getRelativeTime(timestamp: number): string {
@@ -387,19 +386,12 @@ interface SuperAdminDashboardPageProps {
 // ─── Settlement Alert ─────────────────────────────────────────────────────────
 const DEPOSIT_STATUS_KEY = "xpertlab_phlebo_deposit_status";
 
-function getUnsubmittedCount(isDemoMode: boolean): number {
+function getUnsubmittedCount(_isDemoMode: boolean): number {
   try {
-    const samples = isDemoMode ? getDemoSamples() : [];
-    const phlebotomistIds = new Set(samples.map((s) => s.phlebotomistId));
-    if (phlebotomistIds.size === 0) {
-      // Use demo fallback: 2 phlebotomists
-      phlebotomistIds.add("demo-phleb-1");
-      phlebotomistIds.add("demo-phleb-2");
-    }
     const raw = localStorage.getItem(DEPOSIT_STATUS_KEY);
     const statusMap = raw ? JSON.parse(raw) : {};
     let count = 0;
-    for (const id of phlebotomistIds) {
+    for (const id of Object.keys(statusMap)) {
       const entry = statusMap[id];
       if (!entry || entry.depositStatus !== "submitted") count++;
     }

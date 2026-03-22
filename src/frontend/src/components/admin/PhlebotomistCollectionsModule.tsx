@@ -1,10 +1,5 @@
 import { Users } from "lucide-react";
 import React, { useState, useMemo, useCallback } from "react";
-import {
-  DEMO_PHLEBO_ID,
-  getDemoHospitals,
-  getDemoSamples,
-} from "../../utils/demoStorage";
 
 interface PhlebotomistCollectionsModuleProps {
   isDemoMode?: boolean;
@@ -59,13 +54,6 @@ function formatCurrency(amount: number): string {
   return `\u20b9${amount.toLocaleString("en-IN")}`;
 }
 
-const DEMO_PHLEBO_NAME = "Ravi Kumar";
-
-function getPhlebotomistName(id: string): string {
-  if (id === DEMO_PHLEBO_ID) return DEMO_PHLEBO_NAME;
-  return `Phlebotomist ${id.slice(-4)}`;
-}
-
 const DEPOSIT_STATUS_LABELS: Record<DepositStatus, string> = {
   not_submitted: "Not Submitted",
   partially_submitted: "Partially Submitted",
@@ -84,73 +72,16 @@ export default function PhlebotomistCollectionsModule({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedHospital, setSelectedHospital] = useState("");
-  const [depositStatuses, setDepositStatuses] =
+  const [_depositStatuses, setDepositStatuses] =
     useState<DepositStatusMap>(loadDepositStatuses);
 
-  const hospitals = useMemo(() => {
-    if (!isDemoMode) return [];
-    return getDemoHospitals();
-  }, [isDemoMode]);
+  const hospitals = useMemo<{ id: string; name: string }[]>(() => {
+    return [];
+  }, []);
 
   const rows = useMemo<PhlebotomistRow[]>(() => {
-    if (!isDemoMode) return [];
-
-    const samples = getDemoSamples();
-    const aggregated = new Map<
-      string,
-      Omit<PhlebotomistRow, "depositStatus" | "updatedBy" | "updatedAt">
-    >();
-
-    for (const sample of samples) {
-      if (dateFrom) {
-        const fromTs = new Date(dateFrom).getTime();
-        if (sample.createdAt < fromTs) continue;
-      }
-      if (dateTo) {
-        const toTs = new Date(dateTo).getTime() + 86400000;
-        if (sample.createdAt > toTs) continue;
-      }
-      if (selectedHospital && sample.hospitalId !== selectedHospital) continue;
-
-      const id = sample.phlebotomistId;
-      if (!aggregated.has(id)) {
-        aggregated.set(id, {
-          phlebotomistId: id,
-          phlebotomistName: getPhlebotomistName(id),
-          samplesCollected: 0,
-          totalAmountCollected: 0,
-          cashCollected: 0,
-          upiCollected: 0,
-          creditGiven: 0,
-          pendingBalance: 0,
-        });
-      }
-
-      const row = aggregated.get(id)!;
-      row.samplesCollected += 1;
-      row.totalAmountCollected += sample.finalAmount;
-      row.pendingBalance += sample.pendingAmount;
-
-      const mode = sample.paymentMode.toUpperCase();
-      if (mode === "CASH") {
-        row.cashCollected += sample.amountReceived;
-      } else if (mode === "UPI" || mode === "ONLINE") {
-        row.upiCollected += sample.amountReceived;
-      } else if (mode === "CREDIT") {
-        row.creditGiven += sample.finalAmount;
-      }
-    }
-
-    return Array.from(aggregated.values()).map((row) => {
-      const stored = depositStatuses[row.phlebotomistId];
-      return {
-        ...row,
-        depositStatus: stored?.depositStatus ?? "not_submitted",
-        updatedBy: stored?.updatedBy,
-        updatedAt: stored?.updatedAt,
-      };
-    });
-  }, [isDemoMode, dateFrom, dateTo, selectedHospital, depositStatuses]);
+    return [];
+  }, []);
 
   const handleDepositStatusChange = useCallback(
     (phlebotomistId: string, status: DepositStatus) => {

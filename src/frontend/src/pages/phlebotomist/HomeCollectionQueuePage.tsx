@@ -9,11 +9,7 @@ import {
   User,
 } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  type DemoHomeCollection,
-  getDemoHomeCollections,
-  updateDemoHomeCollectionStatus,
-} from "../../utils/demoStorage";
+import type { DemoHomeCollection } from "../../utils/demoStorage";
 import { formatPremiumTimeDisplay } from "../../utils/formatters";
 
 interface HomeCollectionQueuePageProps {
@@ -82,7 +78,7 @@ function getNextActionLabel(
 }
 
 export default function HomeCollectionQueuePage({
-  isDemoMode = false,
+  isDemoMode: _isDemoMode = false,
   onNavigate: _onNavigate,
 }: HomeCollectionQueuePageProps) {
   const [collections, setCollections] = useState<DemoHomeCollection[]>([]);
@@ -91,22 +87,19 @@ export default function HomeCollectionQueuePage({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadCollections = useCallback(() => {
-    if (isDemoMode) {
-      const data = getDemoHomeCollections();
-      setCollections(data);
-      setLastUpdated(new Date());
-    }
-  }, [isDemoMode]);
+    // Backend data not yet wired for home collections
+    setCollections([]);
+    setLastUpdated(new Date());
+  }, []);
 
   useEffect(() => {
     loadCollections();
   }, [loadCollections]);
 
   useEffect(() => {
-    if (!isDemoMode) return;
     const interval = setInterval(loadCollections, 30_000);
     return () => clearInterval(interval);
-  }, [isDemoMode, loadCollections]);
+  }, [loadCollections]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -116,10 +109,10 @@ export default function HomeCollectionQueuePage({
 
   const handleStatusTransition = async (collection: DemoHomeCollection) => {
     const next = getNextStatus(collection.status);
-    if (!next || !isDemoMode) return;
+    if (!next) return;
     setUpdatingId(collection.id);
     await new Promise((r) => setTimeout(r, 400));
-    updateDemoHomeCollectionStatus(collection.id, next);
+    // Backend integration: updateHomeCollectionStatus not yet implemented
     loadCollections();
     setUpdatingId(null);
   };
@@ -130,16 +123,6 @@ export default function HomeCollectionQueuePage({
     (c) => c.status === "SAMPLE_COLLECTED",
   ).length;
   const completed = collections.filter((c) => c.status === "COMPLETED").length;
-
-  if (!isDemoMode) {
-    return (
-      <div className="p-4">
-        <p className="text-muted-foreground text-sm">
-          Live home collection queue — connect to backend.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen pb-[90px]" style={{ background: "#F7F9FC" }}>

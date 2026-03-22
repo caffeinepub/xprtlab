@@ -2,14 +2,6 @@ import { Building2, CheckCircle, Loader2, Plus } from "lucide-react";
 import React, { useState, useMemo } from "react";
 import { Variant_Partial_Settled } from "../../backend";
 import { useMarkSettlement } from "../../hooks/useQueries";
-import {
-  type DemoHospital,
-  type DemoSettlement,
-  getDemoHospitals,
-  getDemoSamples,
-  getDemoSettlements,
-  saveDemoSettlement,
-} from "../../utils/demoStorage";
 import SettlementHistoryPanel from "./SettlementHistoryPanel";
 
 interface SettlementMarkingModuleProps {
@@ -29,7 +21,7 @@ function formatCurrency(amount: number): string {
 }
 
 export default function SettlementMarkingModule({
-  isDemoMode = false,
+  isDemoMode: _isDemoMode = false,
 }: SettlementMarkingModuleProps) {
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>("");
   const [showModal, setShowModal] = useState(false);
@@ -41,39 +33,13 @@ export default function SettlementMarkingModule({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [_refreshKey, _setRefreshKey] = useState(0);
 
   const markSettlementMutation = useMarkSettlement();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshKey forces re-computation intentionally
   const hospitalBalances = useMemo<HospitalBalance[]>(() => {
-    if (!isDemoMode) return [];
-    const hospitals = getDemoHospitals();
-    const samples = getDemoSamples();
-
-    return hospitals.map((h) => {
-      const hospitalSamples = samples.filter((s) => s.hospitalId === h.id);
-      const totalRevenue = hospitalSamples.reduce(
-        (sum, s) => sum + s.finalAmount,
-        0,
-      );
-      const totalReceived = hospitalSamples.reduce(
-        (sum, s) => sum + s.amountReceived,
-        0,
-      );
-      const pendingAmount = hospitalSamples.reduce(
-        (sum, s) => sum + s.pendingAmount,
-        0,
-      );
-      return {
-        hospitalId: h.id,
-        hospitalName: h.name,
-        totalRevenue,
-        totalReceived,
-        pendingAmount,
-      };
-    });
-  }, [isDemoMode, refreshKey]);
+    return [];
+  }, []);
 
   const selectedBalance = hospitalBalances.find(
     (h) => h.hospitalId === selectedHospitalId,
@@ -100,36 +66,18 @@ export default function SettlementMarkingModule({
     setErrorMsg("");
 
     try {
-      if (isDemoMode) {
-        const settlement: DemoSettlement = {
-          id: `settlement-${Date.now()}`,
-          hospitalId: selectedHospitalId,
-          amount: amountNum,
-          settlementType,
-          timestamp: Date.now(),
-          notes: notes.trim() || undefined,
-        };
-        saveDemoSettlement(settlement);
-        setRefreshKey((k) => k + 1);
-        setSuccessMsg(
-          `Settlement of ${formatCurrency(amountNum)} marked as ${settlementType}.`,
-        );
-        setShowModal(false);
-        setTimeout(() => setSuccessMsg(""), 4000);
-      } else {
-        await markSettlementMutation.mutateAsync({
-          hospitalId: selectedHospitalId,
-          amount: BigInt(Math.round(amountNum)),
-          settlementType:
-            settlementType === "Settled"
-              ? Variant_Partial_Settled.Settled
-              : Variant_Partial_Settled.Partial_,
-          notes: notes.trim() || null,
-        });
-        setSuccessMsg("Settlement marked successfully.");
-        setShowModal(false);
-        setTimeout(() => setSuccessMsg(""), 4000);
-      }
+      await markSettlementMutation.mutateAsync({
+        hospitalId: selectedHospitalId,
+        amount: BigInt(Math.round(amountNum)),
+        settlementType:
+          settlementType === "Settled"
+            ? Variant_Partial_Settled.Settled
+            : Variant_Partial_Settled.Partial_,
+        notes: notes.trim() || null,
+      });
+      setSuccessMsg("Settlement marked successfully.");
+      setShowModal(false);
+      setTimeout(() => setSuccessMsg(""), 4000);
     } catch (_e) {
       setErrorMsg("Failed to mark settlement. Please try again.");
     } finally {
@@ -185,9 +133,7 @@ export default function SettlementMarkingModule({
               {hospitalBalances.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="text-center py-12 text-gray-400">
-                    {isDemoMode
-                      ? "No hospital data available."
-                      : "Connect to live backend to view balances."}
+                    "No hospital balance data available."
                   </td>
                 </tr>
               ) : (
@@ -245,8 +191,8 @@ export default function SettlementMarkingModule({
             hospitalBalances.find((h) => h.hospitalId === selectedHospitalId)
               ?.hospitalName ?? ""
           }
-          isDemoMode={isDemoMode}
-          refreshKey={refreshKey}
+          isDemoMode={false}
+          refreshKey={0}
         />
       )}
 

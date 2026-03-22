@@ -6,12 +6,6 @@ import {
   Search,
 } from "lucide-react";
 import React, { useState, useMemo } from "react";
-import {
-  type DemoHospital,
-  type DemoSample,
-  getDemoHospitals,
-  getDemoSamples,
-} from "../../utils/demoStorage";
 import HospitalDetailedLedgerModal from "./HospitalDetailedLedgerModal";
 
 interface HospitalLedgerModuleProps {
@@ -45,7 +39,7 @@ function formatDate(ts: number | null): string {
 }
 
 export default function HospitalLedgerModule({
-  isDemoMode = false,
+  isDemoMode: _isDemoMode = false,
 }: HospitalLedgerModuleProps) {
   const [searchHospital, setSearchHospital] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -55,59 +49,8 @@ export default function HospitalLedgerModule({
     useState<HospitalLedgerRow | null>(null);
 
   const ledgerData = useMemo<HospitalLedgerRow[]>(() => {
-    if (!isDemoMode) return [];
-
-    const samples = getDemoSamples();
-    const hospitals = getDemoHospitals();
-
-    const hospitalMap = new Map<string, DemoHospital>();
-    for (const h of hospitals) hospitalMap.set(h.id, h);
-
-    const aggregated = new Map<string, HospitalLedgerRow>();
-
-    for (const sample of samples) {
-      // Date filter
-      if (dateFrom) {
-        const fromTs = new Date(dateFrom).getTime();
-        if (sample.createdAt < fromTs) continue;
-      }
-      if (dateTo) {
-        const toTs = new Date(dateTo).getTime() + 86400000;
-        if (sample.createdAt > toTs) continue;
-      }
-
-      const hospital = hospitalMap.get(sample.hospitalId);
-      const hospitalName = hospital?.name ?? `Hospital ${sample.hospitalId}`;
-
-      if (!aggregated.has(sample.hospitalId)) {
-        aggregated.set(sample.hospitalId, {
-          hospitalId: sample.hospitalId,
-          hospitalName,
-          totalSamples: 0,
-          totalRevenue: 0,
-          totalReceived: 0,
-          pendingAmount: 0,
-          discountGiven: 0,
-          lastTransactionDate: null,
-        });
-      }
-
-      const row = aggregated.get(sample.hospitalId)!;
-      row.totalSamples += 1;
-      row.totalRevenue += sample.finalAmount;
-      row.totalReceived += sample.amountReceived;
-      row.pendingAmount += sample.pendingAmount;
-      row.discountGiven += sample.discountAmount;
-      if (
-        !row.lastTransactionDate ||
-        sample.createdAt > row.lastTransactionDate
-      ) {
-        row.lastTransactionDate = sample.createdAt;
-      }
-    }
-
-    return Array.from(aggregated.values());
-  }, [isDemoMode, dateFrom, dateTo]);
+    return [];
+  }, []);
 
   const filteredData = useMemo(() => {
     if (!searchHospital.trim()) return ledgerData;
@@ -213,9 +156,7 @@ export default function HospitalLedgerModule({
               {paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12 text-gray-400">
-                    {isDemoMode
-                      ? "No data found for the selected filters."
-                      : "Connect to live backend to view hospital ledger."}
+                    "No hospital ledger data available."
                   </td>
                 </tr>
               ) : (
@@ -313,7 +254,7 @@ export default function HospitalLedgerModule({
       {selectedHospital && (
         <HospitalDetailedLedgerModal
           hospital={selectedHospital}
-          isDemoMode={isDemoMode}
+          isDemoMode={false}
           onClose={() => setSelectedHospital(null)}
         />
       )}

@@ -8,36 +8,25 @@ import {
   getSampleStatusColor,
   getStatusDescription,
 } from "../../utils/deliveryHelpers";
-import {
-  isDemoMode as checkDemoMode,
-  getDemoSamples,
-} from "../../utils/demoData";
 
 interface MyHospitalSamplesPageProps {
   isDemoMode?: boolean;
 }
 
 export default function MyHospitalSamplesPage({
-  isDemoMode = false,
+  isDemoMode: _isDemoMode = false,
 }: MyHospitalSamplesPageProps) {
   const { data: backendSamples = [], isLoading } =
     useGetHospitalSamplesByPhone();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const demoSamples = isDemoMode ? getDemoSamples() : [];
-
-  const allSamples = isDemoMode
-    ? [
-        ...demoSamples.map((s) => ({ ...s, id: s.id ?? "demo" })),
-        ...backendSamples,
-      ]
-    : backendSamples;
+  const allSamples = backendSamples;
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  if (isLoading && !isDemoMode) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />

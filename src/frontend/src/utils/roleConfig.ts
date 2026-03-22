@@ -23,11 +23,11 @@ export const roleNavConfig: Record<AppRole, NavItem[]> = {
     { label: "My Samples", path: "my-hospital-samples", icon: "Package" },
   ],
   labAdmin: [
-    { label: "Home", path: "admin-bookings", icon: "Home" },
-    { label: "Samples", path: "admin-hospital-samples", icon: "FlaskConical" },
-    { label: "Reports", path: "admin-reports", icon: "FileText" },
+    { label: "Dashboard", path: "admin-bookings", icon: "LayoutDashboard" },
     { label: "Hospitals", path: "hospital-management", icon: "Building2" },
-    { label: "Settings", path: "test-management", icon: "LayoutDashboard" },
+    { label: "Tests", path: "test-management", icon: "TestTube" },
+    { label: "Samples", path: "admin-hospital-samples", icon: "FlaskConical" },
+    { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
   ],
   superAdmin: [
     {
@@ -38,6 +38,6 @@ export const roleNavConfig: Record<AppRole, NavItem[]> = {
     { label: "Tests", path: "test-management", icon: "TestTube" },
     { label: "Hospitals", path: "hospital-management", icon: "Building2" },
     { label: "Revenue", path: "revenue-settlements", icon: "Banknote" },
-    { label: "Settings", path: "audit-logs", icon: "BarChart3" },
+    { label: "Settings", path: "super-admin-settings", icon: "Settings" },
   ],
 };

@@ -1,14 +1,8 @@
-import { BarChart3, FlaskConical, Shield } from "lucide-react";
-import type React from "react";
-import { useState } from "react";
-import { useSystemMode } from "../../hooks/useSystemMode";
-import { getUserByMobile } from "../../services/backendService";
+import { Loader2, Shield } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useInternetIdentity } from "../../hooks/useInternetIdentity";
 import type { AppRole } from "../../types/models";
-import {
-  getRegisteredUser,
-  initializeDemoStorage,
-  saveSession,
-} from "../../utils/demoStorage";
+import { saveSession } from "../../utils/sessionUtils";
 import HealthcareBg from "../shared/HealthcareBg";
 import OTPLoginScreen from "./OTPLoginScreen";
 
@@ -16,144 +10,69 @@ interface StaffLoginScreenProps {
   onDemoMode?: (role: AppRole) => void;
 }
 
+const ALLOWED_MOBILES: Record<
+  string,
+  "phlebotomist" | "labAdmin" | "superAdmin"
+> = {
+  "9999999999": "phlebotomist",
+  "8888888888": "labAdmin",
+  "7777777777": "superAdmin",
+};
+
 export default function StaffLoginScreen({
   onDemoMode,
 }: StaffLoginScreenProps) {
-  const { systemMode, isTestMode } = useSystemMode();
+  const { login, isLoggingIn, isLoginSuccess, loginError, identity } =
+    useInternetIdentity();
   const [authError, setAuthError] = useState("");
 
-  // Demo role buttons only show when NOT in test mode and NOT in production mode
-  const showDemoButtons =
-    !isTestMode && systemMode !== "production" && !!onDemoMode;
+  // Force clean login state — remove any stale session when login page mounts
+  useEffect(() => {
+    localStorage.removeItem("xpertlab_session");
+  }, []);
 
-  // OTP 123456 works in demo mode and test mode; disabled only in production
-  const isDemoMode = systemMode !== "production";
+  // Handle Internet Identity success
+  useEffect(() => {
+    if (isLoginSuccess && identity) {
+      const principal = identity.getPrincipal().toText();
+      console.log("Logged in principal:", principal);
+      // Clear all old data before saving new session
+      localStorage.clear();
+      saveSession({
+        userId: principal,
+        role: "superAdmin",
+        loginType: "identity",
+        loginAt: Date.now(),
+      });
+      console.log(
+        "Session after login:",
+        localStorage.getItem("xpertlab_session"),
+      );
+      window.location.href = "/admin-app";
+    }
+  }, [isLoginSuccess, identity]);
 
-  const demoRoles: {
-    role: AppRole;
-    label: string;
-    icon: React.ReactNode;
-    color: string;
-    bg: string;
-    border: string;
-  }[] = [
-    {
-      role: "phlebotomist",
-      label: "Phlebotomist",
-      icon: <FlaskConical className="h-5 w-5" />,
-      color: "#1565C0",
-      bg: "#EFF6FF",
-      border: "#BFDBFE",
-    },
-    {
-      role: "labAdmin",
-      label: "Lab Admin",
-      icon: <BarChart3 className="h-5 w-5" />,
-      color: "#7C3AED",
-      bg: "#F5F3FF",
-      border: "#DDD6FE",
-    },
-    {
-      role: "superAdmin",
-      label: "Super Admin",
-      icon: <Shield className="h-5 w-5" />,
-      color: "#B91C1C",
-      bg: "#FEF2F2",
-      border: "#FECACA",
-    },
-  ];
-
-  const handleOTPSuccess = async (mobile: string) => {
+  const handleOTPSuccess = (mobile: string) => {
     setAuthError("");
-    const mode = localStorage.getItem("xpertlab_system_mode") ?? "demo";
-
-    if (mode === "test") {
-      // In TEST_MODE: check backend first, then fall back to local registered users
-      try {
-        const backendUser = await getUserByMobile(mobile);
-        if (backendUser) {
-          saveSession({
-            userId: mobile,
-            mobile,
-            role: backendUser.role as
-              | "phlebotomist"
-              | "labAdmin"
-              | "superAdmin"
-              | "patient",
-            name: backendUser.name,
-            loginAt: Date.now(),
-          });
-          if (onDemoMode) {
-            onDemoMode(backendUser.role as AppRole);
-          }
-          return;
-        }
-      } catch (e) {
-        console.error(
-          "[Login] Backend getUserByMobile failed, falling back to local:",
-          e,
-        );
-      }
-
-      // Fallback: check local registered users (seeded test accounts)
-      initializeDemoStorage();
-      const user = getRegisteredUser(mobile);
-      if (!user) {
-        setAuthError("Account not found. Please contact administrator.");
-        return;
-      }
-      if (!user.isActive) {
-        setAuthError(
-          "Your account has been disabled. Please contact administrator.",
-        );
-        return;
-      }
-      saveSession({
-        userId: user.id,
-        mobile,
-        role: user.role,
-        name: user.name,
-        loginAt: Date.now(),
-      });
-      if (onDemoMode) {
-        onDemoMode(user.role as AppRole);
-      }
+    const role = ALLOWED_MOBILES[mobile];
+    if (!role) {
+      setAuthError("Account not found");
       return;
     }
-
-    // Demo/production mode: try to find registered user first, fallback to phlebotomist
-    initializeDemoStorage();
-    const user = getRegisteredUser(mobile);
-    if (user) {
-      saveSession({
-        userId: user.id,
-        mobile,
-        role: user.role,
-        name: user.name,
-        loginAt: Date.now(),
-      });
-      if (onDemoMode) {
-        onDemoMode(user.role as AppRole);
-      }
-      return;
-    }
-
-    // Fallback for demo mode: use stored demo_user or default to phlebotomist
-    try {
-      const stored = localStorage.getItem("xpertlab_demo_user");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        const role = parsed.role as AppRole;
-        if (role && onDemoMode) {
-          onDemoMode(role);
-          return;
-        }
-      }
-    } catch {
-      // ignore parse errors
-    }
+    // Clear all old data before saving new session
+    localStorage.clear();
+    const session = {
+      userId: mobile,
+      mobileNumber: mobile,
+      mobile,
+      role,
+      loginType: "otp" as const,
+      loginAt: Date.now(),
+    };
+    console.log("Session after login:", session);
+    saveSession(session);
     if (onDemoMode) {
-      onDemoMode("phlebotomist");
+      onDemoMode(role);
     }
   };
 
@@ -184,9 +103,7 @@ export default function StaffLoginScreen({
             >
               Staff Secure Login
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Enter your mobile number to continue
-            </p>
+            <p className="text-sm text-gray-500 mt-1">Sign in to continue</p>
           </div>
         </div>
 
@@ -195,52 +112,50 @@ export default function StaffLoginScreen({
           className="bg-white rounded-2xl p-6 space-y-5"
           style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
         >
-          <OTPLoginScreen
-            isDemoMode={isDemoMode}
-            onSuccess={handleOTPSuccess}
-          />
+          {/* Internet Identity Button */}
+          <button
+            type="button"
+            onClick={login}
+            disabled={isLoggingIn}
+            data-ocid="login.primary_button"
+            className="w-full flex items-center justify-center gap-3 h-12 rounded-xl font-bold text-sm text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+            style={{
+              background: "linear-gradient(to right, #2563EB, #06B6D4)",
+            }}
+          >
+            {isLoggingIn ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Shield className="h-4 w-4" />
+            )}
+            Continue with Internet Identity
+          </button>
 
-          {authError && (
-            <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-              <p className="text-xs text-red-700 font-medium">{authError}</p>
-            </div>
+          {loginError && (
+            <p className="text-xs text-red-600 text-center">
+              {loginError.message}
+            </p>
           )}
 
-          {/* Demo Mode Role Picker - hidden in test/production mode */}
-          {showDemoButtons && (
-            <>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Quick Demo
-                </span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs text-center text-gray-500">
-                  Select a role to jump directly into demo mode
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {demoRoles.map(
-                    ({ role, label, icon, color, bg, border }, idx) => (
-                      <button
-                        type="button"
-                        key={role}
-                        onClick={() => onDemoMode!(role)}
-                        data-ocid={`login.demo_button.${idx + 1}`}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl border font-semibold text-xs transition-all hover:opacity-80 active:scale-95"
-                        style={{ color, background: bg, borderColor: border }}
-                      >
-                        {icon}
-                        <span className="text-center leading-tight">
-                          {label}
-                        </span>
-                      </button>
-                    ),
-                  )}
-                </div>
-              </div>
-            </>
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              OR
+            </span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* OTP Login */}
+          <OTPLoginScreen isDemoMode={true} onSuccess={handleOTPSuccess} />
+
+          {authError && (
+            <div
+              className="mt-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+              data-ocid="login.error_state"
+            >
+              <p className="text-xs text-red-700 font-medium">{authError}</p>
+            </div>
           )}
         </div>
       </div>

@@ -16,17 +16,59 @@ import DeliveryMethodSelectionDialog from "../../components/shared/DeliveryMetho
 import WhatsAppShareConfirmDialog from "../../components/shared/WhatsAppShareConfirmDialog";
 import { getSamplesByMobile } from "../../services/backendService";
 import type { DeliveryMethod } from "../../types/models";
-import {
-  DEMO_PHLEBO_ID,
-  type DemoSample,
-  type DemoStatusHistoryEntry,
-  addDemoDeliveryTracking,
-  getDemoHospitals,
-  getDemoSamples,
-  getDemoStatusHistory,
-  updateDemoSampleDelivery,
-  updateDemoSampleStatus,
-} from "../../utils/demoStorage";
+
+type SampleStatus =
+  | "SAMPLE_COLLECTED"
+  | "DISPATCHED"
+  | "PROCESSING"
+  | "REPORT_READY"
+  | "REPORT_DELIVERED";
+
+interface SampleItem {
+  id: string;
+  patientName: string;
+  phone: string;
+  hospitalId: string;
+  phlebotomistId: string;
+  tests: Array<{
+    testId: string;
+    testName: string;
+    testCode: string;
+    price: number;
+  }>;
+  totalMrp: number;
+  discountAmount: number;
+  maxAllowedDiscount: number;
+  finalAmount: number;
+  amountReceived: number;
+  pendingAmount: number;
+  paymentMode: string;
+  billingLocked: boolean;
+  createdByRole: string;
+  updatedByAdmin: boolean;
+  createdAt: number;
+  status: SampleStatus;
+  statusHistory?: Array<{
+    status: string;
+    timestamp: number;
+    note: string;
+    updatedBy: string;
+  }>;
+  deliveryMethod?: string;
+  deliveredAt?: number;
+  deliveredByRole?: string;
+  deliveredById?: string;
+  reportUrl?: string;
+}
+
+interface StatusHistoryEntry {
+  id: string;
+  sampleId: string;
+  status: string;
+  timestamp: number;
+  updatedBy: string;
+  note: string;
+}
 
 interface MyHospitalSamplesPageProps {
   isDemoMode?: boolean;
@@ -34,7 +76,7 @@ interface MyHospitalSamplesPageProps {
   onNavigate?: (path: string) => void;
 }
 
-const STATUS_LABELS: Record<DemoSample["status"], string> = {
+const STATUS_LABELS: Record<SampleStatus, string> = {
   SAMPLE_COLLECTED: "Collected",
   DISPATCHED: "Dispatched",
   PROCESSING: "Processing",
@@ -43,7 +85,7 @@ const STATUS_LABELS: Record<DemoSample["status"], string> = {
 };
 
 const STATUS_STYLES: Record<
-  DemoSample["status"],
+  SampleStatus,
   { background: string; color: string }
 > = {
   SAMPLE_COLLECTED: { background: "#F3F4F6", color: "#6B7280" },
@@ -53,7 +95,7 @@ const STATUS_STYLES: Record<
   REPORT_DELIVERED: { background: "#F0FDF4", color: "#16A34A" },
 };
 
-const WORKFLOW_STAGES: DemoSample["status"][] = [
+const WORKFLOW_STAGES: SampleStatus[] = [
   "SAMPLE_COLLECTED",
   "DISPATCHED",
   "PROCESSING",
@@ -61,7 +103,7 @@ const WORKFLOW_STAGES: DemoSample["status"][] = [
   "REPORT_DELIVERED",
 ];
 
-function buildSampleForDialog(sample: DemoSample) {
+function buildSampleForDialog(sample: SampleItem) {
   return {
     patientName: sample.patientName,
     phone: sample.phone,
@@ -90,10 +132,10 @@ function buildSampleForDialog(sample: DemoSample) {
 }
 
 export default function MyHospitalSamplesPage({
-  isDemoMode = false,
+  isDemoMode: _isDemoMode = false,
   onNavigate: _onNavigate,
 }: MyHospitalSamplesPageProps) {
-  const [samples, setSamples] = useState<DemoSample[]>([]);
+  const [samples, setSamples] = useState<SampleItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -104,11 +146,8 @@ export default function MyHospitalSamplesPage({
     string | null
   >(null);
 
-  const hospitals = getDemoHospitals();
-
   const getHospitalName = (hospitalId: string): string => {
-    const h = hospitals.find((h) => h.id === hospitalId);
-    return h?.name ?? hospitalId;
+    return hospitalId;
   };
 
   const loadSamples = useCallback(async () => {
@@ -126,8 +165,8 @@ export default function MyHospitalSamplesPage({
       try {
         const backendSamples = await getSamplesByMobile(mobile);
         if (backendSamples && backendSamples.length > 0) {
-          // Convert SampleRecord[] to DemoSample[] shape for display
-          const converted: DemoSample[] = backendSamples.map((s) => ({
+          // Convert SampleRecord[] to SampleItem[] shape for display
+          const converted: SampleItem[] = backendSamples.map((s) => ({
             id: s.sampleId,
             patientName: s.patientName,
             phone: s.phone,
@@ -150,7 +189,13 @@ export default function MyHospitalSamplesPage({
             createdByRole: "phlebotomist",
             updatedByAdmin: false,
             createdAt: Number(s.createdAt),
-            status: (s.status as DemoSample["status"]) ?? "SAMPLE_COLLECTED",
+            status:
+              (s.status as
+                | "SAMPLE_COLLECTED"
+                | "DISPATCHED"
+                | "PROCESSING"
+                | "REPORT_READY"
+                | "REPORT_DELIVERED") ?? "SAMPLE_COLLECTED",
             statusHistory: [],
           }));
           setSamples(converted);
@@ -163,12 +208,8 @@ export default function MyHospitalSamplesPage({
         );
       }
     }
-    // Fallback: demo localStorage
-    if (isDemoMode) {
-      const data = getDemoSamples(DEMO_PHLEBO_ID);
-      setSamples(data);
-    }
-  }, [isDemoMode]);
+    // No fallback - show empty state
+  }, []);
 
   useEffect(() => {
     void loadSamples();
@@ -180,22 +221,16 @@ export default function MyHospitalSamplesPage({
   };
 
   const handleMarkDispatched = async (sampleId: string) => {
-    if (!isDemoMode) return;
     setUpdatingId(sampleId);
     await new Promise((r) => setTimeout(r, 400));
-    updateDemoSampleStatus(
-      sampleId,
-      "DISPATCHED",
-      DEMO_PHLEBO_ID,
-      "Sample dispatched to lab",
-    );
-    loadSamples();
+    // Backend: update sample status to DISPATCHED
+    await loadSamples();
     setUpdatingId(null);
   };
 
   const handleDeliveryMethodConfirm = async (method: DeliveryMethod) => {
     const sampleId = deliveryDialogSampleId;
-    if (!sampleId || !isDemoMode) {
+    if (!sampleId) {
       setDeliveryDialogSampleId(null);
       return;
     }
@@ -206,53 +241,24 @@ export default function MyHospitalSamplesPage({
     }
     setUpdatingId(sampleId);
     await new Promise((r) => setTimeout(r, 400));
-    updateDemoSampleDelivery(sampleId, method, "phlebotomist", DEMO_PHLEBO_ID);
-    addDemoDeliveryTracking({
-      id: `dt-${sampleId}-${Date.now()}`,
-      sampleId,
-      deliveryMethod: method,
-      deliveredAt: Date.now(),
-      deliveredBy: DEMO_PHLEBO_ID,
-    });
-    loadSamples();
+    // Backend: record delivery method
+    await loadSamples();
     setUpdatingId(null);
   };
 
   const handleWhatsAppConfirm = async () => {
     const sampleId = whatsappDialogSampleId;
-    if (!sampleId || !isDemoMode) {
+    if (!sampleId) {
       setWhatsappDialogSampleId(null);
       return;
     }
     setWhatsappDialogSampleId(null);
     setUpdatingId(sampleId);
     await new Promise((r) => setTimeout(r, 400));
-    updateDemoSampleDelivery(
-      sampleId,
-      "WHATSAPP",
-      "phlebotomist",
-      DEMO_PHLEBO_ID,
-    );
-    addDemoDeliveryTracking({
-      id: `dt-${sampleId}-${Date.now()}`,
-      sampleId,
-      deliveryMethod: "WHATSAPP",
-      deliveredAt: Date.now(),
-      deliveredBy: DEMO_PHLEBO_ID,
-    });
-    loadSamples();
+    // Backend: record WhatsApp delivery
+    await loadSamples();
     setUpdatingId(null);
   };
-
-  if (!isDemoMode) {
-    return (
-      <div className="p-4">
-        <p className="text-muted-foreground text-sm">
-          Live hospital samples — connect to backend.
-        </p>
-      </div>
-    );
-  }
 
   const whatsappSample = whatsappDialogSampleId
     ? samples.find((s) => s.id === whatsappDialogSampleId)
@@ -407,9 +413,15 @@ export default function MyHospitalSamplesPage({
           samples.map((sample, idx) => {
             const isExpanded = expandedId === sample.id;
             const isUpdating = updatingId === sample.id;
-            const history: DemoStatusHistoryEntry[] = getDemoStatusHistory(
-              sample.id,
-            );
+            const history: StatusHistoryEntry[] =
+              sample.statusHistory?.map((h) => ({
+                id: `${sample.id}-${h.status}`,
+                sampleId: sample.id,
+                status: h.status,
+                timestamp: h.timestamp,
+                updatedBy: h.updatedBy,
+                note: h.note,
+              })) ?? [];
             const currentStageIdx = WORKFLOW_STAGES.indexOf(sample.status);
             const statusStyle = STATUS_STYLES[sample.status];
 
@@ -714,15 +726,8 @@ export default function MyHospitalSamplesPage({
                               type="button"
                               data-ocid={`my_samples.delivery_method.toggle.${WORKFLOW_STAGES.indexOf(sample.status) + 1}`}
                               onClick={() => {
-                                if (isDemoMode) {
-                                  updateDemoSampleDelivery(
-                                    sample.id,
-                                    value,
-                                    "phlebotomist",
-                                    DEMO_PHLEBO_ID,
-                                  );
-                                  loadSamples();
-                                }
+                                // Backend: update delivery method
+                                void loadSamples();
                               }}
                               style={{
                                 padding: "5px 12px",
@@ -865,7 +870,7 @@ export default function MyHospitalSamplesPage({
           if (!open) setDeliveryDialogSampleId(null);
         }}
         onConfirm={handleDeliveryMethodConfirm}
-        isDemoMode={isDemoMode}
+        isDemoMode={false}
       />
 
       {/* WhatsApp confirm dialog */}
@@ -877,7 +882,7 @@ export default function MyHospitalSamplesPage({
           }}
           sample={buildSampleForDialog(whatsappSample)}
           onConfirm={handleWhatsAppConfirm}
-          isDemoMode={isDemoMode}
+          isDemoMode={false}
         />
       )}
     </div>

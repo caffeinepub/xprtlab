@@ -27,7 +27,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useSystemMode } from "../../hooks/useSystemMode";
-import { deleteAllSampleData } from "../../services/backendService";
+import { deleteAllData } from "../../services/backendService";
 
 void Building2;
 
@@ -66,33 +66,6 @@ interface Hospital {
   isActive: boolean;
 }
 
-const DEMO_LAB_ADMINS: LabAdmin[] = [
-  {
-    id: "demo-la-1",
-    name: "Rahul Sharma",
-    mobile: "9876543210",
-    email: "rahul@citycare.com",
-    assignedLab: "City Care Lab",
-    loginMethod: "OTP",
-    assignedHospitals: ["City Care Hospital"],
-    status: "Active",
-    lastLogin: "Today, 09:30 AM",
-    isDemo: true,
-  },
-  {
-    id: "demo-la-2",
-    name: "Priya Mehta",
-    mobile: "9876543211",
-    email: "priya@vijaya.com",
-    assignedLab: "Vijaya Lab",
-    loginMethod: "OTP",
-    assignedHospitals: ["Vijaya Hospital"],
-    status: "Active",
-    lastLogin: "Today, 08:45 AM",
-    isDemo: true,
-  },
-];
-
 function loadLabAdmins(): LabAdmin[] {
   try {
     const raw = localStorage.getItem("xpertlab_lab_admins");
@@ -100,8 +73,7 @@ function loadLabAdmins(): LabAdmin[] {
   } catch {
     /* noop */
   }
-  localStorage.setItem("xpertlab_lab_admins", JSON.stringify(DEMO_LAB_ADMINS));
-  return DEMO_LAB_ADMINS;
+  return [];
 }
 
 function saveLabAdmins(admins: LabAdmin[]) {
@@ -1141,18 +1113,14 @@ function SystemModeSection() {
   const handleResetTestData = async () => {
     try {
       // Call backend to delete all sample data
-      await deleteAllSampleData();
+      await deleteAllData();
     } catch (e) {
       console.error(
         "[Settings] Backend reset failed, continuing with local reset:",
         e,
       );
     }
-    // Also clear demo localStorage keys
-    localStorage.removeItem("xpertlab_hospital_samples");
-    localStorage.removeItem("xpertlab_home_collection");
-    localStorage.removeItem("demo_samples");
-    localStorage.removeItem("demo_status_history");
+
     toast.success("Test data reset successfully.");
   };
 
@@ -1235,8 +1203,8 @@ function SystemModeSection() {
           <AlertDialogHeader>
             <AlertDialogTitle>Reset Test Data?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete all hospital samples and home
-              collection records. This action cannot be undone.
+              This will permanently delete ALL samples, tests, hospitals, and
+              tasks. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

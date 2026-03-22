@@ -1,10 +1,6 @@
 import { CheckCircle, Clock, History } from "lucide-react";
 import React, { useMemo } from "react";
 import { useGetSettlementHistory } from "../../hooks/useQueries";
-import {
-  type DemoSettlement,
-  getDemoSettlements,
-} from "../../utils/demoStorage";
 
 interface SettlementHistoryPanelProps {
   hospitalId: string;
@@ -37,11 +33,7 @@ export default function SettlementHistoryPanel({
 
   const settlements = useMemo(() => {
     if (isDemoMode) {
-      try {
-        return getDemoSettlements().filter((s) => s.hospitalId === hospitalId);
-      } catch {
-        return [];
-      }
+      return [];
     }
     return (liveHistory.data ?? []).map((s) => ({
       id: s.timestamp.toString(),
@@ -54,7 +46,7 @@ export default function SettlementHistoryPanel({
       timestamp: Number(s.timestamp) / 1_000_000, // nanoseconds to ms
       notes: s.notes,
     }));
-  }, [isDemoMode, hospitalId, liveHistory.data]);
+  }, [isDemoMode, liveHistory.data]);
 
   return (
     <div className="premium-card overflow-hidden">

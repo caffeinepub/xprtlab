@@ -11,14 +11,13 @@ import {
   User,
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
+import type { Hospital, TestOutput } from "../../backend";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
-import { createSample } from "../../services/backendService";
 import {
-  DEMO_PHLEBO_ID,
-  type DemoHospital,
-  addDemoSample,
-  getDemoHospitalsByPhlebotomist,
-} from "../../utils/demoStorage";
+  createSample,
+  getHospitals,
+  getTests,
+} from "../../services/backendService";
 
 interface AddHospitalSamplePageProps {
   isDemoMode?: boolean;
@@ -30,48 +29,19 @@ interface TestEntry {
   testId: string;
   testName: string;
   testCode: string;
-  price: number;
+  price: number; // mrp
+  mrp: number;
+  lab_cost: number;
+  profit: number;
 }
 
-const DEMO_AVAILABLE_TESTS: TestEntry[] = [
-  {
-    testId: "CBC",
-    testName: "Complete Blood Count",
-    testCode: "CBC",
-    price: 350,
-  },
-  {
-    testId: "LFT",
-    testName: "Liver Function Test",
-    testCode: "LFT",
-    price: 600,
-  },
-  {
-    testId: "RBS",
-    testName: "Random Blood Sugar",
-    testCode: "RBS",
-    price: 150,
-  },
-  {
-    testId: "KFT",
-    testName: "Kidney Function Test",
-    testCode: "KFT",
-    price: 500,
-  },
-  {
-    testId: "TFT",
-    testName: "Thyroid Function Test",
-    testCode: "TFT",
-    price: 450,
-  },
-  { testId: "LIPID", testName: "Lipid Profile", testCode: "LIPID", price: 400 },
-];
-
 export default function AddHospitalSamplePage({
-  isDemoMode = false,
   onNavigate,
 }: AddHospitalSamplePageProps) {
-  const [hospitals, setHospitals] = useState<DemoHospital[]>([]);
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [availableTests, setAvailableTests] = useState<TestEntry[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+
   const [selectedHospitalId, setSelectedHospitalId] = useState("");
   const [hospitalSearch, setHospitalSearch] = useState("");
   const [testSearch, setTestSearch] = useState("");
@@ -87,16 +57,38 @@ export default function AddHospitalSamplePage({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (isDemoMode) {
-      const assignedHospitals = getDemoHospitalsByPhlebotomist(DEMO_PHLEBO_ID);
-      setHospitals(assignedHospitals);
-      if (assignedHospitals.length === 1) {
-        setSelectedHospitalId(assignedHospitals[0].id);
-      }
-    }
-  }, [isDemoMode]);
+    Promise.all([getHospitals(), getTests()])
+      .then(([hospList, testList]) => {
+        console.log("Hospitals from backend:", hospList);
+        console.log("Tests from backend:", testList);
+        setHospitals(hospList.filter((h) => h.isActive));
+        setAvailableTests(
+          testList
+            .filter((t: TestOutput) => t.isActive)
+            .map((t: TestOutput) => ({
+              testId: t.id,
+              testName: t.name,
+              testCode: t.code,
+              price: Number(t.mrp),
+              mrp: Number(t.mrp),
+              lab_cost: Number(t.lab_cost),
+              profit: Number(t.profit),
+            })),
+        );
+        if (hospList.filter((h) => h.isActive).length === 1) {
+          setSelectedHospitalId(hospList.filter((h) => h.isActive)[0].id);
+        }
+      })
+      .catch(() => {
+        setError("Failed to load hospitals and tests.");
+      })
+      .finally(() => setLoadingData(false));
+  }, []);
 
-  const totalMrp = selectedTests.reduce((sum, t) => sum + t.price, 0);
+  const totalMrp = selectedTests.reduce(
+    (sum, t) => sum + Number(t.mrp || 0),
+    0,
+  );
   const maxAllowedDiscount = Math.floor(totalMrp * 0.05);
   const effectiveDiscount = Math.min(discountAmount, maxAllowedDiscount);
   const finalAmount = totalMrp - effectiveDiscount;
@@ -109,7 +101,7 @@ export default function AddHospitalSamplePage({
       (h.area || "").toLowerCase().includes(hospitalSearch.toLowerCase()),
   );
 
-  const filteredTests = DEMO_AVAILABLE_TESTS.filter(
+  const filteredTests = availableTests.filter(
     (t) =>
       t.testName.toLowerCase().includes(testSearch.toLowerCase()) ||
       t.testCode.toLowerCase().includes(testSearch.toLowerCase()),
@@ -143,42 +135,6 @@ export default function AddHospitalSamplePage({
     }
 
     setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 600));
-
-    if (isDemoMode) {
-      const now = Date.now();
-      const newSample = {
-        id: `sample-${now}`,
-        patientName: patientName.trim(),
-        phone: phone.trim(),
-        hospitalId: selectedHospitalId,
-        phlebotomistId: DEMO_PHLEBO_ID,
-        tests: selectedTests,
-        totalMrp,
-        discountAmount: effectiveDiscount,
-        maxAllowedDiscount,
-        finalAmount,
-        amountReceived,
-        pendingAmount,
-        paymentMode,
-        billingLocked: false,
-        createdByRole: "phlebotomist",
-        updatedByAdmin: false,
-        createdAt: now,
-        status: "SAMPLE_COLLECTED" as const,
-        statusHistory: [
-          {
-            status: "SAMPLE_COLLECTED",
-            timestamp: now,
-            note: "Sample collected",
-            updatedBy: DEMO_PHLEBO_ID,
-          },
-        ],
-      };
-      addDemoSample(newSample);
-    }
-
-    // Also write to backend (dual-write pattern)
     try {
       const session = (() => {
         try {
@@ -197,7 +153,7 @@ export default function AddHospitalSamplePage({
           testId: t.testId,
           testName: t.testName,
           testCode: t.testCode,
-          price: BigInt(Math.round(t.price)),
+          price: BigInt(Math.round(t.mrp)),
         })),
         totalAmount: BigInt(Math.round(finalAmount)),
         paymentType: paymentMode,
@@ -207,13 +163,16 @@ export default function AddHospitalSamplePage({
       const sampleId = await createSample(sampleInput);
       if (sampleId) {
         setBackendSampleId(sampleId);
+        setIsSuccess(true);
+      } else {
+        setError("Failed to create sample. Please try again.");
       }
     } catch (e) {
-      console.error("[AddSample] Backend write failed, using local only:", e);
+      console.error("[AddSample] Backend write failed:", e);
+      setError("Failed to save sample. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
-    setIsSuccess(true);
   };
 
   const handleReset = () => {
@@ -360,6 +319,23 @@ export default function AddHospitalSamplePage({
     padding: "16px",
   };
 
+  if (loadingData) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#F7F9FC" }}
+        data-ocid="add_sample.loading_state"
+      >
+        <div style={{ textAlign: "center" }}>
+          <Loader2 className="w-10 h-10 text-blue-500 mx-auto animate-spin mb-3" />
+          <p style={{ color: "#6B7280", fontSize: 14 }}>
+            Loading hospitals and tests...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pb-[90px]" style={{ background: "#F7F9FC" }}>
       <div className="px-4 pt-4">
@@ -411,82 +387,97 @@ export default function AddHospitalSamplePage({
             </p>
           </div>
 
-          {/* Hospital search */}
-          {hospitals.length > 2 && (
-            <div style={{ position: "relative", marginBottom: "12px" }}>
-              <Search
-                style={{
-                  position: "absolute",
-                  left: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "16px",
-                  height: "16px",
-                  color: "#9CA3AF",
-                }}
-              />
-              <input
-                type="text"
-                value={hospitalSearch}
-                onChange={(e) => setHospitalSearch(e.target.value)}
-                placeholder="Search Hospital..."
-                style={{ ...inputStyle, paddingLeft: "38px" }}
-                data-ocid="add_sample.search_input"
-              />
-            </div>
-          )}
-
-          {filteredHospitals.length === 0 ? (
-            <p style={{ fontSize: "14px", color: "#9CA3AF" }}>
-              No hospitals assigned.
+          {hospitals.length === 0 ? (
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#9CA3AF",
+                textAlign: "center",
+                padding: "12px",
+              }}
+              data-ocid="add_sample.empty_state"
+            >
+              No hospitals found. Ask Super Admin to add hospitals.
             </p>
           ) : (
-            <div
-              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-            >
-              {filteredHospitals.map((h) => (
-                <button
-                  type="button"
-                  key={h.id}
-                  onClick={() => setSelectedHospitalId(h.id)}
-                  data-ocid="add_sample.select"
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    padding: "12px",
-                    borderRadius: "12px",
-                    border:
-                      selectedHospitalId === h.id
-                        ? "2px solid #2563EB"
-                        : "2px solid #E5E7EB",
-                    background:
-                      selectedHospitalId === h.id ? "#EFF6FF" : "white",
-                    cursor: "pointer",
-                    transition: "all 150ms ease",
-                  }}
-                >
-                  <p
+            <>
+              {hospitals.length > 2 && (
+                <div style={{ position: "relative", marginBottom: "12px" }}>
+                  <Search
                     style={{
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "#111827",
-                      margin: 0,
+                      position: "absolute",
+                      left: "12px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "16px",
+                      height: "16px",
+                      color: "#9CA3AF",
+                    }}
+                  />
+                  <input
+                    type="text"
+                    value={hospitalSearch}
+                    onChange={(e) => setHospitalSearch(e.target.value)}
+                    placeholder="Search Hospital..."
+                    style={{ ...inputStyle, paddingLeft: "38px" }}
+                    data-ocid="add_sample.search_input"
+                  />
+                </div>
+              )}
+
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                }}
+              >
+                {filteredHospitals.map((h) => (
+                  <button
+                    type="button"
+                    key={h.id}
+                    onClick={() => setSelectedHospitalId(h.id)}
+                    data-ocid="add_sample.select"
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border:
+                        selectedHospitalId === h.id
+                          ? "2px solid #2563EB"
+                          : "2px solid #E5E7EB",
+                      background:
+                        selectedHospitalId === h.id ? "#EFF6FF" : "white",
+                      cursor: "pointer",
+                      transition: "all 150ms ease",
                     }}
                   >
-                    {h.name}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "12px",
-                      color: "#6B7280",
-                      margin: "2px 0 0",
-                    }}
-                  >
-                    {h.area}, {h.city}
-                  </p>
-                </button>
-              ))}
-            </div>
+                    <p
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "#111827",
+                        margin: 0,
+                      }}
+                    >
+                      {h.name}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: "12px",
+                        color: "#6B7280",
+                        margin: "2px 0 0",
+                      }}
+                    >
+                      {h.area}
+                      {h.area && h.city ? ", " : ""}
+                      {h.city}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
@@ -603,127 +594,176 @@ export default function AddHospitalSamplePage({
             </p>
           </div>
 
-          {/* Test search */}
-          <div style={{ position: "relative", marginBottom: "12px" }}>
-            <Search
+          {availableTests.length === 0 ? (
+            <p
               style={{
-                position: "absolute",
-                left: "12px",
-                top: "50%",
-                transform: "translateY(-50%)",
-                width: "16px",
-                height: "16px",
+                fontSize: "14px",
                 color: "#9CA3AF",
+                textAlign: "center",
+                padding: "12px",
               }}
-            />
-            <input
-              type="text"
-              value={testSearch}
-              onChange={(e) => setTestSearch(e.target.value)}
-              placeholder="Search Tests..."
-              style={{ ...inputStyle, paddingLeft: "38px" }}
-              data-ocid="add_sample.search_input"
-            />
-          </div>
+              data-ocid="add_sample.empty_state"
+            >
+              No tests available. Ask Super Admin to add test.
+            </p>
+          ) : (
+            <>
+              <div style={{ position: "relative", marginBottom: "12px" }}>
+                <Search
+                  style={{
+                    position: "absolute",
+                    left: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "16px",
+                    height: "16px",
+                    color: "#9CA3AF",
+                  }}
+                />
+                <input
+                  type="text"
+                  value={testSearch}
+                  onChange={(e) => setTestSearch(e.target.value)}
+                  placeholder="Search test..."
+                  style={{ ...inputStyle, paddingLeft: "38px" }}
+                  data-ocid="add_sample.search_input"
+                />
+              </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {filteredTests.length === 0 ? (
-              <p
+              <div
                 style={{
-                  fontSize: "13px",
-                  color: "#9CA3AF",
-                  textAlign: "center",
-                  padding: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
                 }}
               >
-                No tests match your search.
-              </p>
-            ) : (
-              filteredTests.map((test) => {
-                const isSelected = !!selectedTests.find(
-                  (t) => t.testId === test.testId,
-                );
-                return (
-                  <button
-                    type="button"
-                    key={test.testId}
-                    onClick={() => toggleTest(test)}
+                {filteredTests.length === 0 ? (
+                  <p
                     style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      fontSize: "13px",
+                      color: "#9CA3AF",
+                      textAlign: "center",
                       padding: "12px",
-                      borderRadius: "12px",
-                      border: isSelected
-                        ? "2px solid #2563EB"
-                        : "2px solid #E5E7EB",
-                      background: isSelected ? "#EFF6FF" : "white",
-                      cursor: "pointer",
-                      transition: "all 150ms ease",
                     }}
-                    data-ocid="add_sample.toggle"
                   >
-                    <div style={{ textAlign: "left" }}>
-                      <p
+                    No matching tests found
+                  </p>
+                ) : (
+                  filteredTests.map((test) => {
+                    const isSelected = !!selectedTests.find(
+                      (t) => t.testId === test.testId,
+                    );
+                    return (
+                      <button
+                        type="button"
+                        key={test.testId}
+                        onClick={() => toggleTest(test)}
                         style={{
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#111827",
-                          margin: 0,
+                          width: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "12px",
+                          borderRadius: "12px",
+                          border: isSelected
+                            ? "2px solid #2563EB"
+                            : "2px solid #E5E7EB",
+                          background: isSelected ? "#EFF6FF" : "white",
+                          cursor: "pointer",
+                          transition: "all 150ms ease",
+                          textAlign: "left",
                         }}
+                        data-ocid="add_sample.toggle"
                       >
-                        {test.testName}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#6B7280",
-                          margin: "2px 0 0",
-                        }}
-                      >
-                        {test.testCode}
-                      </p>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#374151",
-                        }}
-                      >
-                        ₹{test.price}
-                      </span>
-                      {isSelected ? (
-                        <Minus
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "2px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                fontSize: "14px",
+                                color: "#111827",
+                              }}
+                            >
+                              {test.testName}
+                            </div>
+                            {test.testCode && (
+                              <div
+                                style={{ fontSize: "11px", color: "#6b7280" }}
+                              >
+                                Code: {test.testCode}
+                              </div>
+                            )}
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "12px",
+                                fontSize: "12px",
+                                marginTop: "2px",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <span
+                                style={{ color: "#2563EB", fontWeight: 600 }}
+                              >
+                                MRP: ₹{Number(test.mrp || 0)}
+                              </span>
+                              <span style={{ color: "#6b7280" }}>
+                                Lab: ₹{Number(test.lab_cost || 0)}
+                              </span>
+                              <span
+                                style={{
+                                  color:
+                                    test.profit && Number(test.profit) > 0
+                                      ? "#16a34a"
+                                      : "#dc2626",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                Profit: ₹{Number(test.profit || 0)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div
                           style={{
-                            width: "16px",
-                            height: "16px",
-                            color: "#2563EB",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginLeft: "8px",
+                            flexShrink: 0,
                           }}
-                        />
-                      ) : (
-                        <Plus
-                          style={{
-                            width: "16px",
-                            height: "16px",
-                            color: "#9CA3AF",
-                          }}
-                        />
-                      )}
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
+                        >
+                          {isSelected ? (
+                            <Minus
+                              style={{
+                                width: "16px",
+                                height: "16px",
+                                color: "#2563EB",
+                              }}
+                            />
+                          ) : (
+                            <Plus
+                              style={{
+                                width: "16px",
+                                height: "16px",
+                                color: "#9CA3AF",
+                              }}
+                            />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Billing */}
@@ -752,7 +792,6 @@ export default function AddHospitalSamplePage({
               </p>
             </div>
 
-            {/* Billing rows */}
             <div
               style={{
                 display: "flex",
@@ -899,7 +938,6 @@ export default function AddHospitalSamplePage({
               )}
             </div>
 
-            {/* Payment mode toggle */}
             <div>
               <p
                 style={{

@@ -7,7 +7,7 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import LoadingScreen from "./components/shared/LoadingScreen";
 
@@ -68,10 +68,22 @@ const staffAppRoute = createRoute({
   ),
 });
 
+const adminAppRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/admin-app",
+  component: () => (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingScreen message="Loading Admin App..." />}>
+        <StaffApp />
+      </Suspense>
+    </ErrorBoundary>
+  ),
+});
 const routeTree = rootRoute.addChildren([
   indexRoute,
   patientAppRoute,
   staffAppRoute,
+  adminAppRoute,
 ]);
 
 const router = createRouter({ routeTree });
@@ -80,6 +92,32 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }
+}
+
+function StaleDataCleaner() {
+  useEffect(() => {
+    const STALE_KEYS = [
+      "xpertlab_hospitals",
+      "xpertlab_tests",
+      "xpertlab_samples",
+      "xpertlab_demo_samples",
+      "demo_mode",
+      "xpertlab_test_metadata",
+      "xpertlab_tasks",
+      "xpertlab_payments",
+      "xpertlab_collections",
+      "xpertlab_audit_logs",
+      "xpertlab_users",
+      "xpertlab_system_mode",
+      "system_mode",
+      "test_mode",
+    ];
+    if (!localStorage.getItem("xpertlab_data_cleaned_v2")) {
+      for (const k of STALE_KEYS) localStorage.removeItem(k);
+      localStorage.setItem("xpertlab_data_cleaned_v2", "1");
+    }
+  }, []);
+  return null;
 }
 
 export default function App() {
@@ -91,6 +129,7 @@ export default function App() {
         enableSystem={false}
       >
         <QueryClientProvider client={queryClient}>
+          <StaleDataCleaner />
           <RouterProvider router={router} />
         </QueryClientProvider>
       </ThemeProvider>

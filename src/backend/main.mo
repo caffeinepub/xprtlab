@@ -7,10 +7,11 @@ import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Order "mo:core/Order";
 import Storage "blob-storage/Storage";
-
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+
+
 
 actor {
   public type SystemMode = { #test; #production };
@@ -47,6 +48,9 @@ actor {
     price : Nat;
     testCode : Text;
     mrp : Nat;
+    lab_cost : Nat;
+    commission_amount : Nat;
+    profit : Nat;
     sampleType : Text;
     isActive : Bool;
   };
@@ -55,6 +59,10 @@ actor {
     name : Text;
     code : Text;
     price : Nat;
+    mrp : Nat;
+    lab_cost : Nat;
+    commission_amount : Nat;
+    profit : Nat;
     sampleType : Text;
     isActive : Bool;
   };
@@ -64,6 +72,10 @@ actor {
     name : Text;
     code : Text;
     price : Nat;
+    mrp : Nat;
+    lab_cost : Nat;
+    commission_amount : Nat;
+    profit : Nat;
     sampleType : Text;
     isActive : Bool;
   };
@@ -73,9 +85,19 @@ actor {
     #notFound;
   };
 
+  public type AppTask = {
+    task_id : Text;
+    assigned_to_mobile : Text;
+    assigned_by : Text;
+    hospital_id : Text;
+    patient_name : Text;
+    status : Text;
+    created_at : Int;
+  };
+
   type Booking = {
     id : Text;
-    patient : Principal;
+    patient : Principal.Principal;
     tests : [Test];
     slot : Text;
     status : { #pending; #confirmed; #completed; #canceled };
@@ -84,23 +106,23 @@ actor {
 
   type HomeCollectionRequest = {
     id : Text;
-    patient : Principal;
+    patient : Principal.Principal;
     address : Text;
     latitude : ?Float;
     longitude : ?Float;
     tests : [Test];
     slot : Text;
-    assignedPhlebotomist : ?Principal;
+    assignedPhlebotomist : ?Principal.Principal;
     status : { #ASSIGNED; #EN_ROUTE; #SAMPLE_COLLECTED; #COMPLETED };
     timestamp : Int;
   };
 
   type Report = {
     id : Text;
-    patient : Principal;
+    patient : Principal.Principal;
     bookingId : Text;
     file : Storage.ExternalBlob;
-    uploadedBy : Principal;
+    uploadedBy : Principal.Principal;
     timestamp : Int;
   };
 
@@ -117,7 +139,7 @@ actor {
   };
 
   type AuditLog = {
-    actorId : Principal;
+    actorId : Principal.Principal;
     actionType : Text;
     targetDocument : Text;
     timestamp : Int;
@@ -133,7 +155,7 @@ actor {
 
   type Incident = {
     id : Text;
-    reporter : Principal;
+    reporter : Principal.Principal;
     description : Text;
     severity : { #low; #medium; #high };
     photo : ?Storage.ExternalBlob;
@@ -250,8 +272,8 @@ actor {
 
   public type HospitalPhlebotomistAssignment = {
     hospitalId : Text;
-    phlebotomist : Principal;
-    assignedBy : Principal;
+    phlebotomist : Principal.Principal;
+    assignedBy : Principal.Principal;
     assignedAt : Int;
     isActive : Bool;
     removedAt : ?Int;
@@ -283,7 +305,7 @@ actor {
   include MixinAuthorization(accessControlState);
 
   // Data
-  let userProfiles = Map.empty<Principal, UserProfile>();
+  let userProfiles = Map.empty<Principal.Principal, UserProfile>();
   let tests = Map.empty<Text, Test>();
   let bookings = Map.empty<Text, Booking>();
   let homeCollectionRequests = Map.empty<Text, HomeCollectionRequest>();
@@ -300,6 +322,7 @@ actor {
   let hospitals = Map.empty<Text, Hospital>();
   let assignments = Map.empty<Text, [HospitalPhlebotomistAssignment]>();
   let settlements = Map.empty<Text, Settlement>();
+  let tasks = Map.empty<Text, AppTask>();
 
   let allowedDiscountPercentage = 20.0;
   let maxDistance = 100.0;
@@ -308,7 +331,7 @@ actor {
     (mrp / 1000) * 50;
   };
 
-  func logDiscountAction(actorId : Principal, role : Text, actionType : Text, sampleId : ?Text, discountAmountAttempted : Nat, maxAllowedDiscount : Nat, mrp : Nat, finalAmount : Nat, outcome : Text) {
+  func logDiscountAction(actorId : Principal.Principal, role : Text, actionType : Text, sampleId : ?Text, discountAmountAttempted : Nat, maxAllowedDiscount : Nat, mrp : Nat, finalAmount : Nat, outcome : Text) {
     let logEntry : AuditLog = {
       actorId;
       actionType;
@@ -327,14 +350,14 @@ actor {
     auditLogs.add(Time.now(), logEntry);
   };
 
-  func getCallerAppRole(caller : Principal) : ?AppRole {
+  func getCallerAppRole(caller : Principal.Principal) : ?AppRole {
     switch (userProfiles.get(caller)) {
       case (null) { null };
       case (?profile) { ?profile.appRole };
     };
   };
 
-  func isAdminOrSuperAdmin(caller : Principal) : Bool {
+  func isAdminOrSuperAdmin(caller : Principal.Principal) : Bool {
     if (AccessControl.isAdmin(accessControlState, caller)) {
       return true;
     };
@@ -345,18 +368,18 @@ actor {
     };
   };
 
-  func isPhlebotomist(caller : Principal) : Bool {
+  func isPhlebotomist(caller : Principal.Principal) : Bool {
     switch (getCallerAppRole(caller)) {
       case (?(#phlebotomist)) { true };
       case (_) { false };
     };
   };
 
-  func phlebotomistCanAccessSample(_caller : Principal, _sample : HospitalSample) : Bool {
+  func phlebotomistCanAccessSample(_caller : Principal.Principal, _sample : HospitalSample) : Bool {
     false;
   };
 
-  func assertSuperAdmin(caller : Principal, errMsg : Text) {
+  func assertSuperAdmin(caller : Principal.Principal, errMsg : Text) {
     let isSuperAdmin = switch (getCallerAppRole(caller)) {
       case (?(#superAdmin)) { true };
       case (_) { false };
@@ -366,7 +389,7 @@ actor {
     };
   };
 
-  func assertLabAdminOrSuperAdmin(caller : Principal, errMsg : Text) {
+  func assertLabAdminOrSuperAdmin(caller : Principal.Principal, errMsg : Text) {
     if (isPhlebotomist(caller)) {
       Runtime.trap("Unauthorized: Phlebotomists are not allowed to access test functions");
     };
@@ -406,6 +429,75 @@ actor {
     found;
   };
 
+  // TASK MANAGEMENT
+
+  public shared ({ caller }) func createTask(
+    assigned_to_mobile : Text,
+    assigned_by : Text,
+    hospital_id : Text,
+    patient_name : Text,
+    status : Text,
+  ) : async AppTask {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can create tasks");
+    };
+
+    let task_id = "TASK-" # Time.now().toText() # "-" # (tasks.size() + 1).toText();
+
+    let task : AppTask = {
+      task_id;
+      assigned_to_mobile;
+      assigned_by;
+      hospital_id;
+      patient_name;
+      status;
+      created_at = Time.now();
+    };
+
+    tasks.add(task_id, task);
+    task;
+  };
+
+  public query ({ caller }) func getTasksByUser(mobile : Text) : async [AppTask] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated users can view tasks");
+    };
+
+    let filtered = List.empty<AppTask>();
+    tasks.forEach(
+      func(v) {
+        let task = v.1;
+        if (task.assigned_to_mobile == mobile) {
+          filtered.add(task);
+        };
+      }
+    );
+    filtered.toArray();
+  };
+
+  public query ({ caller }) func getAllTasks() : async [AppTask] {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can get all tasks");
+
+    let allTasks = List.empty<AppTask>();
+    tasks.forEach(
+      func(v) {
+        let task = v.1;
+        allTasks.add(task);
+      }
+    );
+    allTasks.toArray();
+  };
+
+  public shared ({ caller }) func deleteAllTasks() : async Nat {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can delete all tasks");
+
+    let deletedCount = tasks.size();
+    tasks.clear();
+    deletedCount;
+  };
+
+  // TEST MANAGEMENT
+
   public shared ({ caller }) func addTest(input : TestInput) : async { #ok : TestOutput; #err : TestError } {
     assertSuperAdmin(caller, "Only SUPER_ADMIN role can add tests");
 
@@ -420,7 +512,10 @@ actor {
       sampleType = input.sampleType;
       description = "";
       price = input.price;
-      mrp = input.price;
+      mrp = input.mrp;
+      lab_cost = input.lab_cost;
+      commission_amount = input.commission_amount;
+      profit = input.profit;
       isActive = input.isActive;
     };
 
@@ -431,6 +526,10 @@ actor {
       name = test.name;
       code = test.testCode;
       price = test.price;
+      mrp = test.mrp;
+      lab_cost = test.lab_cost;
+      commission_amount = test.commission_amount;
+      profit = test.profit;
       sampleType = test.sampleType;
       isActive = test.isActive;
     });
@@ -446,6 +545,10 @@ actor {
           name = test.name;
           code = test.testCode;
           price = test.price;
+          mrp = test.mrp;
+          lab_cost = test.lab_cost;
+          commission_amount = test.commission_amount;
+          profit = test.profit;
           sampleType = test.sampleType;
           isActive = test.isActive;
         };
@@ -463,6 +566,10 @@ actor {
           name = test.name;
           code = test.testCode;
           price = test.price;
+          mrp = test.mrp;
+          lab_cost = test.lab_cost;
+          commission_amount = test.commission_amount;
+          profit = test.profit;
           sampleType = test.sampleType;
           isActive = test.isActive;
         };
@@ -482,6 +589,10 @@ actor {
             name = test.name;
             code = test.testCode;
             price = test.price;
+            mrp = test.mrp;
+            lab_cost = test.lab_cost;
+            commission_amount = test.commission_amount;
+            profit = test.profit;
             sampleType = test.sampleType;
             isActive = test.isActive;
           });
@@ -510,7 +621,10 @@ actor {
       description = current.description;
       price = input.price;
       testCode = input.code;
-      mrp = input.price;
+      mrp = input.mrp;
+      lab_cost = input.lab_cost;
+      commission_amount = input.commission_amount;
+      profit = input.profit;
       sampleType = input.sampleType;
       isActive = input.isActive;
     };
@@ -525,6 +639,10 @@ actor {
       name = updatedTest.name;
       code = updatedTest.testCode;
       price = updatedTest.price;
+      mrp = updatedTest.mrp;
+      lab_cost = updatedTest.lab_cost;
+      commission_amount = updatedTest.commission_amount;
+      profit = updatedTest.profit;
       sampleType = updatedTest.sampleType;
       isActive = updatedTest.isActive;
     });
@@ -544,6 +662,9 @@ actor {
       price = current.price;
       testCode = current.testCode;
       mrp = current.mrp;
+      lab_cost = current.lab_cost;
+      commission_amount = current.commission_amount;
+      profit = current.profit;
       sampleType = current.sampleType;
       isActive = false;
     };
@@ -555,6 +676,10 @@ actor {
       name = disabledTest.name;
       code = disabledTest.testCode;
       price = disabledTest.price;
+      mrp = disabledTest.mrp;
+      lab_cost = disabledTest.lab_cost;
+      commission_amount = disabledTest.commission_amount;
+      profit = disabledTest.profit;
       sampleType = disabledTest.sampleType;
       isActive = disabledTest.isActive;
     };
@@ -574,6 +699,9 @@ actor {
       price = current.price;
       testCode = current.testCode;
       mrp = current.mrp;
+      lab_cost = current.lab_cost;
+      commission_amount = current.commission_amount;
+      profit = current.profit;
       sampleType = current.sampleType;
       isActive = isActive;
     };
@@ -585,6 +713,10 @@ actor {
       name = updatedTest.name;
       code = updatedTest.testCode;
       price = updatedTest.price;
+      mrp = updatedTest.mrp;
+      lab_cost = updatedTest.lab_cost;
+      commission_amount = updatedTest.commission_amount;
+      profit = updatedTest.profit;
       sampleType = updatedTest.sampleType;
       isActive = updatedTest.isActive;
     });
@@ -597,7 +729,7 @@ actor {
     userProfiles.get(caller);
   };
 
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+  public query ({ caller }) func getUserProfile(user : Principal.Principal) : async ?UserProfile {
     if (caller != user and not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
@@ -624,7 +756,10 @@ actor {
           sampleType = input.sampleType;
           description = "";
           price = input.price;
-          mrp = input.price;
+          mrp = input.mrp;
+          lab_cost = input.lab_cost;
+          commission_amount = input.commission_amount;
+          profit = input.profit;
           isActive = input.isActive;
         };
 
@@ -635,6 +770,10 @@ actor {
           name = test.name;
           code = test.testCode;
           price = test.price;
+          mrp = test.mrp;
+          lab_cost = test.lab_cost;
+          commission_amount = test.commission_amount;
+          profit = test.profit;
           sampleType = test.sampleType;
           isActive = test.isActive;
         };
@@ -647,7 +786,6 @@ actor {
 
   /// HOSPITAL MANAGEMENT
 
-  // addHospital: only labAdmin or superAdmin may create hospitals
   public shared ({ caller }) func addHospital(name : Text, city : Text, address : Text, area : Text, contactNumber : Text) : async Hospital {
     assertLabAdminOrSuperAdmin(caller, "Only LAB_ADMIN or SUPER_ADMIN role can add hospitals");
 
@@ -668,7 +806,6 @@ actor {
     hospital;
   };
 
-  // updateHospital: only labAdmin or superAdmin may update hospitals
   public shared ({ caller }) func updateHospital(id : Text, name : Text, city : Text, address : Text, area : Text, contactNumber : Text) : async Hospital {
     assertLabAdminOrSuperAdmin(caller, "Only LAB_ADMIN or SUPER_ADMIN role can update hospitals");
 
@@ -692,7 +829,6 @@ actor {
     updatedHospital;
   };
 
-  // disableHospital: only labAdmin or superAdmin may disable hospitals
   public shared ({ caller }) func disableHospital(id : Text) : async Hospital {
     assertLabAdminOrSuperAdmin(caller, "Only LAB_ADMIN or SUPER_ADMIN role can disable hospitals");
 
@@ -716,7 +852,6 @@ actor {
     disabledHospital;
   };
 
-  // getHospitals: accessible to any authenticated user (labAdmin, superAdmin, phlebotomist)
   public query ({ caller }) func getHospitals(search : ?Text) : async [Hospital] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view hospitals");
@@ -743,7 +878,6 @@ actor {
     filtered.toArray();
   };
 
-  // getHospitalById: accessible to any authenticated user
   public query ({ caller }) func getHospitalById(id : Text) : async Hospital {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view hospitals");
@@ -757,7 +891,7 @@ actor {
 
   /// HOSPITAL-PHLEBOTOMIST ASSIGNMENTS
 
-  func generateAssignmentId(hospitalId : Text, phlebotomist : Principal) : Text {
+  func generateAssignmentId(hospitalId : Text, phlebotomist : Principal.Principal) : Text {
     (hospitalId.size() + 1).toText() # phlebotomist.toText();
   };
 
@@ -777,8 +911,7 @@ actor {
     latestAssignment;
   };
 
-  // assignPhlebotomistToHospital: only labAdmin or superAdmin may manage assignments
-  public shared ({ caller }) func assignPhlebotomistToHospital(hospitalId : Text, phlebotomist : Principal) : async HospitalPhlebotomistAssignment {
+  public shared ({ caller }) func assignPhlebotomistToHospital(hospitalId : Text, phlebotomist : Principal.Principal) : async HospitalPhlebotomistAssignment {
     assertLabAdminOrSuperAdmin(caller, "Only LAB_ADMIN or SUPER_ADMIN role can assign phlebotomists to hospitals");
 
     let assignmentId = generateAssignmentId(hospitalId, phlebotomist);
@@ -812,14 +945,12 @@ actor {
     assignment;
   };
 
-  // removePhlebotomistFromHospital: only labAdmin or superAdmin may manage assignments
-  public shared ({ caller }) func removePhlebotomistFromHospital(hospitalId : Text, phlebotomist : Principal, removalReason : Text) : async HospitalPhlebotomistAssignment {
+  public shared ({ caller }) func removePhlebotomistFromHospital(hospitalId : Text, phlebotomist : Principal.Principal, removalReason : Text) : async HospitalPhlebotomistAssignment {
     assertLabAdminOrSuperAdmin(caller, "Only LAB_ADMIN or SUPER_ADMIN role can remove phlebotomists from hospitals");
 
     let assignmentId = generateAssignmentId(hospitalId, phlebotomist);
     let latestAssignment = ensureActiveAssignmentExists(assignmentId, "removePhlebotomistFromHospital");
 
-    // Create a new inactive historical record preserving original assignment data
     let removedAssignment : HospitalPhlebotomistAssignment = {
       hospitalId = latestAssignment.hospitalId;
       phlebotomist = latestAssignment.phlebotomist;
@@ -839,13 +970,12 @@ actor {
     removedAssignment;
   };
 
-  // getPhlebotomistsByHospital: accessible to any authenticated user
-  public query ({ caller }) func getPhlebotomistsByHospital(hospitalId : Text) : async [Principal] {
+  public query ({ caller }) func getPhlebotomistsByHospital(hospitalId : Text) : async [Principal.Principal] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view phlebotomist assignments");
     };
 
-    let phlebotomists = List.empty<Principal>();
+    let phlebotomists = List.empty<Principal.Principal>();
     assignments.forEach(
       func(v) {
         let assignmentList = v.1;
@@ -860,8 +990,7 @@ actor {
     phlebotomists.toArray();
   };
 
-  // getHospitalsByPhlebotomist: accessible to any authenticated user
-  public query ({ caller }) func getHospitalsByPhlebotomist(phlebotomist : Principal) : async [Text] {
+  public query ({ caller }) func getHospitalsByPhlebotomist(phlebotomist : Principal.Principal) : async [Text] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view hospital assignments");
     };
@@ -991,7 +1120,6 @@ actor {
     collectionsToday : Nat;
   };
 
-  // New persistent maps for samples, daily counters, and users
   let samples = Map.empty<Text, SampleRecord>();
   let dailyCounters = Map.empty<Text, Nat>();
   var users = Map.empty<Text, AppUser>();
@@ -1092,8 +1220,6 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only authenticated users can view samples");
     };
-    // Users can only view their own samples (matched by mobile in their profile)
-    // Admins can view any samples
     if (not isAdminOrSuperAdmin(caller)) {
       switch (userProfiles.get(caller)) {
         case (null) { Runtime.trap("Unauthorized: User profile not found") };
@@ -1236,7 +1362,6 @@ actor {
       }
     );
 
-    // Potential enhancements:
     let metrics : DashboardMetrics = {
       samplesTotal = samples.size();
       samplesToday;
@@ -1254,5 +1379,15 @@ actor {
     let deletedCount = samples.size();
     samples.clear();
     deletedCount;
+  };
+
+  public shared ({ caller }) func deleteAllData() : async () {
+    assertSuperAdmin(caller, "Only SUPER_ADMIN role can delete all data");
+
+    samples.clear();
+    tests.clear();
+    hospitals.clear();
+    tasks.clear();
+    dailyCounters.clear();
   };
 };

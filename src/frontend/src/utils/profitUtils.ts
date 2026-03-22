@@ -1,5 +1,3 @@
-import type { DemoTestMaster } from "./demoStorage";
-
 /**
  * Compute profit per test instance.
  * Profit = MRP − (Lab Cost + Doctor Commission Amount)
@@ -40,6 +38,3 @@ export function isLossTest(
 ): boolean {
   return computeProfitPerTest(mrp, labCost, doctorCommissionPct) < 0;
 }
-
-// Re-export the type so callers can import from a single place when needed
-export type { DemoTestMaster };

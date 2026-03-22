@@ -16,7 +16,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { TestError, type TestOutput } from "../../backend";
 import { useUpdateTest } from "../../hooks/useQueries";
-import { updateDemoTestMaster } from "../../utils/demoStorage";
 import { computeProfitPerTest } from "../../utils/profitUtils";
 
 interface EditTestFormValues {
@@ -96,13 +95,25 @@ export default function EditTestModal({
     try {
       const result = await updateTest.mutateAsync({
         code: test.code,
-        input: {
-          name: values.name.trim(),
-          code: values.code.trim().toUpperCase(),
-          sampleType: values.sampleType.trim(),
-          price: BigInt(Math.round(values.mrp)),
-          isActive: values.isActive,
-        },
+        input: (() => {
+          const mrpV = Math.round(values.mrp);
+          const labV = Math.round(values.labCost ?? 0);
+          const commV = Math.round(
+            (mrpV * (values.doctorCommission ?? 0)) / 100,
+          );
+          const profV = mrpV - labV - commV;
+          return {
+            name: values.name.trim(),
+            code: values.code.trim().toUpperCase(),
+            sampleType: values.sampleType.trim(),
+            price: BigInt(mrpV),
+            mrp: BigInt(mrpV),
+            lab_cost: BigInt(labV),
+            commission_amount: BigInt(commV),
+            profit: BigInt(profV),
+            isActive: values.isActive,
+          };
+        })(),
       });
 
       if (result.__kind__ === "err") {
@@ -116,13 +127,6 @@ export default function EditTestModal({
         toast.error("Failed to update test. Please try again.");
         return;
       }
-
-      // Persist labCost & doctorCommission to demo storage
-      updateDemoTestMaster(test.code, {
-        labCost: values.labCost ?? 0,
-        doctorCommissionPct: values.doctorCommission ?? 0,
-        mrp: values.mrp,
-      });
 
       toast.success(`Test "${values.name}" updated successfully`);
       onClose();

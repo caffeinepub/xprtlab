@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useMemo } from "react";
-import { type DemoSample, getDemoSamples } from "../../utils/demoStorage";
 
 interface DailyRevenueOverviewModuleProps {
   isDemoMode?: boolean;
@@ -20,46 +19,6 @@ interface RevenueMetrics {
   revenueThisMonth: number;
   pendingCollections: number;
   totalDiscountsGiven: number;
-}
-
-function computeMetrics(samples: DemoSample[]): RevenueMetrics {
-  const _now = Date.now();
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const todayMs = startOfToday.getTime();
-
-  const startOfWeek = new Date();
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-  const weekMs = startOfWeek.getTime();
-
-  const startOfMonth = new Date();
-  startOfMonth.setDate(1);
-  startOfMonth.setHours(0, 0, 0, 0);
-  const monthMs = startOfMonth.getTime();
-
-  let revenueToday = 0;
-  let revenueThisWeek = 0;
-  let revenueThisMonth = 0;
-  let pendingCollections = 0;
-  let totalDiscountsGiven = 0;
-
-  for (const sample of samples) {
-    const ts = sample.createdAt;
-    if (ts >= todayMs) revenueToday += sample.finalAmount;
-    if (ts >= weekMs) revenueThisWeek += sample.finalAmount;
-    if (ts >= monthMs) revenueThisMonth += sample.finalAmount;
-    pendingCollections += sample.pendingAmount;
-    totalDiscountsGiven += sample.discountAmount;
-  }
-
-  return {
-    revenueToday,
-    revenueThisWeek,
-    revenueThisMonth,
-    pendingCollections,
-    totalDiscountsGiven,
-  };
 }
 
 function formatCurrency(amount: number): string {
@@ -108,14 +67,10 @@ function MetricCard({
 }
 
 export default function DailyRevenueOverviewModule({
-  isDemoMode = false,
+  isDemoMode: _isDemoMode = false,
 }: DailyRevenueOverviewModuleProps) {
   const metrics = useMemo<RevenueMetrics>(() => {
-    if (isDemoMode) {
-      const samples = getDemoSamples();
-      return computeMetrics(samples);
-    }
-    // Live mode: return zeros (backend integration would go here)
+    // Backend integration: return zeros until live data is wired
     return {
       revenueToday: 0,
       revenueThisWeek: 0,
@@ -123,7 +78,7 @@ export default function DailyRevenueOverviewModule({
       pendingCollections: 0,
       totalDiscountsGiven: 0,
     };
-  }, [isDemoMode]);
+  }, []);
 
   const cards: MetricCardProps[] = [
     {
@@ -182,12 +137,6 @@ export default function DailyRevenueOverviewModule({
           <MetricCard key={card.title} {...card} />
         ))}
       </div>
-
-      {!isDemoMode && (
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-600 text-center">
-          Connect to live backend to see real revenue data.
-        </div>
-      )}
     </div>
   );
 }

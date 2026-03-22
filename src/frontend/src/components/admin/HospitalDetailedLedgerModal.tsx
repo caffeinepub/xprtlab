@@ -1,6 +1,5 @@
 import { Building2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import React, { useState, useMemo } from "react";
-import { type DemoSample, getDemoSamples } from "../../utils/demoStorage";
 
 interface HospitalLedgerRow {
   hospitalId: string;
@@ -88,15 +87,29 @@ function getPaymentModeLabel(mode: string): string {
 
 export default function HospitalDetailedLedgerModal({
   hospital,
-  isDemoMode = false,
+  isDemoMode: _isDemoMode = false,
   onClose,
 }: HospitalDetailedLedgerModalProps) {
   const [page, setPage] = useState(1);
 
-  const samples = useMemo<DemoSample[]>(() => {
-    if (!isDemoMode) return [];
-    return getDemoSamples().filter((s) => s.hospitalId === hospital.hospitalId);
-  }, [isDemoMode, hospital.hospitalId]);
+  const samples = useMemo<
+    {
+      id: string;
+      patientName: string;
+      phone: string;
+      status: string;
+      paymentMode: string;
+      finalAmount: number;
+      amountReceived: number;
+      pendingAmount: number;
+      discountAmount: number;
+      totalMrp: number;
+      createdAt: number;
+      tests: { testName: string; testCode: string; price: number }[];
+    }[]
+  >(() => {
+    return [];
+  }, []);
 
   const totalPages = Math.max(1, Math.ceil(samples.length / PAGE_SIZE));
   const paginatedSamples = samples.slice(

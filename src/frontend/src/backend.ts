@@ -111,15 +111,29 @@ export interface SampleTestItem {
 }
 export interface TestOutput {
     id: string;
+    mrp: bigint;
+    lab_cost: bigint;
     code: string;
     name: string;
     sampleType: string;
     isActive: boolean;
+    commission_amount: bigint;
+    profit: bigint;
     price: bigint;
 }
 export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
+}
+export type Principal = Principal;
+export interface AppTask {
+    status: string;
+    patient_name: string;
+    hospital_id: string;
+    task_id: string;
+    created_at: bigint;
+    assigned_by: string;
+    assigned_to_mobile: string;
 }
 export interface HospitalPhlebotomistAssignment {
     assignedAt: bigint;
@@ -139,10 +153,14 @@ export interface AppUser {
     mobile: string;
 }
 export interface TestInput {
+    mrp: bigint;
+    lab_cost: bigint;
     code: string;
     name: string;
     sampleType: string;
     isActive: boolean;
+    commission_amount: bigint;
+    profit: bigint;
     price: bigint;
 }
 export interface SampleInput {
@@ -242,12 +260,16 @@ export interface backendInterface {
     assignPhlebotomistToHospital(hospitalId: string, phlebotomist: Principal): Promise<HospitalPhlebotomistAssignment>;
     bulkAddTests(testInputs: Array<TestInput>): Promise<Array<TestOutput>>;
     createSample(input: SampleInput): Promise<string>;
+    createTask(assigned_to_mobile: string, assigned_by: string, hospital_id: string, patient_name: string, status: string): Promise<AppTask>;
+    deleteAllData(): Promise<void>;
     deleteAllSampleData(): Promise<bigint>;
+    deleteAllTasks(): Promise<bigint>;
     deleteTestUser(mobile: string): Promise<boolean>;
     disableHospital(id: string): Promise<Hospital>;
     disableTest(code: string): Promise<TestOutput>;
     getAllAppUsers(): Promise<Array<AppUser>>;
     getAllSamples(): Promise<Array<SampleRecord>>;
+    getAllTasks(): Promise<Array<AppTask>>;
     getAllTests(): Promise<Array<TestOutput>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
@@ -260,6 +282,7 @@ export interface backendInterface {
     getSamplesByMobile(mobile: string): Promise<Array<SampleRecord>>;
     getSettlementHistory(hospitalId: string): Promise<Array<Settlement>>;
     getSystemMode(): Promise<SystemMode>;
+    getTasksByUser(mobile: string): Promise<Array<AppTask>>;
     getTest(code: string): Promise<TestOutput | null>;
     getTestByCode(testCode: string): Promise<TestOutput | null>;
     getUserByMobile(mobile: string): Promise<AppUser | null>;
@@ -288,7 +311,7 @@ export interface backendInterface {
         err: TestError;
     }>;
 }
-import type { AppRole as _AppRole, AppUser as _AppUser, HospitalPhlebotomistAssignment as _HospitalPhlebotomistAssignment, SampleInput as _SampleInput, SampleRecord as _SampleRecord, SampleTestItem as _SampleTestItem, Settlement as _Settlement, SystemMode as _SystemMode, TestError as _TestError, TestOutput as _TestOutput, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { AppRole as _AppRole, AppUser as _AppUser, HospitalPhlebotomistAssignment as _HospitalPhlebotomistAssignment, Principal as _Principal, SampleInput as _SampleInput, SampleRecord as _SampleRecord, SampleTestItem as _SampleTestItem, Settlement as _Settlement, SystemMode as _SystemMode, TestError as _TestError, TestOutput as _TestOutput, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -479,6 +502,34 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async createTask(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string): Promise<AppTask> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.createTask(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.createTask(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async deleteAllData(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteAllData();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteAllData();
+            return result;
+        }
+    }
     async deleteAllSampleData(): Promise<bigint> {
         if (this.processError) {
             try {
@@ -490,6 +541,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteAllSampleData();
+            return result;
+        }
+    }
+    async deleteAllTasks(): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteAllTasks();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteAllTasks();
             return result;
         }
     }
@@ -561,6 +626,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getAllSamples();
             return from_candid_vec_n24(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllTasks(): Promise<Array<AppTask>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllTasks();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllTasks();
+            return result;
         }
     }
     async getAllTests(): Promise<Array<TestOutput>> {
@@ -729,6 +808,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getSystemMode();
             return from_candid_SystemMode_n39(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getTasksByUser(arg0: string): Promise<Array<AppTask>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getTasksByUser(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getTasksByUser(arg0);
+            return result;
         }
     }
     async getTest(arg0: string): Promise<TestOutput | null> {
@@ -1007,12 +1100,12 @@ function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 }
 function from_candid_record_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     assignedAt: bigint;
-    assignedBy: Principal;
+    assignedBy: _Principal;
     isActive: boolean;
     hospitalId: string;
     removedAt: [] | [bigint];
     removalReason: [] | [string];
-    phlebotomist: Principal;
+    phlebotomist: _Principal;
 }): {
     assignedAt: bigint;
     assignedBy: Principal;
