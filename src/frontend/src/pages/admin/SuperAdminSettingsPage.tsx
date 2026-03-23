@@ -26,6 +26,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
+import { useHospitals } from "../../hooks/useQueries";
 import { useSystemMode } from "../../hooks/useSystemMode";
 import { deleteAllData } from "../../services/backendService";
 
@@ -92,21 +93,6 @@ function loadPhlebotomists(): Phlebotomist[] {
 
 function savePhlebotomists(phlebs: Phlebotomist[]) {
   localStorage.setItem("xpertlab_phlebotomists", JSON.stringify(phlebs));
-}
-
-function loadHospitals(): Hospital[] {
-  try {
-    const raw = localStorage.getItem("xpertlab_hospitals");
-    if (raw) return JSON.parse(raw) as Hospital[];
-  } catch {
-    /* noop */
-  }
-  return [
-    { id: "h1", name: "City Care Hospital", isActive: true },
-    { id: "h2", name: "Vijaya Hospital", isActive: true },
-    { id: "h3", name: "Sunrise Medical Centre", isActive: true },
-    { id: "h4", name: "Apollo Diagnostics", isActive: true },
-  ];
 }
 
 function StatusBadge({ status }: { status: "Active" | "Disabled" }) {
@@ -1231,7 +1217,13 @@ export default function SuperAdminSettingsPage({
   isDemoMode = false,
 }: SuperAdminSettingsPageProps) {
   void isDemoMode;
-  const [hospitals] = useState<Hospital[]>(() => loadHospitals());
+  const { data: hospitalsData = [] } = useHospitals();
+  const hospitals: Hospital[] = hospitalsData.map((h) => ({
+    id: String(h.id),
+    name: h.name,
+    isActive: h.isActive,
+  }));
+  console.log("Hospitals from backend:", hospitals);
 
   return (
     <div

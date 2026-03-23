@@ -20,6 +20,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useHospitals } from "../../hooks/useQueries";
 import { formatCurrency } from "../../utils/formatters";
 import {
   computeProfitPerTest,
@@ -200,48 +201,7 @@ function generateDemoProfitData(filter: FilterPeriod): DemoProfitData {
     return { date: label, profit: base };
   });
 
-  const hospitalProfits: HospitalProfit[] = [
-    {
-      id: "1",
-      name: "City General Hospital",
-      totalTests: Math.round(142 * multiplier),
-      revenue: Math.round(38500 * multiplier),
-      commission: Math.round(19250 * multiplier),
-      profit: Math.round(13200 * multiplier),
-    },
-    {
-      id: "2",
-      name: "Apollo Diagnostics",
-      totalTests: Math.round(98 * multiplier),
-      revenue: Math.round(27200 * multiplier),
-      commission: Math.round(13600 * multiplier),
-      profit: Math.round(9200 * multiplier),
-    },
-    {
-      id: "3",
-      name: "Sunrise Medical Centre",
-      totalTests: Math.round(76 * multiplier),
-      revenue: Math.round(19800 * multiplier),
-      commission: Math.round(9900 * multiplier),
-      profit: Math.round(6800 * multiplier),
-    },
-    {
-      id: "4",
-      name: "Metro Health Clinic",
-      totalTests: Math.round(54 * multiplier),
-      revenue: Math.round(14600 * multiplier),
-      commission: Math.round(7300 * multiplier),
-      profit: Math.round(5100 * multiplier),
-    },
-    {
-      id: "5",
-      name: "Green Valley Hospital",
-      totalTests: Math.round(31 * multiplier),
-      revenue: Math.round(8900 * multiplier),
-      commission: Math.round(4450 * multiplier),
-      profit: Math.round(3100 * multiplier),
-    },
-  ];
+  const hospitalProfits: HospitalProfit[] = [];
 
   return {
     profitToday:
@@ -394,12 +354,23 @@ export default function ProfitDashboardPage({
 
   const data = useMemo(() => computeRealProfitData(filter), [filter]);
 
+  // Fetch hospitals from backend
+  const { data: backendHospitals = [] } = useHospitals();
+  const hospitalProfitData: HospitalProfit[] = backendHospitals.map((h) => ({
+    id: h.id,
+    name: h.name,
+    totalTests: 0,
+    revenue: 0,
+    commission: 0,
+    profit: 0,
+  }));
+
   // Hospital pagination
   const totalHospitalPages = Math.max(
     1,
-    Math.ceil(data.hospitalProfits.length / ROWS_PER_PAGE),
+    Math.ceil(hospitalProfitData.length / ROWS_PER_PAGE),
   );
-  const paginatedHospitals = data.hospitalProfits.slice(
+  const paginatedHospitals = hospitalProfitData.slice(
     hospitalPage * ROWS_PER_PAGE,
     (hospitalPage + 1) * ROWS_PER_PAGE,
   );
@@ -619,7 +590,7 @@ export default function ProfitDashboardPage({
               </h2>
             </div>
 
-            {data.hospitalProfits.length === 0 ? (
+            {hospitalProfitData.length === 0 ? (
               <div
                 className="py-12 flex flex-col items-center justify-center text-center px-4"
                 data-ocid="profit_dashboard.hospital.empty_state"
@@ -712,9 +683,9 @@ export default function ProfitDashboardPage({
                       Showing {hospitalPage * ROWS_PER_PAGE + 1}–
                       {Math.min(
                         (hospitalPage + 1) * ROWS_PER_PAGE,
-                        data.hospitalProfits.length,
+                        hospitalProfitData.length,
                       )}{" "}
-                      of {data.hospitalProfits.length}
+                      of {hospitalProfitData.length}
                     </p>
                     <div className="flex items-center gap-1">
                       <button

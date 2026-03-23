@@ -13,7 +13,7 @@ interface AddTestFormValues {
   sampleType: string;
   mrp: number;
   labCost: number;
-  doctorCommission: number;
+  commission: number;
   isActive: boolean;
 }
 
@@ -40,7 +40,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
       sampleType: "",
       mrp: 0,
       labCost: 0,
-      doctorCommission: 0,
+      commission: 0,
       isActive: true,
     },
   });
@@ -48,11 +48,10 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
   const isActive = watch("isActive");
   const watchedMrp = watch("mrp");
   const watchedLabCost = watch("labCost");
-  const watchedDoctorCommission = watch("doctorCommission");
+  const watchedCommission = watch("commission");
 
-  // Commission % → ₹ amount conversion for preview
-  const commissionAmt =
-    (watchedMrp ?? 0) * ((watchedDoctorCommission ?? 0) / 100);
+  // Flat ₹ commission — use directly
+  const commissionAmt = watchedCommission ?? 0;
   const profitPerTest =
     (watchedMrp ?? 0) - (watchedLabCost ?? 0) - commissionAmt;
   const showLossWarning = profitPerTest < 0 && (watchedMrp ?? 0) > 0;
@@ -80,10 +79,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
 
     const mrpVal = Math.round(values.mrp);
     const labCostVal = Math.round(values.labCost ?? 0);
-    // Convert commission % → flat ₹ amount
-    const commissionVal = Math.round(
-      (mrpVal * (values.doctorCommission ?? 0)) / 100,
-    );
+    const commissionVal = Math.round(values.commission ?? 0); // direct flat ₹
     const profitVal = mrpVal - labCostVal - commissionVal;
 
     const payload = {
@@ -98,14 +94,14 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
       isActive: values.isActive,
     };
 
-    console.log("Creating test with payload:", {
-      name: payload.name,
-      code: payload.code,
-      sample_type: payload.sampleType,
+    console.log("Final Payload:", {
+      test_name: values.name.trim(),
+      test_code: values.code.trim().toUpperCase(),
       mrp: mrpVal,
       lab_cost: labCostVal,
       commission_amount: commissionVal,
       profit: profitVal,
+      status: values.isActive ? "active" : "inactive",
     });
     console.log(
       "Auth token:",
@@ -114,6 +110,8 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
 
     try {
       const result = await addTest.mutateAsync(payload);
+      console.log("CreateTest response:", result);
+      if (!result) throw new Error("Test creation failed");
 
       if (result.__kind__ === "err") {
         if (result.err === TestError.duplicateCode) {
@@ -136,7 +134,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
       reset();
       onClose();
     } catch (err: unknown) {
-      console.error(err);
+      console.error("CreateTest error:", err);
       const msg =
         err instanceof Error
           ? err.message
@@ -144,6 +142,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
             ? err
             : JSON.stringify(err);
       toast.error(`Failed to add test: ${msg}`);
+      alert(msg || "Failed to add test");
     }
   };
 
@@ -383,29 +382,27 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
           {/* Doctor Commission */}
           <div className="space-y-1.5">
             <label
-              htmlFor="add-doctorCommission"
+              htmlFor="add-commission"
               className="block text-xs font-semibold text-gray-700 uppercase tracking-wide"
             >
-              Doctor Commission (%)
+              Doctor Commission (₹)
             </label>
             <input
-              id="add-doctorCommission"
+              id="add-commission"
               type="number"
               min={0}
-              max={100}
-              step={0.01}
-              placeholder="e.g. 10"
+              step={1}
+              placeholder="e.g. 50"
               className="w-full rounded-xl border-2 border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              {...register("doctorCommission", {
+              {...register("commission", {
                 min: { value: 0, message: "Commission must be 0 or more" },
-                max: { value: 100, message: "Commission cannot exceed 100%" },
                 valueAsNumber: true,
               })}
             />
-            {errors.doctorCommission && (
+            {errors.commission && (
               <p className="text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" />
-                {errors.doctorCommission.message}
+                {errors.commission.message}
               </p>
             )}
           </div>
