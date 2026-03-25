@@ -338,7 +338,20 @@ export async function getUserByMobile(mobile: string): Promise<AppUser | null> {
   try {
     const actor = await getActor();
     const result = await actor.getUserByMobile(mobile);
-    return result ?? null;
+    // Motoko optional: result is [] (None) or [user] (Some)
+    if (Array.isArray(result)) {
+      return result.length > 0 ? (result[0] as AppUser) : null;
+    }
+    // Handle plain object Result variants just in case
+    const r = result as unknown as
+      | { ok?: AppUser; err?: string }
+      | AppUser
+      | null
+      | undefined;
+    if (r && typeof r === "object" && "ok" in r)
+      return (r as { ok: AppUser }).ok;
+    if (r && typeof r === "object" && "err" in r) return null;
+    return (r as AppUser | null | undefined) ?? null;
   } catch (e) {
     console.error("[backendService] getUserByMobile failed:", e);
     return null;
@@ -363,10 +376,17 @@ export async function registerAppUser(
 ): Promise<AppUser | null> {
   try {
     const actor = await getActor();
-    return await actor.registerAppUser(mobile, name, role, assignedHospitalId);
+    const result = await actor.registerAppUser(
+      mobile,
+      name,
+      role,
+      assignedHospitalId,
+    );
+    console.log("[backendService] registerAppUser result:", result);
+    return result as AppUser;
   } catch (e) {
     console.error("[backendService] registerAppUser failed:", e);
-    return null;
+    throw e;
   }
 }
 

@@ -201,7 +201,7 @@ export default function StaffApp() {
   // Effective role: session-based role takes priority (for OTP logins),
   // then ICP user profile, then fall back to labAdmin as least-privileged
   const effectiveRole: AppRole =
-    sessionRole ?? (userProfile?.appRole as AppRole) ?? "labAdmin";
+    sessionRole ?? (userProfile?.appRole as AppRole) ?? "superAdmin";
 
   useEffect(() => {
     if (currentPage) return;

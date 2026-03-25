@@ -1285,10 +1285,8 @@ actor {
     user;
   };
 
-  public query ({ caller }) func getUserByMobile(mobile : Text) : async ?AppUser {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can get user data");
-    };
+  public query func getUserByMobile(mobile : Text) : async ?AppUser {
+    // Public: called during login before user is authenticated
     users.get(mobile);
   };
 

@@ -27,7 +27,11 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useHospitals } from "../../hooks/useQueries";
-import { deleteAllData } from "../../services/backendService";
+import {
+  deleteAllData,
+  getAllAppUsers,
+  registerAppUser,
+} from "../../services/backendService";
 
 void Building2;
 
@@ -63,34 +67,6 @@ interface Hospital {
   id: string;
   name: string;
   isActive: boolean;
-}
-
-function loadLabAdmins(): LabAdmin[] {
-  try {
-    const raw = localStorage.getItem("xpertlab_lab_admins");
-    if (raw) return JSON.parse(raw) as LabAdmin[];
-  } catch {
-    /* noop */
-  }
-  return [];
-}
-
-function saveLabAdmins(admins: LabAdmin[]) {
-  localStorage.setItem("xpertlab_lab_admins", JSON.stringify(admins));
-}
-
-function loadPhlebotomists(): Phlebotomist[] {
-  try {
-    const raw = localStorage.getItem("xpertlab_phlebotomists");
-    if (raw) return JSON.parse(raw) as Phlebotomist[];
-  } catch {
-    /* noop */
-  }
-  return [];
-}
-
-function savePhlebotomists(phlebs: Phlebotomist[]) {
-  localStorage.setItem("xpertlab_phlebotomists", JSON.stringify(phlebs));
 }
 
 function StatusBadge({ status }: { status: "Active" | "Disabled" }) {
@@ -315,7 +291,31 @@ function Modal({
 // ─── Lab Admins Tab ──────────────────────────────────────────────────────────
 
 function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
-  const [admins, setAdmins] = useState<LabAdmin[]>(() => loadLabAdmins());
+  const [admins, setAdmins] = useState<LabAdmin[]>([]);
+  useEffect(() => {
+    getAllAppUsers()
+      .then((users) => {
+        const labAdmins: LabAdmin[] = users
+          .filter((u) => u.role === "lab_admin")
+          .map((u) => ({
+            id: u.mobile,
+            name: u.name,
+            mobile: u.mobile,
+            email: "",
+            assignedLab: "",
+            loginMethod: "OTP" as const,
+            assignedHospitals: u.assignedHospitalId
+              ? [u.assignedHospitalId]
+              : [],
+            status: u.isActive ? "Active" : "Disabled",
+            lastLogin: "Never",
+            isDemo: false,
+          }));
+        setAdmins(labAdmins);
+      })
+      .catch(() => setAdmins([]))
+      .catch(() => setAdmins([]));
+  }, []);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<LabAdminFormState>(emptyLabAdminForm());
@@ -343,7 +343,7 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) {
       setError("Name is required.");
       return;
@@ -353,34 +353,59 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
       return;
     }
     setError("");
-    if (editingId) {
-      const updated = admins.map((a) =>
-        a.id === editingId ? { ...a, ...form } : a,
+    const payload = {
+      name: form.name.trim(),
+      mobile: form.mobile.trim(),
+      role: "lab_admin",
+      assigned_hospitals: form.assignedHospitals || [],
+    };
+    console.log("Creating lab admin:", payload);
+    try {
+      const res = await registerAppUser(
+        payload.mobile,
+        payload.name,
+        payload.role,
+        payload.assigned_hospitals[0] ?? null,
       );
-      setAdmins(updated);
-      saveLabAdmins(updated);
-    } else {
+      console.log("User response:", res);
+      if (!res) throw new Error("User creation failed");
       const newAdmin: LabAdmin = {
-        ...form,
-        id: `la-${Date.now()}`,
+        id: res.mobile,
+        name: res.name,
+        mobile: res.mobile,
+        email: form.email,
+        assignedLab: form.assignedLab,
+        loginMethod: "OTP" as const,
+        assignedHospitals: res.assignedHospitalId
+          ? [res.assignedHospitalId]
+          : form.assignedHospitals,
+        status: "Active",
         lastLogin: "Never",
         isDemo: false,
       };
-      const updated = [newAdmin, ...admins];
-      setAdmins(updated);
-      saveLabAdmins(updated);
+      setAdmins((prev) => [
+        newAdmin,
+        ...prev.filter((a) => a.mobile !== res.mobile),
+      ]);
+      toast.success("Lab Admin created successfully");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "User creation failed";
+      setError(msg);
+      toast.error(msg);
+      return;
     }
     setShowModal(false);
   };
 
   const handleToggleStatus = (id: string) => {
-    const updated = admins.map((a) =>
-      a.id === id
-        ? { ...a, status: a.status === "Active" ? "Disabled" : "Active" }
-        : a,
-    ) as LabAdmin[];
-    setAdmins(updated);
-    saveLabAdmins(updated);
+    setAdmins(
+      (prev) =>
+        prev.map((a) =>
+          a.id === id
+            ? { ...a, status: a.status === "Active" ? "Disabled" : "Active" }
+            : a,
+        ) as LabAdmin[],
+    );
   };
 
   return (
@@ -668,9 +693,29 @@ function LabAdminsTab({ hospitals }: { hospitals: Hospital[] }) {
 // ─── Phlebotomists Tab ───────────────────────────────────────────────────────
 
 function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
-  const [phlebs, setPhlebs] = useState<Phlebotomist[]>(() =>
-    loadPhlebotomists(),
-  );
+  const [phlebs, setPhlebs] = useState<Phlebotomist[]>([]);
+
+  useEffect(() => {
+    getAllAppUsers()
+      .then((users) => {
+        const phlebotomists: Phlebotomist[] = users
+          .filter((u) => u.role === "phlebotomist")
+          .map((u) => ({
+            id: u.mobile,
+            name: u.name,
+            mobile: u.mobile,
+            assignedHospitals: u.assignedHospitalId
+              ? [u.assignedHospitalId]
+              : [],
+            status: u.isActive ? "Active" : "Disabled",
+            samplesToday: 0,
+            lastLogin: "Never",
+            isDemo: false,
+          }));
+        setPhlebs(phlebotomists);
+      })
+      .catch(() => setPhlebs([]));
+  }, []);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<PhlebotomistFormState>(
@@ -697,7 +742,7 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
     setShowModal(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) {
       setError("Name is required.");
       return;
@@ -707,35 +752,57 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
       return;
     }
     setError("");
-    if (editingId) {
-      const updated = phlebs.map((p) =>
-        p.id === editingId ? { ...p, ...form } : p,
+    const payload = {
+      name: form.name.trim(),
+      mobile: form.mobile.trim(),
+      role: "phlebotomist",
+      assigned_hospitals: form.assignedHospitals || [],
+    };
+    console.log("Creating phlebotomist:", payload);
+    try {
+      const res = await registerAppUser(
+        payload.mobile,
+        payload.name,
+        payload.role,
+        payload.assigned_hospitals[0] ?? null,
       );
-      setPhlebs(updated);
-      savePhlebotomists(updated);
-    } else {
+      console.log("User response:", res);
+      if (!res) throw new Error("User creation failed");
       const newPhleb: Phlebotomist = {
-        ...form,
-        id: `ph-${Date.now()}`,
+        id: res.mobile,
+        name: res.name,
+        mobile: res.mobile,
+        assignedHospitals: res.assignedHospitalId
+          ? [res.assignedHospitalId]
+          : form.assignedHospitals,
+        status: "Active",
         samplesToday: 0,
         lastLogin: "Never",
         isDemo: false,
       };
-      const updated = [newPhleb, ...phlebs];
-      setPhlebs(updated);
-      savePhlebotomists(updated);
+      setPhlebs((prev) => [
+        newPhleb,
+        ...prev.filter((p) => p.mobile !== res.mobile),
+      ]);
+      toast.success("Phlebotomist created successfully");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "User creation failed";
+      setError(msg);
+      toast.error(msg);
+      return;
     }
     setShowModal(false);
   };
 
   const handleToggleStatus = (id: string) => {
-    const updated = phlebs.map((p) =>
-      p.id === id
-        ? { ...p, status: p.status === "Active" ? "Disabled" : "Active" }
-        : p,
-    ) as Phlebotomist[];
-    setPhlebs(updated);
-    savePhlebotomists(updated);
+    setPhlebs(
+      (prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? { ...p, status: p.status === "Active" ? "Disabled" : "Active" }
+            : p,
+        ) as Phlebotomist[],
+    );
   };
 
   const handleResetDevice = (id: string) => {
@@ -749,7 +816,6 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
       p.id === id ? { ...p, deviceId: null, deviceBound: false } : p,
     ) as Phlebotomist[];
     setPhlebs(updated);
-    savePhlebotomists(updated);
     window.alert(
       "Device reset successfully. Phlebotomist will need to log in again.",
     );
