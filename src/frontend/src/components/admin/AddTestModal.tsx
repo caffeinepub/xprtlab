@@ -3,7 +3,6 @@ import { AlertCircle, AlertTriangle, Loader2, X } from "lucide-react";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { TestError } from "../../backend";
 import { useAddTest } from "../../hooks/useQueries";
 import { getSession } from "../../utils/sessionUtils";
 
@@ -70,7 +69,6 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
 
   const onSubmit = async (values: AddTestFormValues) => {
     console.log("Submit clicked - onSubmit fired");
-    // ── Role check: only super_admin can add tests ──────────────────────────
     const session = getSession();
     if (!session || session.role !== "superAdmin") {
       toast.error("Only Super Admin can add test");
@@ -79,7 +77,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
 
     const mrpVal = Math.round(values.mrp);
     const labCostVal = Math.round(values.labCost ?? 0);
-    const commissionVal = Math.round(values.commission ?? 0); // direct flat ₹
+    const commissionVal = Math.round(values.commission ?? 0);
     const profitVal = mrpVal - labCostVal - commissionVal;
 
     const payload = {
@@ -103,30 +101,23 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
       profit: profitVal,
       status: values.isActive ? "active" : "inactive",
     });
-    console.log(
-      "Auth token:",
-      `${session.userId} (${session.role}) — ICP identity auth`,
-    );
 
     try {
       const result = await addTest.mutateAsync(payload);
       console.log("CreateTest response:", result);
-      if (!result) throw new Error("Test creation failed");
 
-      if (result.__kind__ === "err") {
-        if (result.err === TestError.duplicateCode) {
+      // ICP variants are plain objects: { ok: ... } or { err: ... }
+      if ("err" in result) {
+        const errVariant = result.err;
+        if ("duplicateCode" in (errVariant as unknown as object)) {
           setError("code", {
             type: "manual",
             message: "Test code already exists.",
           });
           toast.error("Test code already exists. Use a different code.");
-          return;
+        } else {
+          toast.error(`Failed to add test: ${JSON.stringify(errVariant)}`);
         }
-        const errMsg =
-          typeof result.err === "string"
-            ? result.err
-            : JSON.stringify(result.err);
-        toast.error(`Failed to add test: ${errMsg}`);
         return;
       }
 

@@ -1,6 +1,7 @@
 import { Loader2, Shield } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useInternetIdentity } from "../../hooks/useInternetIdentity";
+import { getUserByMobile } from "../../services/backendService";
 import type { AppRole } from "../../types/models";
 import { saveSession } from "../../utils/sessionUtils";
 import HealthcareBg from "../shared/HealthcareBg";
@@ -9,15 +10,6 @@ import OTPLoginScreen from "./OTPLoginScreen";
 interface StaffLoginScreenProps {
   onDemoMode?: (role: AppRole) => void;
 }
-
-const ALLOWED_MOBILES: Record<
-  string,
-  "phlebotomist" | "labAdmin" | "superAdmin"
-> = {
-  "9999999999": "phlebotomist",
-  "8888888888": "labAdmin",
-  "7777777777": "superAdmin",
-};
 
 export default function StaffLoginScreen({
   onDemoMode,
@@ -52,27 +44,43 @@ export default function StaffLoginScreen({
     }
   }, [isLoginSuccess, identity]);
 
-  const handleOTPSuccess = (mobile: string) => {
+  const handleOTPSuccess = async (mobile: string) => {
     setAuthError("");
-    const role = ALLOWED_MOBILES[mobile];
-    if (!role) {
-      setAuthError("Account not found");
-      return;
-    }
-    // Clear all old data before saving new session
-    localStorage.clear();
-    const session = {
-      userId: mobile,
-      mobileNumber: mobile,
-      mobile,
-      role,
-      loginType: "otp" as const,
-      loginAt: Date.now(),
-    };
-    console.log("Session after login:", session);
-    saveSession(session);
-    if (onDemoMode) {
-      onDemoMode(role);
+    try {
+      const user = await getUserByMobile(mobile);
+      if (!user) {
+        setAuthError("Account not found. Please contact administrator.");
+        return;
+      }
+      let role: AppRole;
+      if (user.role === "phlebotomist") {
+        role = "phlebotomist";
+      } else if (user.role === "lab_admin") {
+        role = "labAdmin";
+      } else if (user.role === "super_admin") {
+        role = "superAdmin";
+      } else {
+        setAuthError("Account not found. Please contact administrator.");
+        return;
+      }
+      // Clear all old data before saving new session
+      localStorage.clear();
+      const session = {
+        userId: mobile,
+        mobileNumber: mobile,
+        mobile,
+        role,
+        loginType: "otp" as const,
+        loginAt: Date.now(),
+      };
+      console.log("Session after login:", session);
+      saveSession(session);
+      if (onDemoMode) {
+        onDemoMode(role);
+      }
+    } catch (e) {
+      console.error("Login error:", e);
+      setAuthError("Login failed. Please try again.");
     }
   };
 
@@ -147,7 +155,7 @@ export default function StaffLoginScreen({
           </div>
 
           {/* OTP Login */}
-          <OTPLoginScreen isDemoMode={true} onSuccess={handleOTPSuccess} />
+          <OTPLoginScreen onSuccess={handleOTPSuccess} />
 
           {authError && (
             <div

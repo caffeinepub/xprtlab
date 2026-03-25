@@ -3,7 +3,6 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface OTPLoginScreenProps {
-  isDemoMode?: boolean;
   onSuccess: (mobile: string) => void;
 }
 
@@ -14,10 +13,7 @@ const OTP_EXPIRY_SECONDS = 300; // 5 minutes
 const RESEND_COOLDOWN_SECONDS = 30;
 const MAX_ATTEMPTS = 3;
 
-export default function OTPLoginScreen({
-  isDemoMode = false,
-  onSuccess,
-}: OTPLoginScreenProps) {
+export default function OTPLoginScreen({ onSuccess }: OTPLoginScreenProps) {
   const [step, setStep] = useState<Step>("mobile");
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -86,7 +82,6 @@ export default function OTPLoginScreen({
     setError("");
     setIsLoading(true);
 
-    // Simulate OTP send (demo mode or real backend)
     await new Promise((r) => setTimeout(r, 800));
     setIsLoading(false);
     setAttempts(0);
@@ -155,9 +150,7 @@ export default function OTPLoginScreen({
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 600));
 
-    const isValid = isDemoMode
-      ? enteredOtp === DEMO_OTP
-      : enteredOtp === DEMO_OTP;
+    const isValid = enteredOtp === DEMO_OTP;
 
     if (isValid) {
       clearTimers();
@@ -195,19 +188,6 @@ export default function OTPLoginScreen({
 
   return (
     <div className="w-full space-y-5">
-      {/* Demo Mode Banner */}
-      {isDemoMode && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-2">
-          <span className="text-blue-500 text-base leading-none mt-0.5">ℹ️</span>
-          <p className="text-xs text-blue-700 font-medium leading-relaxed">
-            <strong>Demo Mode</strong> — enter any 10-digit number. OTP is{" "}
-            <code className="bg-blue-100 px-1.5 py-0.5 rounded font-mono font-bold">
-              123456
-            </code>
-          </p>
-        </div>
-      )}
-
       {step === "mobile" ? (
         <>
           {/* Step 1: Mobile Number */}

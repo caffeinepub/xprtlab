@@ -80,7 +80,7 @@ export default function LoginScreen({ onAuthenticated }: LoginScreenProps) {
         </div>
 
         {/* OTP Login */}
-        <OTPLoginScreen isDemoMode={true} onSuccess={handleOTPSuccess} />
+        <OTPLoginScreen onSuccess={handleOTPSuccess} />
       </div>
     </div>
   );

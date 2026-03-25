@@ -1,6 +1,5 @@
 import { Search, UserCircle } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
-import { useSystemMode } from "../../hooks/useSystemMode";
 import BottomNavigation, { type NavItem } from "./BottomNavigation";
 
 interface StaffAppLayoutProps {
@@ -96,11 +95,8 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
   navItems,
   onNavigate,
   roleLabel,
-  isDemoMode = false,
-  onExitDemo,
 }) => {
   const isSuperAdmin = roleLabel === "Super Admin";
-  const { systemMode } = useSystemMode();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: currentPath intentionally used to force recompute
   const pendingCount = React.useMemo(() => {
@@ -139,24 +135,6 @@ const StaffAppLayout: React.FC<StaffAppLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Demo mode banner */}
-      {isDemoMode && systemMode !== "test" && systemMode !== "production" && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center justify-between">
-          <span className="text-xs text-amber-700 font-medium">
-            🎭 Demo Mode — data is not saved to the blockchain
-          </span>
-          {onExitDemo && (
-            <button
-              type="button"
-              onClick={onExitDemo}
-              className="text-xs text-amber-600 underline hover:text-amber-800 transition-colors"
-            >
-              Exit Demo
-            </button>
-          )}
-        </div>
-      )}
-
       {/* Header */}
       <header
         className="sticky top-0 z-40 px-4 py-2.5 flex items-center justify-between gap-3"

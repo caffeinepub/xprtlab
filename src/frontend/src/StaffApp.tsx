@@ -243,27 +243,21 @@ export default function StaffApp() {
   const renderPage = () => {
     switch (currentPage) {
       case "super-admin-dashboard":
-        return <SuperAdminDashboardPage isDemoMode={false} />;
+        return <SuperAdminDashboardPage />;
       case "phlebotomist-attendance":
         return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
       case "tasks":
       case "task-queue":
         return (
-          <TaskQueuePage
-            isDemoMode={false}
-            role={effectiveRole}
-            onNavigate={handleNavigate}
-          />
+          <TaskQueuePage role={effectiveRole} onNavigate={handleNavigate} />
         );
       case "home-collections":
       case "home-collection-queue":
-        return <HomeCollectionQueuePage isDemoMode={false} />;
+        return <HomeCollectionQueuePage />;
       case "hospital-sample-entry":
-        return <AddHospitalSamplePage isDemoMode={false} />;
+        return <AddHospitalSamplePage />;
       case "my-hospital-samples":
-        return (
-          <MyHospitalSamplesPage isDemoMode={false} role={effectiveRole} />
-        );
+        return <MyHospitalSamplesPage role={effectiveRole} />;
       case "scan-qr":
         return <ScanCampQRPage />;
       case "record-vitals":
@@ -323,31 +317,21 @@ export default function StaffApp() {
         );
       case "revenue-settlements":
         if (effectiveRole === "superAdmin" || effectiveRole === "labAdmin") {
-          return (
-            <RevenueSettlementsPage
-              onNavigate={handleNavigate}
-              isDemoMode={false}
-            />
-          );
+          return <RevenueSettlementsPage onNavigate={handleNavigate} />;
         }
         return (
           <AccessDenied message="You do not have permission to access Revenue & Settlements." />
         );
       case "profit-dashboard":
         if (effectiveRole === "superAdmin") {
-          return <ProfitDashboardPage isDemoMode={false} />;
+          return <ProfitDashboardPage />;
         }
         return (
           <AccessDenied message="You do not have permission to access the Profit Dashboard." />
         );
       case "super-admin-settings":
         if (effectiveRole === "superAdmin") {
-          return (
-            <SuperAdminSettingsPage
-              isDemoMode={false}
-              onNavigate={handleNavigate}
-            />
-          );
+          return <SuperAdminSettingsPage onNavigate={handleNavigate} />;
         }
         return (
           <AccessDenied message="You do not have permission to access Settings." />
@@ -363,8 +347,7 @@ export default function StaffApp() {
       default:
         if (effectiveRole === "phlebotomist")
           return <PhlebotomistAttendancePage onNavigate={handleNavigate} />;
-        if (effectiveRole === "superAdmin")
-          return <SuperAdminDashboardPage isDemoMode={false} />;
+        if (effectiveRole === "superAdmin") return <SuperAdminDashboardPage />;
         return <AdminBookingsPage onNavigate={handleNavigate} />;
     }
   };
@@ -385,7 +368,6 @@ export default function StaffApp() {
         onNavigate={handleNavigate}
         navItems={getNavItems(effectiveRole)}
         roleLabel={getRoleLabel(effectiveRole)}
-        isDemoMode={false}
         onExitDemo={handleLogout}
       >
         <ErrorBoundary>

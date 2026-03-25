@@ -27,13 +27,11 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useHospitals } from "../../hooks/useQueries";
-import { useSystemMode } from "../../hooks/useSystemMode";
 import { deleteAllData } from "../../services/backendService";
 
 void Building2;
 
 export interface SuperAdminSettingsPageProps {
-  isDemoMode?: boolean;
   onNavigate?: (path: string) => void;
 }
 
@@ -1031,192 +1029,11 @@ function PhlebotomistsTab({ hospitals }: { hospitals: Hospital[] }) {
   );
 }
 
-// ─── System Mode Section ──────────────────────────────────────────────────────
-
-function SystemModeSection() {
-  const { systemMode, isTestMode, setSystemMode } = useSystemMode();
-  const [saving, setSaving] = useState(false);
-
-  const handleSetMode = async (mode: "test" | "production") => {
-    setSaving(true);
-    try {
-      await setSystemMode(mode);
-      if (mode === "test") {
-        try {
-          const phleboRaw = localStorage.getItem("xpertlab_phlebotomists");
-          const phlebos: any[] = phleboRaw ? JSON.parse(phleboRaw) : [];
-          if (!phlebos.find((p: any) => p.id === "test-phlebo-1")) {
-            phlebos.push({
-              id: "test-phlebo-1",
-              name: "Test Phlebo",
-              mobile: "9999999999",
-              assignedHospitals: ["Vijaya Hospital"],
-              status: "Active",
-              samplesToday: 0,
-              lastLogin: "Never",
-              isTestAccount: true,
-            });
-            localStorage.setItem(
-              "xpertlab_phlebotomists",
-              JSON.stringify(phlebos),
-            );
-          }
-          const labRaw = localStorage.getItem("xpertlab_lab_admins");
-          const labs: any[] = labRaw ? JSON.parse(labRaw) : [];
-          if (!labs.find((l: any) => l.id === "test-lab-admin-1")) {
-            labs.push({
-              id: "test-lab-admin-1",
-              name: "Test Lab Admin",
-              mobile: "8888888888",
-              email: "test@lab.com",
-              assignedLab: "Test Lab",
-              loginMethod: "OTP",
-              assignedHospitals: ["Vijaya Hospital"],
-              status: "Active",
-              lastLogin: "Never",
-              isTestAccount: true,
-            });
-            localStorage.setItem("xpertlab_lab_admins", JSON.stringify(labs));
-          }
-          localStorage.setItem(
-            "xpertlab_test_super_admin",
-            JSON.stringify({ mobile: "7777777777", role: "superAdmin" }),
-          );
-        } catch {
-          /* noop */
-        }
-        toast.success("TEST MODE enabled. Test accounts created.");
-      } else {
-        toast.success("PRODUCTION MODE enabled. OTP 123456 is disabled.");
-      }
-    } catch {
-      toast.error("Failed to update system mode. Please try again.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleResetTestData = async () => {
-    try {
-      // Call backend to delete all sample data
-      await deleteAllData();
-    } catch (e) {
-      console.error(
-        "[Settings] Backend reset failed, continuing with local reset:",
-        e,
-      );
-    }
-
-    toast.success("Test data reset successfully.");
-  };
-
-  return (
-    <div
-      className="bg-white rounded-2xl p-6 mb-6"
-      style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
-    >
-      <div className="flex items-center gap-2 mb-1">
-        <Shield className="w-5 h-5 text-blue-600" />
-        <h2 className="font-bold text-gray-900" style={{ fontSize: "16px" }}>
-          System Mode
-        </h2>
-      </div>
-      <p className="text-sm text-gray-500 mb-4">
-        Control whether the system operates in test or production mode.
-      </p>
-
-      <div className="flex gap-3 mb-4">
-        <button
-          type="button"
-          data-ocid="system_mode.test_button"
-          disabled={saving}
-          onClick={() => handleSetMode("test")}
-          className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm border-2 transition-all"
-          style={
-            isTestMode
-              ? {
-                  background: "linear-gradient(135deg, #2563EB, #06B6D4)",
-                  color: "#fff",
-                  borderColor: "transparent",
-                  boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
-                }
-              : { background: "#fff", color: "#6B7280", borderColor: "#E5E7EB" }
-          }
-        >
-          TEST MODE
-        </button>
-        <button
-          type="button"
-          data-ocid="system_mode.production_button"
-          disabled={saving}
-          onClick={() => handleSetMode("production")}
-          className="flex-1 py-3 px-4 rounded-xl font-semibold text-sm border-2 transition-all"
-          style={
-            systemMode === "production"
-              ? {
-                  background: "linear-gradient(135deg, #2563EB, #06B6D4)",
-                  color: "#fff",
-                  borderColor: "transparent",
-                  boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
-                }
-              : { background: "#fff", color: "#6B7280", borderColor: "#E5E7EB" }
-          }
-        >
-          PRODUCTION MODE
-        </button>
-      </div>
-
-      <div className="text-xs text-gray-500 mb-5">
-        {isTestMode &&
-          "TEST MODE active — OTP 123456 is enabled, test accounts are available, demo banner is hidden."}
-        {systemMode === "production" &&
-          "PRODUCTION MODE active — OTP 123456 is disabled. Real SMS required."}
-        {systemMode === "demo" &&
-          "Default demo mode — OTP 123456 works, demo banner is visible."}
-      </div>
-
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <button
-            type="button"
-            data-ocid="system_mode.reset_button"
-            className="text-sm font-semibold border-2 border-red-200 text-red-600 rounded-xl px-4 py-2 hover:bg-red-50 transition-colors"
-          >
-            Reset Test Data
-          </button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset Test Data?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete ALL samples, tests, hospitals, and
-              tasks. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-ocid="system_mode.reset_cancel_button">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              data-ocid="system_mode.reset_confirm_button"
-              onClick={handleResetTestData}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Reset Data
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
-
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function SuperAdminSettingsPage({
-  isDemoMode = false,
-}: SuperAdminSettingsPageProps) {
-  void isDemoMode;
+export default function SuperAdminSettingsPage(
+  _props: SuperAdminSettingsPageProps,
+) {
   const { data: hospitalsData = [] } = useHospitals();
   const hospitals: Hospital[] = hospitalsData.map((h) => ({
     id: String(h.id),
@@ -1268,8 +1085,6 @@ export default function SuperAdminSettingsPage({
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        <SystemModeSection />
-
         <Tabs defaultValue="lab-admins">
           <TabsList
             className="mb-6 bg-white border border-gray-100 p-1 rounded-xl"
