@@ -1,7 +1,12 @@
 import { Loader2, Shield } from "lucide-react";
 import React, { useEffect, useState } from "react";
+import { createActorWithConfig } from "../../config";
 import { useInternetIdentity } from "../../hooks/useInternetIdentity";
-import { getUserByMobile } from "../../services/backendService";
+import {
+  claimSuperAdmin,
+  getUserByMobile,
+  setAuthenticatedActor,
+} from "../../services/backendService";
 import type { AppRole } from "../../types/models";
 import { saveSession } from "../../utils/sessionUtils";
 import HealthcareBg from "../shared/HealthcareBg";
@@ -25,10 +30,37 @@ export default function StaffLoginScreen({
 
   // Handle Internet Identity success
   useEffect(() => {
-    if (isLoginSuccess && identity) {
-      const principal = identity.getPrincipal().toText();
-      console.log("Logged in principal:", principal);
-      // Clear all old data before saving new session
+    if (!isLoginSuccess || !identity) return;
+
+    const principal = identity.getPrincipal().toText();
+    console.log("Logged in principal:", principal);
+
+    (async () => {
+      try {
+        // Build an authenticated actor immediately so claimSuperAdmin uses it
+        const authActor = await createActorWithConfig({
+          agentOptions: { identity },
+        });
+        setAuthenticatedActor(authActor);
+        console.log("Identity:", identity);
+      } catch (e) {
+        console.warn("Failed to create authenticated actor:", e);
+      }
+
+      // Try to claim super admin (only works if no super admin exists yet)
+      try {
+        const result = await claimSuperAdmin();
+        if ("ok" in result) {
+          console.log("Super admin claimed:", result.ok);
+        } else {
+          console.log("claimSuperAdmin info:", result.err);
+          // "already exists" is normal on subsequent logins — not an error
+        }
+      } catch (e) {
+        console.warn("claimSuperAdmin call failed (non-critical):", e);
+      }
+
+      // Always proceed to admin panel regardless of claimSuperAdmin result
       localStorage.clear();
       saveSession({
         userId: principal,
@@ -41,7 +73,7 @@ export default function StaffLoginScreen({
         localStorage.getItem("xpertlab_session"),
       );
       window.location.href = "/admin-app";
-    }
+    })();
   }, [isLoginSuccess, identity]);
 
   const handleOTPSuccess = async (mobile: string) => {

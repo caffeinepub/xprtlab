@@ -17,17 +17,33 @@ import type {
 } from "../backend.d";
 import { createActorWithConfig } from "../config";
 
-let _actorPromise: ReturnType<typeof createActorWithConfig> | null = null;
+// Module-level authenticated actor (set after II login)
+let _authenticatedActor: Awaited<
+  ReturnType<typeof createActorWithConfig>
+> | null = null;
+// Anonymous fallback (lazy)
+let _anonActorPromise: ReturnType<typeof createActorWithConfig> | null = null;
+
+/** Called by useActor hook after II login (or on page load when delegation is restored). */
+export function setAuthenticatedActor(
+  actor: Awaited<ReturnType<typeof createActorWithConfig>> | null,
+) {
+  _authenticatedActor = actor;
+  // Reset anon cache too so queries after logout get fresh anon actor
+  _anonActorPromise = null;
+}
 
 async function getActor() {
-  if (!_actorPromise) {
-    _actorPromise = createActorWithConfig();
+  if (_authenticatedActor) return _authenticatedActor;
+  if (!_anonActorPromise) {
+    _anonActorPromise = createActorWithConfig();
   }
-  return _actorPromise;
+  return _anonActorPromise;
 }
 
 export function resetActorCache() {
-  _actorPromise = null;
+  _authenticatedActor = null;
+  _anonActorPromise = null;
 }
 
 // ─── Samples ─────────────────────────────────────────────────────────────────
@@ -173,18 +189,6 @@ export async function getTests(): Promise<TestOutput[]> {
 }
 
 export async function createTest(input: TestInput) {
-  // Read session for debug logging (ICP canister uses identity, not Bearer tokens)
-  let sessionAuthToken: string | null = null;
-  try {
-    const rawSession = localStorage.getItem("xpertlab_session");
-    if (rawSession) {
-      const session = JSON.parse(rawSession);
-      sessionAuthToken = session?.authToken ?? null;
-    }
-  } catch {
-    // ignore parse errors
-  }
-
   console.log("Creating test with payload:", {
     name: input.name,
     code: input.code,
@@ -194,12 +198,16 @@ export async function createTest(input: TestInput) {
     commission_amount: Number(input.commission_amount),
     profit: Number(input.profit),
   });
-  console.log("Auth token:", sessionAuthToken ?? "(none — using ICP identity)");
+  console.log("Auth actor available:", _authenticatedActor !== null);
 
   try {
     const actor = await getActor();
-    const result = await actor.addTest(input);
-    return result;
+    const res = await actor.addTest(input);
+    if (res && typeof res === "object" && "ok" in res)
+      return (res as { ok: unknown }).ok;
+    if (res && typeof res === "object" && "err" in res)
+      throw new Error(String((res as { err: unknown }).err));
+    return res;
   } catch (e) {
     console.error("[backendService] createTest failed:", e);
     throw e;
@@ -386,6 +394,21 @@ export async function registerAppUser(
     return result as AppUser;
   } catch (e) {
     console.error("[backendService] registerAppUser failed:", e);
+    throw e;
+  }
+}
+
+export async function claimSuperAdmin(): Promise<
+  { ok: string } | { err: string }
+> {
+  try {
+    const actor = await getActor();
+    const result = await actor.claimSuperAdmin();
+    console.log("[backendService] claimSuperAdmin result:", result);
+    if ("ok" in result) return { ok: result.ok as string };
+    return { err: result.err as string };
+  } catch (e) {
+    console.error("[backendService] claimSuperAdmin failed:", e);
     throw e;
   }
 }

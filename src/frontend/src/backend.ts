@@ -291,6 +291,7 @@ export interface backendInterface {
     markSettlement(hospitalId: string, amount: bigint, settlementType: Variant_Partial_Settled, notes: string | null): Promise<Settlement>;
     registerAppUser(mobile: string, name: string, role: string, assignedHospitalId: string | null): Promise<AppUser>;
     removePhlebotomistFromHospital(hospitalId: string, phlebotomist: Principal, removalReason: string): Promise<HospitalPhlebotomistAssignment>;
+    claimSuperAdmin(): Promise<{ __kind__: "ok"; ok: string } | { __kind__: "err"; err: string }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     seedTestUsers(): Promise<bigint>;
     setSystemMode(mode: SystemMode): Promise<void>;
@@ -934,6 +935,22 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.removePhlebotomistFromHospital(arg0, arg1, arg2);
             return from_candid_HospitalPhlebotomistAssignment_n13(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async claimSuperAdmin(): Promise<{ __kind__: "ok"; ok: string } | { __kind__: "err"; err: string }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimSuperAdmin();
+                if ("ok" in result) return { __kind__: "ok", ok: result.ok as string };
+                return { __kind__: "err", err: result.err as string };
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimSuperAdmin();
+            if ("ok" in result) return { __kind__: "ok", ok: result.ok as string };
+            return { __kind__: "err", err: result.err as string };
         }
     }
     async saveCallerUserProfile(arg0: UserProfile): Promise<void> {

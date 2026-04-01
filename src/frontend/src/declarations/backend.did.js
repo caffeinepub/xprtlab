@@ -274,6 +274,7 @@ export const idlService = IDL.Service({
       [HospitalPhlebotomistAssignment],
       [],
     ),
+  'claimSuperAdmin' : IDL.Func([], [IDL.Variant({'ok': IDL.Text, 'err': IDL.Text})], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'seedTestUsers' : IDL.Func([], [IDL.Nat], []),
   'setSystemMode' : IDL.Func([SystemMode], [], []),
@@ -568,7 +569,8 @@ export const idlFactory = ({ IDL }) => {
         [HospitalPhlebotomistAssignment],
         [],
       ),
-    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'claimSuperAdmin' : IDL.Func([], [IDL.Variant({'ok': IDL.Text, 'err': IDL.Text})], []),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'seedTestUsers' : IDL.Func([], [IDL.Nat], []),
     'setSystemMode' : IDL.Func([SystemMode], [], []),
     'setTestStatus' : IDL.Func(

@@ -8,6 +8,7 @@ import ErrorBoundary from "./components/shared/ErrorBoundary";
 import LoadingScreen from "./components/shared/LoadingScreen";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
+import { resetActorCache } from "./services/backendService";
 import { getSession } from "./utils/sessionUtils";
 
 type AppRole = "patient" | "phlebotomist" | "labAdmin" | "superAdmin";
@@ -163,6 +164,7 @@ export default function StaffApp() {
   // Hard logout: clear all storage, clear II session, hard navigate to "/"
   const handleLogout = () => {
     try {
+      resetActorCache();
       localStorage.clear();
       clearIISession();
     } catch (e) {
@@ -199,7 +201,7 @@ export default function StaffApp() {
   } = useGetCallerUserProfile();
 
   // Effective role: session-based role takes priority (for OTP logins),
-  // then ICP user profile, then fall back to labAdmin as least-privileged
+  // then ICP user profile, then fall back to superAdmin
   const effectiveRole: AppRole =
     sessionRole ?? (userProfile?.appRole as AppRole) ?? "superAdmin";
 

@@ -49,11 +49,13 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
   const watchedLabCost = watch("labCost");
   const watchedCommission = watch("commission");
 
-  // Flat ₹ commission — use directly
-  const commissionAmt = watchedCommission ?? 0;
-  const profitPerTest =
-    (watchedMrp ?? 0) - (watchedLabCost ?? 0) - commissionAmt;
-  const showLossWarning = profitPerTest < 0 && (watchedMrp ?? 0) > 0;
+  // % commission → calculate doctor amount and profit
+  const mrpNum = Number(watchedMrp || 0);
+  const labCostNum = Number(watchedLabCost || 0);
+  const commissionPercent = Number(watchedCommission || 0);
+  const doctorAmount = Math.round((mrpNum * commissionPercent) / 100);
+  const profitPerTest = mrpNum - labCostNum - doctorAmount;
+  const showLossWarning = profitPerTest < 0 && mrpNum > 0;
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -68,64 +70,80 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
   }, [open]);
 
   const onSubmit = async (values: AddTestFormValues) => {
-    console.log("Submit clicked - onSubmit fired");
+    console.log("HANDLE START");
     const session = getSession();
     if (!session || session.role !== "superAdmin") {
       toast.error("Only Super Admin can add test");
       return;
     }
 
-    const mrpVal = Math.round(values.mrp);
-    const labCostVal = Math.round(values.labCost ?? 0);
-    const commissionVal = Math.round(values.commission ?? 0);
-    const profitVal = mrpVal - labCostVal - commissionVal;
+    const mrpVal = Number(values.mrp || 0);
+    const labCostVal = Number(values.labCost || 0);
+    const commPct = Number(values.commission || 0);
+    const commissionAmount = Math.round((mrpVal * commPct) / 100);
+    const profitVal = mrpVal - labCostVal - commissionAmount;
 
     const payload = {
-      name: values.name.trim(),
-      code: values.code.trim().toUpperCase(),
+      name: values.name.trim() || "test",
+      code: values.code.trim().toUpperCase() || Date.now().toString(),
       sampleType: values.sampleType.trim(),
       price: BigInt(mrpVal),
       mrp: BigInt(mrpVal),
       lab_cost: BigInt(labCostVal),
-      commission_amount: BigInt(commissionVal),
+      commission_amount: BigInt(commissionAmount),
       profit: BigInt(profitVal),
       isActive: values.isActive,
     };
 
-    console.log("Final Payload:", {
-      test_name: values.name.trim(),
-      test_code: values.code.trim().toUpperCase(),
+    console.log("PAYLOAD:", {
+      test_name: payload.name,
+      test_code: payload.code,
       mrp: mrpVal,
       lab_cost: labCostVal,
-      commission_amount: commissionVal,
+      commission_amount: commissionAmount,
       profit: profitVal,
       status: values.isActive ? "active" : "inactive",
     });
 
     try {
       const result = await addTest.mutateAsync(payload);
-      console.log("CreateTest response:", result);
+      console.log("RESPONSE:", result);
 
-      // ICP variants are plain objects: { ok: ... } or { err: ... }
-      if ("err" in result) {
+      if (!result) {
+        throw new Error("Test creation failed");
+      }
+
+      // ICP variants: { ok: ... } or { err: ... }
+      if (typeof result === "object" && "err" in result) {
         const errVariant = result.err;
-        if ("duplicateCode" in (errVariant as unknown as object)) {
+        if (
+          errVariant &&
+          typeof errVariant === "object" &&
+          "duplicateCode" in errVariant
+        ) {
           setError("code", {
             type: "manual",
             message: "Test code already exists.",
           });
           toast.error("Test code already exists. Use a different code.");
         } else {
-          toast.error(`Failed to add test: ${JSON.stringify(errVariant)}`);
+          const msg =
+            typeof errVariant === "string"
+              ? errVariant
+              : JSON.stringify(errVariant);
+          toast.error(`Failed to add test: ${msg}`);
+          alert(msg || "Failed to add test");
         }
         return;
       }
 
       toast.success(`Test "${values.name}" added successfully`);
+      alert("Test added successfully");
       reset();
       onClose();
+      window.location.reload();
     } catch (err: unknown) {
-      console.error("CreateTest error:", err);
+      console.error("ERROR:", err);
       const msg =
         err instanceof Error
           ? err.message
@@ -200,13 +218,15 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
         {/* Scrollable Form Body */}
         <form
           id="add-test-form"
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex-1 overflow-y-auto px-6 py-5 space-y-5"
+          onSubmit={(e) => e.preventDefault()}
           style={{
+            flex: 1,
             overflowY: "auto",
             WebkitOverflowScrolling: "touch",
-            paddingBottom: "80px",
+            maxHeight: "90vh",
+            paddingBottom: "120px",
           }}
+          className="px-6 py-5 space-y-5"
         >
           {/* Error Banner */}
           {hasGeneralError && (
@@ -223,9 +243,7 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
             <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
               <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
               <p className="text-sm text-amber-800 font-medium">
-                Warning: This test will generate negative profit. (MRP ₹
-                {watchedMrp} − Lab Cost ₹{watchedLabCost ?? 0} − Commission ₹
-                {Math.round(commissionAmt)} = ₹{Math.round(profitPerTest)})
+                Warning: This test will generate negative profit.
               </p>
             </div>
           )}
@@ -362,31 +380,27 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
                 valueAsNumber: true,
               })}
             />
-            {errors.labCost && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.labCost.message}
-              </p>
-            )}
           </div>
 
-          {/* Doctor Commission */}
+          {/* Doctor Commission (%) */}
           <div className="space-y-1.5">
             <label
               htmlFor="add-commission"
               className="block text-xs font-semibold text-gray-700 uppercase tracking-wide"
             >
-              Doctor Commission (₹)
+              Doctor Commission (%)
             </label>
             <input
               id="add-commission"
               type="number"
               min={0}
-              step={1}
-              placeholder="e.g. 50"
+              max={100}
+              step={0.1}
+              placeholder="e.g. 10"
               className="w-full rounded-xl border-2 border-gray-200 px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 bg-white outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               {...register("commission", {
                 min: { value: 0, message: "Commission must be 0 or more" },
+                max: { value: 100, message: "Commission cannot exceed 100%" },
                 valueAsNumber: true,
               })}
             />
@@ -398,22 +412,18 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
             )}
           </div>
 
-          {/* Profit Preview */}
-          {(watchedMrp ?? 0) > 0 && (
-            <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 text-xs flex items-center gap-3">
-              <span className="text-gray-500">
-                Commission: ₹{Math.round(commissionAmt)}
-              </span>
-              <span className="text-gray-400">|</span>
-              <span
-                className={
-                  profitPerTest >= 0
-                    ? "text-green-600 font-semibold"
-                    : "text-red-600 font-semibold"
-                }
+          {/* Auto-calculated preview */}
+          {mrpNum > 0 && (
+            <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 space-y-1">
+              <div className="text-xs text-gray-600">
+                Doctor: ₹{doctorAmount}
+              </div>
+              <div
+                className="text-xs font-semibold"
+                style={{ color: profitPerTest >= 0 ? "green" : "red" }}
               >
-                Profit per Test: ₹{Math.round(profitPerTest)}
-              </span>
+                Profit: ₹{profitPerTest}
+              </div>
             </div>
           )}
 
@@ -436,36 +446,43 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
 
         {/* Sticky Footer with Action Buttons */}
         <div
-          className="flex-shrink-0 flex items-center gap-3 px-6 py-4 border-t border-gray-100 bg-white"
-          style={{ position: "sticky", bottom: 0, zIndex: 10 }}
+          style={{
+            position: "sticky",
+            bottom: 0,
+            background: "#fff",
+            padding: "12px",
+            borderTop: "1px solid #eee",
+            zIndex: 50,
+            display: "flex",
+            gap: "12px",
+          }}
         >
           <button
             type="button"
             onClick={handleClose}
             disabled={addTest.isPending}
             className="flex-1 h-10 rounded-xl border-2 border-gray-300 bg-transparent text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            data-ocid="add-test.cancel_button"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={() => {
-              console.log("Submit clicked");
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("CLICK WORKED");
               handleSubmit(onSubmit)();
             }}
             disabled={addTest.isPending}
             className="flex-[2] flex items-center justify-center gap-2 h-10 rounded-xl font-bold text-sm text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed disabled:hover:scale-100"
             style={{
               background: addTest.isPending
-                ? undefined
+                ? "#9ca3af"
                 : "linear-gradient(to right, #2563EB, #26C6DA)",
-              backgroundColor: addTest.isPending ? "#9ca3af" : undefined,
             }}
-            data-ocid="add-test.submit_button"
           >
             {addTest.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Add Test
+            Submit
           </button>
         </div>
       </dialog>

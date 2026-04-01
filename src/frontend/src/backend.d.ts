@@ -191,6 +191,7 @@ export interface backendInterface {
     markSettlement(hospitalId: string, amount: bigint, settlementType: Variant_Partial_Settled, notes: string | null): Promise<Settlement>;
     registerAppUser(mobile: string, name: string, role: string, assignedHospitalId: string | null): Promise<AppUser>;
     removePhlebotomistFromHospital(hospitalId: string, phlebotomist: Principal, removalReason: string): Promise<HospitalPhlebotomistAssignment>;
+    claimSuperAdmin(): Promise<{ __kind__: "ok"; ok: string } | { __kind__: "err"; err: string }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     seedTestUsers(): Promise<bigint>;
     setSystemMode(mode: SystemMode): Promise<void>;

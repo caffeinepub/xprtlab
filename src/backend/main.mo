@@ -737,10 +737,44 @@ actor {
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
+    // Allow any Internet Identity principal to save their own profile
+    // (IC authenticates the caller; no additional permission check needed)
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Anonymous callers cannot save profiles");
     };
     userProfiles.add(caller, profile);
+  };
+
+  // Bootstrap: allows the first Internet Identity principal to claim super admin
+  // Only works when NO super admin exists yet in userProfiles
+  public shared ({ caller }) func claimSuperAdmin() : async { #ok : Text; #err : Text } {
+    if (caller.isAnonymous()) {
+      return #err("Anonymous callers cannot claim super admin");
+    };
+
+    // Check if any super admin already exists
+    var superAdminExists = false;
+    userProfiles.forEach(func(v) {
+      let profile = v.1;
+      switch (profile.appRole) {
+        case (#superAdmin) { superAdminExists := true };
+        case (_) {};
+      };
+    });
+
+    if (superAdminExists) {
+      return #err("Super admin already exists. Cannot claim super admin.");
+    };
+
+    // Register this principal as super admin
+    let profile : UserProfile = {
+      name = "Super Admin";
+      appRole = #superAdmin;
+      phone = "";
+      area = null;
+    };
+    userProfiles.add(caller, profile);
+    #ok("Super admin role granted to: " # caller.toText());
   };
 
   public shared ({ caller }) func bulkAddTests(testInputs : [TestInput]) : async [TestOutput] {
