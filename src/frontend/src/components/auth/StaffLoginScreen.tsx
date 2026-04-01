@@ -35,6 +35,10 @@ export default function StaffLoginScreen({
     const principal = identity.getPrincipal().toText();
     console.log("Logged in principal:", principal);
 
+    // Store identity on window.ic so backendService.getActor() can use it after page reload
+    (window as any).ic = (window as any).ic || {};
+    (window as any).ic.identity = identity;
+
     (async () => {
       try {
         // Build an authenticated actor immediately so claimSuperAdmin uses it

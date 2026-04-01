@@ -21,6 +21,10 @@ import { createActorWithConfig } from "../config";
 let _authenticatedActor: Awaited<
   ReturnType<typeof createActorWithConfig>
 > | null = null;
+// Actor created from window.ic.identity (lazy, recreated when identity changes)
+let _icIdentityActor: Awaited<ReturnType<typeof createActorWithConfig>> | null =
+  null;
+let _icIdentityRef: unknown = null;
 // Anonymous fallback (lazy)
 let _anonActorPromise: ReturnType<typeof createActorWithConfig> | null = null;
 
@@ -29,12 +33,29 @@ export function setAuthenticatedActor(
   actor: Awaited<ReturnType<typeof createActorWithConfig>> | null,
 ) {
   _authenticatedActor = actor;
-  // Reset anon cache too so queries after logout get fresh anon actor
   _anonActorPromise = null;
 }
 
 async function getActor() {
+  // 1. Prefer explicitly set authenticated actor
   if (_authenticatedActor) return _authenticatedActor;
+
+  // 2. Fall back to window.ic.identity (set after II login)
+  const icIdentity = (window as any).ic?.identity;
+  if (icIdentity) {
+    // Recreate if identity reference changed
+    if (_icIdentityActor && _icIdentityRef === icIdentity) {
+      return _icIdentityActor;
+    }
+    console.log("[backendService] Creating actor from window.ic.identity");
+    _icIdentityActor = await createActorWithConfig({
+      agentOptions: { identity: icIdentity },
+    });
+    _icIdentityRef = icIdentity;
+    return _icIdentityActor;
+  }
+
+  // 3. Anonymous fallback
   if (!_anonActorPromise) {
     _anonActorPromise = createActorWithConfig();
   }
@@ -43,7 +64,12 @@ async function getActor() {
 
 export function resetActorCache() {
   _authenticatedActor = null;
+  _icIdentityActor = null;
+  _icIdentityRef = null;
   _anonActorPromise = null;
+  if ((window as any).ic) {
+    (window as any).ic.identity = null;
+  }
 }
 
 // ─── Samples ─────────────────────────────────────────────────────────────────

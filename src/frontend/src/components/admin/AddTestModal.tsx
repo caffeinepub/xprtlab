@@ -4,7 +4,6 @@ import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useAddTest } from "../../hooks/useQueries";
-import { getSession } from "../../utils/sessionUtils";
 
 interface AddTestFormValues {
   name: string;
@@ -70,52 +69,47 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
   }, [open]);
 
   const onSubmit = async (values: AddTestFormValues) => {
-    console.log("HANDLE START");
-    const session = getSession();
-    if (!session || session.role !== "superAdmin") {
-      toast.error("Only Super Admin can add test");
-      return;
-    }
-
-    const mrpVal = Number(values.mrp || 0);
-    const labCostVal = Number(values.labCost || 0);
-    const commPct = Number(values.commission || 0);
-    const commissionAmount = Math.round((mrpVal * commPct) / 100);
-    const profitVal = mrpVal - labCostVal - commissionAmount;
-
-    const payload = {
-      name: values.name.trim() || "test",
-      code: values.code.trim().toUpperCase() || Date.now().toString(),
-      sampleType: values.sampleType.trim(),
-      price: BigInt(mrpVal),
-      mrp: BigInt(mrpVal),
-      lab_cost: BigInt(labCostVal),
-      commission_amount: BigInt(commissionAmount),
-      profit: BigInt(profitVal),
-      isActive: values.isActive,
-    };
-
-    console.log("PAYLOAD:", {
-      test_name: payload.name,
-      test_code: payload.code,
-      mrp: mrpVal,
-      lab_cost: labCostVal,
-      commission_amount: commissionAmount,
-      profit: profitVal,
-      status: values.isActive ? "active" : "inactive",
-    });
+    console.log("STEP 1: Click received");
 
     try {
-      const result = await addTest.mutateAsync(payload);
-      console.log("RESPONSE:", result);
+      console.log("STEP 2: Preparing payload");
 
-      if (!result) {
-        throw new Error("Test creation failed");
-      }
+      const mrpVal = Number(values.mrp || 0);
+      const labCostVal = Number(values.labCost || 0);
+      const commPct = Number(values.commission || 0);
+      const commissionAmount = Math.round((mrpVal * commPct) / 100);
+      const profitVal = mrpVal - labCostVal - commissionAmount;
+
+      const payload = {
+        name: values.name.trim() || "test",
+        code: values.code.trim().toUpperCase() || Date.now().toString(),
+        sampleType: values.sampleType.trim(),
+        price: BigInt(mrpVal),
+        mrp: BigInt(mrpVal),
+        lab_cost: BigInt(labCostVal),
+        commission_amount: BigInt(commissionAmount),
+        profit: BigInt(profitVal),
+        isActive: values.isActive,
+      };
+
+      console.log("STEP 3: Payload ready", {
+        test_name: payload.name,
+        test_code: payload.code,
+        mrp: mrpVal,
+        lab_cost: labCostVal,
+        commission_amount: commissionAmount,
+        status: values.isActive ? "active" : "inactive",
+      });
+
+      console.log("STEP 4: Calling backend");
+
+      const res = await addTest.mutateAsync(payload);
+
+      console.log("STEP 5: Backend response", res);
 
       // ICP variants: { ok: ... } or { err: ... }
-      if (typeof result === "object" && "err" in result) {
-        const errVariant = result.err;
+      if (res && typeof res === "object" && "err" in res) {
+        const errVariant = (res as any).err;
         if (
           errVariant &&
           typeof errVariant === "object" &&
@@ -137,21 +131,19 @@ export default function AddTestModal({ open, onClose }: AddTestModalProps) {
         return;
       }
 
-      toast.success(`Test "${values.name}" added successfully`);
-      alert("Test added successfully");
+      alert("SUCCESS");
       reset();
       onClose();
       window.location.reload();
     } catch (err: unknown) {
-      console.error("ERROR:", err);
+      console.error("STEP ERROR:", err);
       const msg =
         err instanceof Error
           ? err.message
           : typeof err === "string"
             ? err
             : JSON.stringify(err);
-      toast.error(`Failed to add test: ${msg}`);
-      alert(msg || "Failed to add test");
+      alert(`ERROR: ${msg}`);
     }
   };
 

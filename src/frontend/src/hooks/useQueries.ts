@@ -79,6 +79,8 @@ export function useAddTest() {
 
   return useMutation({
     mutationFn: async (input: TestInput) => {
+      console.log("BACKEND FUNCTION CALLED");
+      console.log("Actor available:", !!actor);
       if (!actor) throw new Error("Actor not available");
       return actor.addTest(input);
     },
