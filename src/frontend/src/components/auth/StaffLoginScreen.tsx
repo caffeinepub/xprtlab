@@ -7,25 +7,23 @@ import {
   getUserByMobile,
   setAuthenticatedActor,
 } from "../../services/backendService";
-import type { AppRole } from "../../types/models";
 import { saveSession } from "../../utils/sessionUtils";
 import HealthcareBg from "../shared/HealthcareBg";
 import OTPLoginScreen from "./OTPLoginScreen";
 
-interface StaffLoginScreenProps {
-  onDemoMode?: (role: AppRole) => void;
-}
-
-export default function StaffLoginScreen({
-  onDemoMode,
-}: StaffLoginScreenProps) {
+export default function StaffLoginScreen() {
   const { login, isLoggingIn, isLoginSuccess, loginError, identity } =
     useInternetIdentity();
   const [authError, setAuthError] = useState("");
 
-  // Force clean login state — remove any stale session when login page mounts
+  // Only clear stale session when we are actually on the login/root path.
+  // Do NOT clear unconditionally — this was causing the login loop when the
+  // component remounted after a successful login on /admin-app or /staff-app.
   useEffect(() => {
-    localStorage.removeItem("xpertlab_session");
+    const path = window.location.pathname;
+    if (path === "/" || path === "/login") {
+      localStorage.removeItem("xpertlab_session");
+    }
   }, []);
 
   // Handle Internet Identity success
@@ -35,13 +33,11 @@ export default function StaffLoginScreen({
     const principal = identity.getPrincipal().toText();
     console.log("Logged in principal:", principal);
 
-    // Store identity on window.ic so backendService.getActor() can use it after page reload
     (window as any).ic = (window as any).ic || {};
     (window as any).ic.identity = identity;
 
     (async () => {
       try {
-        // Build an authenticated actor immediately so claimSuperAdmin uses it
         const authActor = await createActorWithConfig({
           agentOptions: { identity },
         });
@@ -51,20 +47,17 @@ export default function StaffLoginScreen({
         console.warn("Failed to create authenticated actor:", e);
       }
 
-      // Try to claim super admin (only works if no super admin exists yet)
       try {
         const result = await claimSuperAdmin();
         if ("ok" in result) {
           console.log("Super admin claimed:", result.ok);
         } else {
           console.log("claimSuperAdmin info:", result.err);
-          // "already exists" is normal on subsequent logins — not an error
         }
       } catch (e) {
         console.warn("claimSuperAdmin call failed (non-critical):", e);
       }
 
-      // Always proceed to admin panel regardless of claimSuperAdmin result
       localStorage.clear();
       saveSession({
         userId: principal,
@@ -88,31 +81,54 @@ export default function StaffLoginScreen({
         setAuthError("Account not found. Please contact administrator.");
         return;
       }
-      let role: AppRole;
-      if (user.role === "phlebotomist") {
-        role = "phlebotomist";
-      } else if (user.role === "lab_admin") {
-        role = "labAdmin";
-      } else if (user.role === "super_admin") {
-        role = "superAdmin";
-      } else {
-        setAuthError("Account not found. Please contact administrator.");
+
+      console.log("User from backend:", user);
+
+      // Map backend role strings to AppRole values
+      const roleMap: Record<string, string> = {
+        super_admin: "superAdmin",
+        lab_admin: "labAdmin",
+        phlebotomist: "phlebotomist",
+      };
+
+      const mappedRole = roleMap[user.role];
+      if (!mappedRole) {
+        setAuthError("Invalid role. Please contact administrator.");
         return;
       }
+
       // Clear all old data before saving new session
       localStorage.clear();
       const session = {
         userId: mobile,
         mobileNumber: mobile,
         mobile,
-        role,
+        role: mappedRole as
+          | "phlebotomist"
+          | "labAdmin"
+          | "superAdmin"
+          | "patient",
         loginType: "otp" as const,
         loginAt: Date.now(),
+        assignedHospitalId: user.assignedHospitalId || "",
       };
+      console.log("USER:", user);
+      console.log(
+        "SESSION:",
+        JSON.parse(localStorage.getItem("xpertlab_session") || "{}"),
+      );
       console.log("Session after login:", session);
       saveSession(session);
-      if (onDemoMode) {
-        onDemoMode(role);
+
+      // Role-based navigation — always use window.location for hard nav
+      if (user.role === "super_admin") {
+        window.location.href = "/admin-app";
+      } else if (user.role === "lab_admin") {
+        window.location.href = "/staff-app";
+      } else if (user.role === "phlebotomist") {
+        window.location.href = "/staff-app";
+      } else {
+        setAuthError("Invalid role. Please contact administrator.");
       }
     } catch (e) {
       console.error("Login error:", e);

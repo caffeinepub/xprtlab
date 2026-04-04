@@ -38,9 +38,9 @@ interface TestEntry {
 export default function AddHospitalSamplePage({
   onNavigate,
 }: AddHospitalSamplePageProps) {
+  const [_allHospitals, setAllHospitals] = useState<Hospital[]>([]);
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [availableTests, setAvailableTests] = useState<TestEntry[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
 
   const [selectedHospitalId, setSelectedHospitalId] = useState("");
   const [hospitalSearch, setHospitalSearch] = useState("");
@@ -57,32 +57,72 @@ export default function AddHospitalSamplePage({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getHospitals(), getTests()])
-      .then(([hospList, testList]) => {
-        console.log("Hospitals from backend:", hospList);
-        console.log("Tests from backend:", testList);
-        setHospitals(hospList.filter((h) => h.isActive));
-        setAvailableTests(
-          testList
-            .filter((t: TestOutput) => t.isActive)
-            .map((t: TestOutput) => ({
-              testId: t.id,
-              testName: t.name,
-              testCode: t.code,
-              price: Number(t.mrp),
-              mrp: Number(t.mrp),
-              lab_cost: Number(t.lab_cost),
-              profit: Number(t.profit),
-            })),
-        );
-        if (hospList.filter((h) => h.isActive).length === 1) {
-          setSelectedHospitalId(hospList.filter((h) => h.isActive)[0].id);
+    const loadTests = async () => {
+      const data = await getTests();
+      console.log("Tests from backend:", data);
+      setAvailableTests(
+        (data || []).map((t: TestOutput) => ({
+          testId: t.id,
+          testName: t.name,
+          testCode: t.code,
+          price: Number(t.mrp),
+          mrp: Number(t.mrp),
+          lab_cost: Number(t.lab_cost),
+          profit: Number(t.profit),
+        })),
+      );
+    };
+    loadTests();
+  }, []);
+
+  useEffect(() => {
+    const loadHospitals = async () => {
+      const data = await getHospitals();
+
+      // Keep original data
+      setAllHospitals(data || []);
+
+      // Read session
+      const session = (() => {
+        try {
+          const s = localStorage.getItem("xpertlab_session");
+          return s ? JSON.parse(s) : {};
+        } catch {
+          return {};
         }
-      })
-      .catch(() => {
-        setError("Failed to load hospitals and tests.");
-      })
-      .finally(() => setLoadingData(false));
+      })();
+
+      const sessionMobile = String(
+        session.mobile || session.mobileNumber || "",
+      ).trim();
+
+      const assignedHospitalId = String(
+        session.assignedHospitalId || "",
+      ).trim();
+
+      console.log("Session mobile:", sessionMobile);
+      console.log("Session assignedHospitalId:", assignedHospitalId);
+      console.log("All hospitals from backend:", data);
+
+      let filtered: Hospital[];
+      if (assignedHospitalId) {
+        filtered = (data || []).filter(
+          (h) => String(h.id).trim() === assignedHospitalId,
+        );
+      } else {
+        // No specific assignment stored in session → show all hospitals
+        filtered = data || [];
+      }
+
+      console.log("Filtered hospitals:", filtered);
+
+      setHospitals(filtered);
+
+      if (filtered.length === 1) {
+        setSelectedHospitalId(filtered[0].id);
+      }
+    };
+    loadHospitals();
   }, []);
 
   const totalMrp = selectedTests.reduce(
@@ -318,23 +358,6 @@ export default function AddHospitalSamplePage({
     boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
     padding: "16px",
   };
-
-  if (loadingData) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "#F7F9FC" }}
-        data-ocid="add_sample.loading_state"
-      >
-        <div style={{ textAlign: "center" }}>
-          <Loader2 className="w-10 h-10 text-blue-500 mx-auto animate-spin mb-3" />
-          <p style={{ color: "#6B7280", fontSize: 14 }}>
-            Loading hospitals and tests...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen pb-[90px]" style={{ background: "#F7F9FC" }}>

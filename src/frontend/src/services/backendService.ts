@@ -17,56 +17,42 @@ import type {
 } from "../backend.d";
 import { createActorWithConfig } from "../config";
 
-// Module-level authenticated actor (set after II login)
-let _authenticatedActor: Awaited<
-  ReturnType<typeof createActorWithConfig>
-> | null = null;
-// Actor created from window.ic.identity (lazy, recreated when identity changes)
-let _icIdentityActor: Awaited<ReturnType<typeof createActorWithConfig>> | null =
+// Module-level singleton actor
+let actorInstance: Awaited<ReturnType<typeof createActorWithConfig>> | null =
   null;
-let _icIdentityRef: unknown = null;
-// Anonymous fallback (lazy)
-let _anonActorPromise: ReturnType<typeof createActorWithConfig> | null = null;
 
-/** Called by useActor hook after II login (or on page load when delegation is restored). */
+/** Called by StaffApp after II login (or on page load when delegation is restored). */
 export function setAuthenticatedActor(
   actor: Awaited<ReturnType<typeof createActorWithConfig>> | null,
 ) {
-  _authenticatedActor = actor;
-  _anonActorPromise = null;
+  actorInstance = actor;
+  console.log(
+    "[backendService] setAuthenticatedActor called, actor:",
+    actor !== null ? "set" : "null",
+  );
 }
 
 async function getActor() {
-  // 1. Prefer explicitly set authenticated actor
-  if (_authenticatedActor) return _authenticatedActor;
+  // If actor is already initialized, return it
+  if (actorInstance) return actorInstance;
 
-  // 2. Fall back to window.ic.identity (set after II login)
+  // Try window.ic.identity (set after II login or restored by StaffApp useEffect)
   const icIdentity = (window as any).ic?.identity;
   if (icIdentity) {
-    // Recreate if identity reference changed
-    if (_icIdentityActor && _icIdentityRef === icIdentity) {
-      return _icIdentityActor;
-    }
     console.log("[backendService] Creating actor from window.ic.identity");
-    _icIdentityActor = await createActorWithConfig({
+    actorInstance = await createActorWithConfig({
       agentOptions: { identity: icIdentity },
     });
-    _icIdentityRef = icIdentity;
-    return _icIdentityActor;
+    return actorInstance;
   }
 
-  // 3. Anonymous fallback
-  if (!_anonActorPromise) {
-    _anonActorPromise = createActorWithConfig();
-  }
-  return _anonActorPromise;
+  // Anonymous fallback for read-only calls (getUserByMobile, etc.)
+  console.warn("[backendService] No identity available, using anonymous actor");
+  return await createActorWithConfig();
 }
 
 export function resetActorCache() {
-  _authenticatedActor = null;
-  _icIdentityActor = null;
-  _icIdentityRef = null;
-  _anonActorPromise = null;
+  actorInstance = null;
   if ((window as any).ic) {
     (window as any).ic.identity = null;
   }
@@ -224,7 +210,7 @@ export async function createTest(input: TestInput) {
     commission_amount: Number(input.commission_amount),
     profit: Number(input.profit),
   });
-  console.log("Auth actor available:", _authenticatedActor !== null);
+  console.log("Auth actor available:", actorInstance !== null);
 
   try {
     const actor = await getActor();

@@ -6,9 +6,13 @@ import type { NavItem } from "./components/layout/BottomNavigation";
 import StaffAppLayout from "./components/layout/StaffAppLayout";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import LoadingScreen from "./components/shared/LoadingScreen";
+import { createActorWithConfig } from "./config";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
-import { resetActorCache } from "./services/backendService";
+import {
+  resetActorCache,
+  setAuthenticatedActor,
+} from "./services/backendService";
 import { getSession } from "./utils/sessionUtils";
 
 type AppRole = "patient" | "phlebotomist" | "labAdmin" | "superAdmin";
@@ -147,11 +151,7 @@ function AccessDenied({ message }: { message: string }) {
 }
 
 export default function StaffApp() {
-  const {
-    identity,
-    isInitializing,
-    clear: clearIISession,
-  } = useInternetIdentity();
+  const { identity, clear: clearIISession } = useInternetIdentity();
   const queryClient = useQueryClient();
   const isAuthenticated = !!identity;
 
@@ -159,7 +159,29 @@ export default function StaffApp() {
   const [currentPage, setCurrentPage] = useState<string>("");
   const [pageParams, setPageParams] = useState<Record<string, string>>({});
 
+  // Block rendering until we've finished reading localStorage.
+  // Without this, the component renders with sessionRole=null before the
+  // effect below has a chance to restore it, causing a flash to the login screen.
+  const [sessionLoading, setSessionLoading] = useState(true);
+
   const _initRef = useRef(false);
+
+  // Sync restored identity → window.ic.identity + backendService actor
+  // This runs after page reload when useInternetIdentity restores the delegation from storage
+  useEffect(() => {
+    if (!identity) return;
+    (window as any).ic = (window as any).ic || {};
+    (window as any).ic.identity = identity;
+    console.log("[StaffApp] Syncing identity to window.ic and backendService");
+    createActorWithConfig({ agentOptions: { identity } })
+      .then((actor) => {
+        setAuthenticatedActor(actor);
+        console.log("[StaffApp] Authenticated actor set");
+      })
+      .catch((e) => {
+        console.error("[StaffApp] Failed to create actor:", e);
+      });
+  }, [identity]);
 
   // Hard logout: clear all storage, clear II session, hard navigate to "/"
   const handleLogout = () => {
@@ -173,17 +195,21 @@ export default function StaffApp() {
     window.location.replace("/");
   };
 
-  // Restore session on page load — but NOT on the login/selector page
+  // Restore session on page load — but NOT on the login/selector page.
+  // Always call setSessionLoading(false) at the end so the UI can unblock.
   useEffect(() => {
     const path = window.location.pathname;
     console.log("SESSION ON LOAD:", localStorage.getItem("xpertlab_session"));
     console.log("CURRENT PATH:", path);
 
-    // Do not auto-restore session when on the root or login path
-    if (path === "/" || path === "/login") return;
+    // On the root or login path there is no session to restore — unblock immediately.
+    if (path === "/" || path === "/login") {
+      setSessionLoading(false);
+      return;
+    }
 
     const session = getSession();
-    if (session) {
+    if (session?.role) {
       // Identity login always forces superAdmin role
       const role: AppRole =
         session.loginType === "identity"
@@ -192,6 +218,9 @@ export default function StaffApp() {
       setSessionRole(role);
       setCurrentPage(getDefaultPage(role));
     }
+
+    // Always unblock regardless of whether a session was found
+    setSessionLoading(false);
   }, []);
 
   const {
@@ -228,18 +257,14 @@ export default function StaffApp() {
     profileFetched &&
     userProfile === null;
 
-  // Show loading only for ICP-auth flow (not session-based)
-  if (!sessionRole && isInitializing)
-    return <LoadingScreen message="Initializing..." />;
+  // Block UI until we've finished reading the session from localStorage.
+  // This prevents the login screen from flashing on refresh when a valid session exists.
+  if (sessionLoading) return <LoadingScreen message="Loading app..." />;
 
+  // After session is loaded: if no role from localStorage AND no II identity,
+  // show the login screen.
   if (!sessionRole && !isAuthenticated) {
-    return (
-      <StaffLoginScreen
-        onDemoMode={() => {
-          // no-op: demo mode is disabled
-        }}
-      />
-    );
+    return <StaffLoginScreen />;
   }
 
   const renderPage = () => {

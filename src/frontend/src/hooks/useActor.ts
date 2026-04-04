@@ -2,7 +2,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import type { backendInterface } from "../backend";
 import { createActorWithConfig } from "../config";
-import { setAuthenticatedActor } from "../services/backendService";
 import { getSecretParameter } from "../utils/urlParams";
 import { useInternetIdentity } from "./useInternetIdentity";
 
@@ -16,15 +15,9 @@ export function useActor() {
       const isAuthenticated = !!identity;
 
       if (!isAuthenticated) {
-        const anonActor = await createActorWithConfig();
-        // Clear any stale authenticated actor
-        setAuthenticatedActor(null);
-        return anonActor;
+        // Return anonymous actor if not authenticated
+        return await createActorWithConfig();
       }
-
-      // Store identity on window.ic for backendService fallback
-      (window as any).ic = (window as any).ic || {};
-      (window as any).ic.identity = identity;
 
       const actorOptions = {
         agentOptions: {
@@ -35,10 +28,6 @@ export function useActor() {
       const actor = await createActorWithConfig(actorOptions);
       const adminToken = getSecretParameter("caffeineAdminToken") || "";
       await actor._initializeAccessControlWithSecret(adminToken);
-
-      // Sync to backendService so direct calls also use the authenticated actor
-      setAuthenticatedActor(actor);
-
       return actor;
     },
     // Only refetch when identity changes

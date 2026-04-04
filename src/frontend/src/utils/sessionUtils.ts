@@ -8,6 +8,8 @@ export interface XpertSession {
   loginType: "identity" | "otp";
   name?: string;
   loginAt?: number;
+  /** Assigned hospital ID — stored at OTP login from backend AppUser.assignedHospitalId */
+  assignedHospitalId?: string;
 }
 
 export function getSession(): XpertSession | null {
