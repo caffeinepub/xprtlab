@@ -57,61 +57,61 @@ export default function AddHospitalSamplePage({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const loadTests = async () => {
-      const data = await getTests();
-      console.log("Tests from backend:", data);
-      setAvailableTests(
-        (data || []).map((t: TestOutput) => ({
-          testId: t.id,
-          testName: t.name,
-          testCode: t.code,
-          price: Number(t.mrp),
-          mrp: Number(t.mrp),
-          lab_cost: Number(t.lab_cost),
-          profit: Number(t.profit),
-        })),
-      );
-    };
-    loadTests();
-  }, []);
+    const loadData = async () => {
+      try {
+        console.log("Loading data directly...");
+        const hospitalsData = await getHospitals();
+        const testsData = await getTests();
 
-  useEffect(() => {
-    const loadHospitals = async () => {
-      const data = await getHospitals();
+        console.log("Hospitals:", hospitalsData);
+        console.log("Tests:", testsData);
 
-      // Keep original data
-      setAllHospitals(data || []);
+        setAllHospitals(hospitalsData || []);
 
-      // Read session
-      const session = (() => {
-        try {
-          const s = localStorage.getItem("xpertlab_session");
-          return s ? JSON.parse(s) : {};
-        } catch {
-          return {};
+        const session = (() => {
+          try {
+            const s = localStorage.getItem("xpertlab_session");
+            return s ? JSON.parse(s) : {};
+          } catch {
+            return {};
+          }
+        })();
+
+        console.log("Session:", session);
+
+        const filteredHospitals = (hospitalsData || []).filter(
+          (h: Hospital) => {
+            if (session.assignedHospitalId) {
+              return String(h.id) === String(session.assignedHospitalId);
+            }
+            return true;
+          },
+        );
+
+        console.log("Filtered hospitals:", filteredHospitals);
+        setHospitals(filteredHospitals);
+
+        if (filteredHospitals.length === 1) {
+          setSelectedHospitalId(filteredHospitals[0].id);
         }
-      })();
 
-      console.log("Session:", session);
-      console.log("Hospitals:", data);
-
-      const filteredHospitals = (data || []).filter((h: Hospital) => {
-        // If assignedHospitalId exists → strict match
-        if (session.assignedHospitalId) {
-          return String(h.id) === String(session.assignedHospitalId);
-        }
-        // Fallback → show all (important for now)
-        return true;
-      });
-
-      console.log("Filtered hospitals:", filteredHospitals);
-      setHospitals(filteredHospitals);
-
-      if (filteredHospitals.length === 1) {
-        setSelectedHospitalId(filteredHospitals[0].id);
+        setAvailableTests(
+          (testsData || []).map((t: TestOutput) => ({
+            testId: t.id,
+            testName: t.name,
+            testCode: t.code,
+            price: Number(t.mrp),
+            mrp: Number(t.mrp),
+            lab_cost: Number(t.lab_cost),
+            profit: Number(t.profit),
+          })),
+        );
+      } catch (e) {
+        console.error("ERROR:", e);
       }
     };
-    loadHospitals();
+
+    loadData();
   }, []);
 
   const totalMrp = selectedTests.reduce(
