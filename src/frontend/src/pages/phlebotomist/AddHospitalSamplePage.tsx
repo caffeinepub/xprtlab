@@ -92,34 +92,23 @@ export default function AddHospitalSamplePage({
         }
       })();
 
-      const sessionMobile = String(
-        session.mobile || session.mobileNumber || "",
-      ).trim();
+      console.log("Session:", session);
+      console.log("Hospitals:", data);
 
-      const assignedHospitalId = String(
-        session.assignedHospitalId || "",
-      ).trim();
+      const filteredHospitals = (data || []).filter((h: Hospital) => {
+        // If assignedHospitalId exists → strict match
+        if (session.assignedHospitalId) {
+          return String(h.id) === String(session.assignedHospitalId);
+        }
+        // Fallback → show all (important for now)
+        return true;
+      });
 
-      console.log("Session mobile:", sessionMobile);
-      console.log("Session assignedHospitalId:", assignedHospitalId);
-      console.log("All hospitals from backend:", data);
+      console.log("Filtered hospitals:", filteredHospitals);
+      setHospitals(filteredHospitals);
 
-      let filtered: Hospital[];
-      if (assignedHospitalId) {
-        filtered = (data || []).filter(
-          (h) => String(h.id).trim() === assignedHospitalId,
-        );
-      } else {
-        // No specific assignment stored in session → show all hospitals
-        filtered = data || [];
-      }
-
-      console.log("Filtered hospitals:", filtered);
-
-      setHospitals(filtered);
-
-      if (filtered.length === 1) {
-        setSelectedHospitalId(filtered[0].id);
+      if (filteredHospitals.length === 1) {
+        setSelectedHospitalId(filteredHospitals[0].id);
       }
     };
     loadHospitals();
