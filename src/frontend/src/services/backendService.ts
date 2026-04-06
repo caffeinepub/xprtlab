@@ -6,6 +6,7 @@
  * localStorage is used ONLY for session tokens.
  */
 
+import { AuthClient } from "@dfinity/auth-client";
 import type {
   AppTask,
   AppUser,
@@ -32,30 +33,23 @@ export function setAuthenticatedActor(
   );
 }
 
-async function getActor() {
-  // If actor is already initialized, return it
+export async function getActor() {
   if (actorInstance) return actorInstance;
 
-  // Try window.ic.identity (set after II login or restored by StaffApp useEffect)
-  const icIdentity = (window as any).ic?.identity;
-  if (icIdentity) {
-    console.log("[backendService] Creating actor from window.ic.identity");
-    actorInstance = await createActorWithConfig({
-      agentOptions: { identity: icIdentity },
-    });
-    return actorInstance;
-  }
+  const authClient = await AuthClient.create();
+  const identity = authClient.getIdentity();
 
-  // Anonymous fallback for read-only calls (getUserByMobile, etc.)
-  console.warn("[backendService] No identity available, using anonymous actor");
-  return await createActorWithConfig();
+  actorInstance = await createActorWithConfig({
+    agentOptions: {
+      identity,
+    },
+  });
+
+  return actorInstance;
 }
 
 export function resetActorCache() {
   actorInstance = null;
-  if ((window as any).ic) {
-    (window as any).ic.identity = null;
-  }
 }
 
 // ─── Samples ─────────────────────────────────────────────────────────────────
