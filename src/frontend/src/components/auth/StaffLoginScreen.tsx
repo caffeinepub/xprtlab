@@ -39,6 +39,13 @@ export default function StaffLoginScreen() {
         return;
       }
 
+      // Normalize assignedHospitalId — Motoko ?Text comes back as [] | [string]
+      // or as a plain string/undefined depending on the SDK version.
+      const rawHospitalId = user.assignedHospitalId;
+      const assignedHospitalId = Array.isArray(rawHospitalId)
+        ? (rawHospitalId[0] ?? "")
+        : (rawHospitalId ?? "");
+
       // Clear all old data before saving new session
       localStorage.clear();
       const session = {
@@ -52,7 +59,7 @@ export default function StaffLoginScreen() {
           | "patient",
         loginType: "otp" as const,
         loginAt: Date.now(),
-        assignedHospitalId: user.assignedHospitalId || "",
+        assignedHospitalId,
       };
 
       console.log("Session after login:", session);

@@ -79,10 +79,21 @@ export default function AddHospitalSamplePage({
 
         console.log("Session:", session);
 
+        // Normalize assignedHospitalId — may be stored as [] (Candid optional)
+        // or as a plain string. Coerce both to a clean string.
+        const rawId = session.assignedHospitalId;
+        const assignedHospitalId: string = Array.isArray(rawId)
+          ? (rawId[0] ?? "")
+          : (rawId ?? "");
+
+        console.log("All hospitals:", hospitalsData);
+        console.log("assignedHospitalId from session:", assignedHospitalId);
+
         const filteredHospitals = (hospitalsData || []).filter(
           (h: Hospital) => {
-            if (session.assignedHospitalId) {
-              return String(h.id) === String(session.assignedHospitalId);
+            // If assignedHospitalId is non-empty, strict match; else show all (safety fallback)
+            if (assignedHospitalId) {
+              return String(h.id).trim() === String(assignedHospitalId).trim();
             }
             return true;
           },
