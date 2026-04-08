@@ -26,7 +26,6 @@ import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import SampleActionControls from "../../components/shared/SampleActionControls";
 import SampleWorkflowTimeline from "../../components/shared/SampleWorkflowTimeline";
 import WhatsAppShareConfirmDialog from "../../components/shared/WhatsAppShareConfirmDialog";
-import { useInternetIdentity } from "../../hooks/useInternetIdentity";
 import {
   useConfirmWhatsAppDelivery,
   useGetAllHospitalSamples,
@@ -36,6 +35,7 @@ import {
 } from "../../hooks/useQueries";
 import type { DeliveryMethod, SampleStatus } from "../../types/models";
 import { getSampleStatusColor } from "../../utils/deliveryHelpers";
+import { getSession } from "../../utils/sessionUtils";
 
 const DELIVERY_FILTER_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "all", label: "All" },
@@ -56,8 +56,9 @@ interface BillingEditState {
 }
 
 export default function AdminHospitalSamplesPage() {
-  const { identity } = useInternetIdentity();
-  const userId = identity?.getPrincipal().toString() ?? "";
+  // Use session-based userId instead of Internet Identity principal
+  const session = getSession();
+  const userId = session?.userId ?? "";
 
   const { data: samples = [], isLoading } = useGetAllHospitalSamples();
   const updateBilling = useUpdateHospitalSampleBilling();

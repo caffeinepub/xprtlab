@@ -11,14 +11,14 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { AppTask, AppUser } from "../../backend";
-import type { Hospital } from "../../backend";
 import {
   createTask,
   getAllAppUsers,
   getAllTasks,
   getHospitals,
 } from "../../services/backendService";
+import type { AppTask, AppUser } from "../../types/backendTypes";
+import type { Hospital } from "../../types/backendTypes";
 
 const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   assigned: { bg: "#F3F4F6", color: "#6B7280" },

@@ -1,0 +1,215 @@
+type UserProfile = 
+ record {
+   appRole: AppRole;
+   area: opt text;
+   name: text;
+   phone: text;
+ };
+type TestOutput = 
+ record {
+   code: text;
+   commission_amount: nat;
+   id: text;
+   isActive: bool;
+   lab_cost: nat;
+   mrp: nat;
+   name: text;
+   price: nat;
+   profit: nat;
+   sampleType: text;
+ };
+type TestInput = 
+ record {
+   code: text;
+   commission_amount: nat;
+   isActive: bool;
+   lab_cost: nat;
+   mrp: nat;
+   name: text;
+   price: nat;
+   profit: nat;
+   sampleType: text;
+ };
+type TestError = 
+ variant {
+   duplicateCode;
+   notFound;
+ };
+type SystemMode = 
+ variant {
+   production;
+   test;
+ };
+type Settlement = 
+ record {
+   amount: nat;
+   hospitalId: text;
+   notes: opt text;
+   settlementType: variant {
+                     Partial;
+                     Settled;
+                   };
+   timestamp: int;
+ };
+type SampleTestItem = 
+ record {
+   price: nat;
+   testCode: text;
+   testId: text;
+   testName: text;
+ };
+type SampleRecord = 
+ record {
+   createdAt: int;
+   createdByMobile: text;
+   deliveryMethod: opt text;
+   hospitalId: text;
+   patientName: text;
+   paymentType: text;
+   phone: text;
+   sampleId: text;
+   status: text;
+   tests: vec SampleTestItem;
+   totalAmount: nat;
+ };
+type SampleInput = 
+ record {
+   createdByMobile: text;
+   deliveryMethod: opt text;
+   hospitalId: text;
+   patientName: text;
+   paymentType: text;
+   phone: text;
+   tests: vec opt SampleTestItem;
+   totalAmount: nat;
+ };
+type Principal = principal;
+type HospitalPhlebotomistAssignment = 
+ record {
+   assignedAt: int;
+   assignedBy: Principal;
+   hospitalId: text;
+   isActive: bool;
+   phlebotomist: Principal;
+   removalReason: opt text;
+   removedAt: opt int;
+ };
+type Hospital = 
+ record {
+   address: text;
+   area: text;
+   city: text;
+   contactNumber: text;
+   createdAt: int;
+   id: text;
+   isActive: bool;
+   name: text;
+ };
+type DashboardMetrics = 
+ record {
+   activeHospitals: nat;
+   collectionsToday: nat;
+   pendingReports: nat;
+   revenueToday: nat;
+   samplesToday: nat;
+   samplesTotal: nat;
+ };
+type AppUser = 
+ record {
+   assignedHospitalId: opt text;
+   createdAt: int;
+   isActive: bool;
+   mobile: text;
+   name: text;
+   role: text;
+ };
+type AppTask = 
+ record {
+   assigned_by: text;
+   assigned_to_mobile: text;
+   created_at: int;
+   hospital_id: text;
+   patient_name: text;
+   status: text;
+   task_id: text;
+ };
+type AppRole = 
+ variant {
+   labAdmin;
+   patient;
+   phlebotomist;
+   superAdmin;
+ };
+service : {
+  /// HOSPITAL MANAGEMENT
+  addHospital: (name: text, city: text, address: text, area: text,
+   contactNumber: text) -> (Hospital);
+  addTest: (input: TestInput) -> (variant {
+                                    err: TestError;
+                                    ok: TestOutput;
+                                  });
+  assignPhlebotomistToHospital: (hospitalId: text, phlebotomist:
+   Principal) -> (HospitalPhlebotomistAssignment);
+  bulkAddTests: (testInputs: vec TestInput) -> (vec TestOutput);
+  claimSuperAdmin: () -> (variant {
+                            err: text;
+                            ok: text;
+                          });
+  createSample: (input: SampleInput) -> (text);
+  createTask: (assigned_to_mobile: text, assigned_by: text, hospital_id:
+   text, patient_name: text, status: text) -> (AppTask);
+  deleteAllData: () -> ();
+  deleteAllSampleData: () -> (nat);
+  deleteAllTasks: () -> (nat);
+  deleteTestUser: (mobile: text) -> (bool);
+  disableHospital: (id: text) -> (Hospital);
+  disableTest: (code: text) -> (TestOutput);
+  getAllAppUsers: () -> (vec AppUser) query;
+  getAllSamples: () -> (vec SampleRecord) query;
+  getAllTasks: () -> (vec AppTask) query;
+  getAllTests: () -> (vec TestOutput) query;
+  getCallerUserProfile: () -> (opt UserProfile) query;
+  getDashboardMetrics: () -> (DashboardMetrics) query;
+  getHospitalById: (id: text) -> (Hospital) query;
+  getHospitals: (search: opt text) -> (vec Hospital) query;
+  getHospitalsByPhlebotomist: (phlebotomist: Principal) -> (vec text) query;
+  getPhlebotomistsByHospital: (hospitalId: text) -> (vec Principal) query;
+  getSamplesByHospital: (hospitalId: text) -> (vec SampleRecord) query;
+  getSamplesByMobile: (mobile: text) -> (vec SampleRecord) query;
+  getSettlementHistory: (hospitalId: text) -> (vec Settlement) query;
+  getSystemMode: () -> (SystemMode) query;
+  getTasksByUser: (mobile: text) -> (vec AppTask) query;
+  getTest: (code: text) -> (opt TestOutput) query;
+  getTestByCode: (testCode: text) -> (opt TestOutput) query;
+  getUserByMobile: (mobile: text) -> (opt AppUser) query;
+  getUserProfile: (user: Principal) -> (opt UserProfile) query;
+  markSettlement: (hospitalId: text, amount: nat, settlementType:
+   variant {
+     Partial;
+     Settled;
+   }, notes: opt text) -> (Settlement);
+  registerAppUser: (mobile: text, name: text, role: text, assignedHospitalId:
+   opt text) -> (AppUser);
+  removePhlebotomistFromHospital: (hospitalId: text, phlebotomist: Principal,
+   removalReason: text) -> (HospitalPhlebotomistAssignment);
+  saveCallerUserProfile: (profile: UserProfile) -> ();
+  seedTestUsers: () -> (nat);
+  setSystemMode: (mode: SystemMode) -> ();
+  setTestStatus: (testId: text, isActive: bool) ->
+   (variant {
+      err: TestError;
+      ok: TestOutput;
+    });
+  updateHospital: (id: text, name: text, city: text, address: text, area:
+   text, contactNumber: text) -> (Hospital);
+  updateSampleStatus: (sampleId: text, status: text) ->
+   (variant {
+      notFound;
+      ok;
+    });
+  updateTest: (code: text, input: TestInput) ->
+   (variant {
+      err: TestError;
+      ok: TestOutput;
+    });
+}

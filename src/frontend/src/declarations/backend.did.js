@@ -8,17 +8,6 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const _CaffeineStorageCreateCertificateResult = IDL.Record({
-  'method' : IDL.Text,
-  'blob_hash' : IDL.Text,
-});
-export const _CaffeineStorageRefillInformation = IDL.Record({
-  'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
-});
-export const _CaffeineStorageRefillResult = IDL.Record({
-  'success' : IDL.Opt(IDL.Bool),
-  'topped_up_amount' : IDL.Opt(IDL.Nat),
-});
 export const Hospital = IDL.Record({
   'id' : IDL.Text,
   'area' : IDL.Text,
@@ -55,11 +44,6 @@ export const TestOutput = IDL.Record({
 export const TestError = IDL.Variant({
   'notFound' : IDL.Null,
   'duplicateCode' : IDL.Null,
-});
-export const UserRole = IDL.Variant({
-  'admin' : IDL.Null,
-  'user' : IDL.Null,
-  'guest' : IDL.Null,
 });
 export const Principal = IDL.Principal;
 export const HospitalPhlebotomistAssignment = IDL.Record({
@@ -153,33 +137,6 @@ export const SystemMode = IDL.Variant({
 });
 
 export const idlService = IDL.Service({
-  '_caffeineStorageBlobIsLive' : IDL.Func(
-      [IDL.Vec(IDL.Nat8)],
-      [IDL.Bool],
-      ['query'],
-    ),
-  '_caffeineStorageBlobsToDelete' : IDL.Func(
-      [],
-      [IDL.Vec(IDL.Vec(IDL.Nat8))],
-      ['query'],
-    ),
-  '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
-      [IDL.Vec(IDL.Vec(IDL.Nat8))],
-      [],
-      [],
-    ),
-  '_caffeineStorageCreateCertificate' : IDL.Func(
-      [IDL.Text],
-      [_CaffeineStorageCreateCertificateResult],
-      [],
-    ),
-  '_caffeineStorageRefillCashier' : IDL.Func(
-      [IDL.Opt(_CaffeineStorageRefillInformation)],
-      [_CaffeineStorageRefillResult],
-      [],
-    ),
-  '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-  '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addHospital' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
       [Hospital],
@@ -190,13 +147,17 @@ export const idlService = IDL.Service({
       [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
       [],
     ),
-  'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'assignPhlebotomistToHospital' : IDL.Func(
       [IDL.Text, Principal],
       [HospitalPhlebotomistAssignment],
       [],
     ),
   'bulkAddTests' : IDL.Func([IDL.Vec(TestInput)], [IDL.Vec(TestOutput)], []),
+  'claimSuperAdmin' : IDL.Func(
+      [],
+      [IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text })],
+      [],
+    ),
   'createSample' : IDL.Func([SampleInput], [IDL.Text], []),
   'createTask' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
@@ -214,7 +175,6 @@ export const idlService = IDL.Service({
   'getAllTasks' : IDL.Func([], [IDL.Vec(AppTask)], ['query']),
   'getAllTests' : IDL.Func([], [IDL.Vec(TestOutput)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-  'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getDashboardMetrics' : IDL.Func([], [DashboardMetrics], ['query']),
   'getHospitalById' : IDL.Func([IDL.Text], [Hospital], ['query']),
   'getHospitals' : IDL.Func(
@@ -253,7 +213,6 @@ export const idlService = IDL.Service({
   'getTestByCode' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
   'getUserByMobile' : IDL.Func([IDL.Text], [IDL.Opt(AppUser)], ['query']),
   'getUserProfile' : IDL.Func([Principal], [IDL.Opt(UserProfile)], ['query']),
-  'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'markSettlement' : IDL.Func(
       [
         IDL.Text,
@@ -274,7 +233,6 @@ export const idlService = IDL.Service({
       [HospitalPhlebotomistAssignment],
       [],
     ),
-  'claimSuperAdmin' : IDL.Func([], [IDL.Variant({'ok': IDL.Text, 'err': IDL.Text})], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'seedTestUsers' : IDL.Func([], [IDL.Nat], []),
   'setSystemMode' : IDL.Func([SystemMode], [], []),
@@ -303,17 +261,6 @@ export const idlService = IDL.Service({
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const _CaffeineStorageCreateCertificateResult = IDL.Record({
-    'method' : IDL.Text,
-    'blob_hash' : IDL.Text,
-  });
-  const _CaffeineStorageRefillInformation = IDL.Record({
-    'proposed_top_up_amount' : IDL.Opt(IDL.Nat),
-  });
-  const _CaffeineStorageRefillResult = IDL.Record({
-    'success' : IDL.Opt(IDL.Bool),
-    'topped_up_amount' : IDL.Opt(IDL.Nat),
-  });
   const Hospital = IDL.Record({
     'id' : IDL.Text,
     'area' : IDL.Text,
@@ -350,11 +297,6 @@ export const idlFactory = ({ IDL }) => {
   const TestError = IDL.Variant({
     'notFound' : IDL.Null,
     'duplicateCode' : IDL.Null,
-  });
-  const UserRole = IDL.Variant({
-    'admin' : IDL.Null,
-    'user' : IDL.Null,
-    'guest' : IDL.Null,
   });
   const Principal = IDL.Principal;
   const HospitalPhlebotomistAssignment = IDL.Record({
@@ -448,33 +390,6 @@ export const idlFactory = ({ IDL }) => {
   });
   
   return IDL.Service({
-    '_caffeineStorageBlobIsLive' : IDL.Func(
-        [IDL.Vec(IDL.Nat8)],
-        [IDL.Bool],
-        ['query'],
-      ),
-    '_caffeineStorageBlobsToDelete' : IDL.Func(
-        [],
-        [IDL.Vec(IDL.Vec(IDL.Nat8))],
-        ['query'],
-      ),
-    '_caffeineStorageConfirmBlobDeletion' : IDL.Func(
-        [IDL.Vec(IDL.Vec(IDL.Nat8))],
-        [],
-        [],
-      ),
-    '_caffeineStorageCreateCertificate' : IDL.Func(
-        [IDL.Text],
-        [_CaffeineStorageCreateCertificateResult],
-        [],
-      ),
-    '_caffeineStorageRefillCashier' : IDL.Func(
-        [IDL.Opt(_CaffeineStorageRefillInformation)],
-        [_CaffeineStorageRefillResult],
-        [],
-      ),
-    '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
-    '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addHospital' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
         [Hospital],
@@ -485,13 +400,17 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Variant({ 'ok' : TestOutput, 'err' : TestError })],
         [],
       ),
-    'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'assignPhlebotomistToHospital' : IDL.Func(
         [IDL.Text, Principal],
         [HospitalPhlebotomistAssignment],
         [],
       ),
     'bulkAddTests' : IDL.Func([IDL.Vec(TestInput)], [IDL.Vec(TestOutput)], []),
+    'claimSuperAdmin' : IDL.Func(
+        [],
+        [IDL.Variant({ 'ok' : IDL.Text, 'err' : IDL.Text })],
+        [],
+      ),
     'createSample' : IDL.Func([SampleInput], [IDL.Text], []),
     'createTask' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
@@ -509,7 +428,6 @@ export const idlFactory = ({ IDL }) => {
     'getAllTasks' : IDL.Func([], [IDL.Vec(AppTask)], ['query']),
     'getAllTests' : IDL.Func([], [IDL.Vec(TestOutput)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
-    'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getDashboardMetrics' : IDL.Func([], [DashboardMetrics], ['query']),
     'getHospitalById' : IDL.Func([IDL.Text], [Hospital], ['query']),
     'getHospitals' : IDL.Func(
@@ -548,7 +466,6 @@ export const idlFactory = ({ IDL }) => {
     'getTestByCode' : IDL.Func([IDL.Text], [IDL.Opt(TestOutput)], ['query']),
     'getUserByMobile' : IDL.Func([IDL.Text], [IDL.Opt(AppUser)], ['query']),
     'getUserProfile' : IDL.Func([Principal], [IDL.Opt(UserProfile)], ['query']),
-    'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'markSettlement' : IDL.Func(
         [
           IDL.Text,
@@ -569,8 +486,7 @@ export const idlFactory = ({ IDL }) => {
         [HospitalPhlebotomistAssignment],
         [],
       ),
-    'claimSuperAdmin' : IDL.Func([], [IDL.Variant({'ok': IDL.Text, 'err': IDL.Text})], []),
-  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'seedTestUsers' : IDL.Func([], [IDL.Nat], []),
     'setSystemMode' : IDL.Func([SystemMode], [], []),
     'setTestStatus' : IDL.Func(

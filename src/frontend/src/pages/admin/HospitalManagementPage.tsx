@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import type { Hospital } from "../../backend";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import {
   useAddHospital,
@@ -29,6 +28,7 @@ import {
   useHospitals,
   useUpdateHospital,
 } from "../../hooks/useQueries";
+import type { Hospital } from "../../types/backendTypes";
 
 interface HospitalManagementPageProps {
   role?: string;

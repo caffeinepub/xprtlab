@@ -14,8 +14,8 @@ import { AlertTriangle, Loader2 } from "lucide-react";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { TestError, type TestOutput } from "../../backend";
 import { useUpdateTest } from "../../hooks/useQueries";
+import { TestError, type TestOutput } from "../../types/backendTypes";
 import { computeProfitPerTest } from "../../utils/profitUtils";
 
 interface EditTestFormValues {

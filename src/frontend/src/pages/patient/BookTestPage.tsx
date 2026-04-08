@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Minus, Plus, Search, ShoppingCart } from "lucide-react";
 import React, { useState } from "react";
-import type { TestOutput } from "../../backend";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests } from "../../hooks/useQueries";
+import type { TestOutput } from "../../types/backendTypes";
 
 interface BookTestPageProps {
   onNavigate?: (page: string, data?: any) => void;

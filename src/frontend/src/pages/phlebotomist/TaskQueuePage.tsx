@@ -1,8 +1,8 @@
 import { ClipboardList, Loader2, MapPin, RefreshCw, User } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { AppTask } from "../../backend";
 import HealthcareBg from "../../components/shared/HealthcareBg";
 import { getTasksByUser } from "../../services/backendService";
+import type { AppTask } from "../../types/backendTypes";
 
 interface TaskQueuePageProps {
   isDemoMode?: boolean;

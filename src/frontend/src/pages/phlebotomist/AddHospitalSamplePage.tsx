@@ -11,13 +11,13 @@ import {
   User,
 } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import type { Hospital, TestOutput } from "../../backend";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import {
   createSample,
   getHospitals,
   getTests,
 } from "../../services/backendService";
+import type { Hospital, TestOutput } from "../../types/backendTypes";
 
 interface AddHospitalSamplePageProps {
   isDemoMode?: boolean;

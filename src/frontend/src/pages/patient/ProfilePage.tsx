@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { useInternetIdentity } from "../../hooks/useInternetIdentity";
 import {
   useGetAssignedHospitals,
   useGetCallerUserProfile,
@@ -33,13 +32,14 @@ import {
   useHospitals,
   useRemovePhlebotomistFromHospital,
 } from "../../hooks/useQueries";
+import { getSession } from "../../utils/sessionUtils";
 
 const APP_VERSION = "v1.0.0";
 const ADMIN_PHONE = "+919876543210";
 
 interface ProfilePageProps {
   onNavigate?: (route: string) => void;
-  viewingPrincipal?: string; // if superAdmin is viewing a phlebotomist profile
+  viewingPrincipal?: string;
   viewingRole?: string;
   currentUserRole?: string;
 }
@@ -50,7 +50,6 @@ export default function ProfilePage({
   viewingRole,
   currentUserRole,
 }: ProfilePageProps) {
-  const { identity, clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [removeHospitalTarget, setRemoveHospitalTarget] = useState<
@@ -65,19 +64,23 @@ export default function ProfilePage({
     isLoading: hospitalsLegacyLoading,
   } = useGetAssignedHospitals();
 
-  const isAuthenticated = !!identity;
-  const principalId = identity?.getPrincipal().toString();
+  // Session-based identity — no Internet Identity needed
+  const session = getSession();
+  const isAuthenticated = !!session;
 
-  // Determine if we're showing phlebotomist's assigned hospitals via new system
   const effectiveRole = viewingRole ?? (userProfile?.appRole as string) ?? "";
   const isPhlebotomistView = effectiveRole === "phlebotomist";
   const isSuperAdminViewer = currentUserRole === "superAdmin";
 
   const phlebotomistPrincipal: Principal | null = viewingPrincipal
-    ? Principal.fromText(viewingPrincipal)
-    : principalId
-      ? Principal.fromText(principalId)
-      : null;
+    ? (() => {
+        try {
+          return Principal.fromText(viewingPrincipal);
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   const { data: assignedHospitalIds = [], isLoading: hospitalIdsLoading } =
     useGetHospitalsByPhlebotomist(
@@ -98,10 +101,11 @@ export default function ProfilePage({
     ? hospitalIdsLoading || allHospitalsLoading
     : hospitalsLegacyLoading;
 
-  const handleLogoutConfirm = async () => {
-    await clear();
+  const handleLogoutConfirm = () => {
+    localStorage.clear();
     queryClient.clear();
     setShowLogoutDialog(false);
+    window.location.replace("/");
   };
 
   const handleRemoveHospital = async () => {
@@ -150,7 +154,7 @@ export default function ProfilePage({
           ) : (
             <>
               <p className="font-bold text-base text-foreground truncate">
-                {userProfile?.name || "User"}
+                {userProfile?.name || session?.mobile || "User"}
               </p>
               {userProfile?.appRole && (
                 <span
@@ -160,9 +164,9 @@ export default function ProfilePage({
                     String(userProfile.appRole).slice(1)}
                 </span>
               )}
-              {userProfile?.phone && (
+              {(userProfile?.phone || session?.mobile) && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {userProfile.phone}
+                  {userProfile?.phone ?? session?.mobile}
                 </p>
               )}
               {userProfile?.area && (
@@ -175,15 +179,15 @@ export default function ProfilePage({
         </div>
       </div>
 
-      {/* Principal ID */}
-      {principalId && (
+      {/* Session Info */}
+      {session?.mobile && (
         <div className="bg-white rounded-2xl border border-border shadow-sm p-4">
           <div className="flex items-center gap-2 mb-1">
             <Shield className="h-4 w-4 text-primary" />
-            <p className="text-xs font-bold text-foreground">Principal ID</p>
+            <p className="text-xs font-bold text-foreground">Logged In As</p>
           </div>
-          <p className="text-xs text-muted-foreground font-mono break-all">
-            {principalId}
+          <p className="text-xs text-muted-foreground font-mono">
+            {session.mobile} · {session.role}
           </p>
         </div>
       )}
@@ -255,8 +259,7 @@ export default function ProfilePage({
               ))}
             </div>
           )
-        ) : // Legacy assigned hospitals (non-phlebotomist roles)
-        assignedHospitalsLegacy.length === 0 ? (
+        ) : assignedHospitalsLegacy.length === 0 ? (
           <p className="text-xs text-muted-foreground">
             No hospitals assigned yet. Contact admin.
           </p>

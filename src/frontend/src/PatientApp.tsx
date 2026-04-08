@@ -5,7 +5,6 @@ import ProfileSetupModal from "./components/auth/ProfileSetupModal";
 import PatientAppLayout from "./components/layout/PatientAppLayout";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import LoadingScreen from "./components/shared/LoadingScreen";
-import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useGetCallerUserProfile } from "./hooks/useQueries";
 
 type PatientRoute =
@@ -48,9 +47,7 @@ const NAV_ITEMS = [
 ];
 
 export default function PatientApp() {
-  const { identity, isInitializing } = useInternetIdentity();
   const queryClient = useQueryClient();
-  const isAuthenticated = !!identity;
 
   const [currentRoute, setCurrentRoute] = useState<PatientRoute>("home");
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
@@ -60,6 +57,9 @@ export default function PatientApp() {
     isLoading: profileLoading,
     isFetched: profileFetched,
   } = useGetCallerUserProfile();
+
+  // Patient app is open to all visitors — no identity gate
+  const isAuthenticated = true;
 
   const showProfileSetup =
     isAuthenticated &&
@@ -76,14 +76,6 @@ export default function PatientApp() {
     }
     setCurrentRoute(route as PatientRoute);
   };
-
-  if (isInitializing) {
-    return <LoadingScreen message="Initializing..." />;
-  }
-
-  if (!isAuthenticated) {
-    return <PatientLoginScreen />;
-  }
 
   const renderPage = () => {
     switch (currentRoute) {

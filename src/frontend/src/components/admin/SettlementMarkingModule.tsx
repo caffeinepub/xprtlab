@@ -1,7 +1,7 @@
 import { Building2, CheckCircle, Loader2, Plus } from "lucide-react";
 import React, { useState, useMemo } from "react";
-import { Variant_Partial_Settled } from "../../backend";
 import { useMarkSettlement } from "../../hooks/useQueries";
+import { Variant_Partial_Settled } from "../../types/backendTypes";
 import SettlementHistoryPanel from "./SettlementHistoryPanel";
 
 interface SettlementMarkingModuleProps {

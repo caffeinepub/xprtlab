@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
-import type { UserProfile } from "../../backend";
 import { useActor } from "../../hooks/useActor";
 import {
   useAssignPhlebotomistToHospital,
@@ -35,6 +34,7 @@ import {
   useHospitalById,
   useRemovePhlebotomistFromHospital,
 } from "../../hooks/useQueries";
+import type { UserProfile } from "../../types/backendTypes";
 
 interface HospitalDetailsPageProps {
   hospitalId: string;

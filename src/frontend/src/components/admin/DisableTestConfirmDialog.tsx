@@ -11,8 +11,8 @@ import {
 import { Loader2 } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
-import type { TestOutput } from "../../backend";
 import { useDisableTest } from "../../hooks/useQueries";
+import type { TestOutput } from "../../types/backendTypes";
 
 interface DisableTestConfirmDialogProps {
   open: boolean;

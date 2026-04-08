@@ -2,11 +2,14 @@
  * backendService.ts
  *
  * Unified backend service — single source of truth.
+ * Uses an anonymous HttpAgent — no Internet Identity required.
  * ALL business data reads/writes go through here.
  * localStorage is used ONLY for session tokens.
  */
 
-import { AuthClient } from "@dfinity/auth-client";
+import { HttpAgent } from "@dfinity/agent";
+import { type ExternalBlob, createActor } from "../backend";
+import { loadConfig } from "../config";
 import type {
   AppTask,
   AppUser,
@@ -15,41 +18,46 @@ import type {
   SampleRecord,
   TestInput,
   TestOutput,
-} from "../backend.d";
-import { createActorWithConfig } from "../config";
+} from "../types/backendTypes";
 
-// Module-level singleton actor
-let actorInstance: Awaited<ReturnType<typeof createActorWithConfig>> | null =
-  null;
+// Module-level anonymous actor singleton
+let actorInstance: ReturnType<typeof createActor> | null = null;
 
-/** Called by StaffApp after II login (or on page load when delegation is restored). */
-export function setAuthenticatedActor(
-  actor: Awaited<ReturnType<typeof createActorWithConfig>> | null,
-) {
-  actorInstance = actor;
-  console.log(
-    "[backendService] setAuthenticatedActor called, actor:",
-    actor !== null ? "set" : "null",
-  );
-}
-
-export async function getActor() {
+async function getActor() {
   if (actorInstance) return actorInstance;
 
-  const authClient = await AuthClient.create();
-  const identity = authClient.getIdentity();
+  const config = await loadConfig();
 
-  actorInstance = await createActorWithConfig({
-    agentOptions: {
-      identity,
-    },
+  const agent = new HttpAgent({
+    host: config.backend_host ?? "https://ic0.app",
   });
 
-  return actorInstance;
-}
+  // Fetch root key only in local development
+  if (config.backend_host?.includes("localhost")) {
+    await agent.fetchRootKey().catch((err) => {
+      console.warn("Unable to fetch root key:", err);
+    });
+  }
 
-export function resetActorCache() {
-  actorInstance = null;
+  const _uploadFile = async (_file: ExternalBlob): Promise<Uint8Array> => {
+    throw new Error("File upload not supported");
+  };
+  const _downloadFile = async (_bytes: Uint8Array): Promise<ExternalBlob> => {
+    throw new Error("File download not supported");
+  };
+
+  actorInstance = createActor(
+    config.backend_canister_id,
+    _uploadFile,
+    _downloadFile,
+    { agent },
+  );
+
+  console.log(
+    "[backendService] Anonymous actor created for canister:",
+    config.backend_canister_id,
+  );
+  return actorInstance;
 }
 
 // ─── Samples ─────────────────────────────────────────────────────────────────
@@ -204,7 +212,6 @@ export async function createTest(input: TestInput) {
     commission_amount: Number(input.commission_amount),
     profit: Number(input.profit),
   });
-  console.log("Auth actor available:", actorInstance !== null);
 
   try {
     const actor = await getActor();
@@ -356,7 +363,6 @@ export async function getUserByMobile(mobile: string): Promise<AppUser | null> {
     if (Array.isArray(result)) {
       return result.length > 0 ? (result[0] as AppUser) : null;
     }
-    // Handle plain object Result variants just in case
     const r = result as unknown as
       | { ok?: AppUser; err?: string }
       | AppUser

@@ -1,77 +1,19 @@
-import { Loader2, Shield } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { createActorWithConfig } from "../../config";
-import { useInternetIdentity } from "../../hooks/useInternetIdentity";
-import {
-  claimSuperAdmin,
-  getUserByMobile,
-  setAuthenticatedActor,
-} from "../../services/backendService";
+import { getUserByMobile } from "../../services/backendService";
 import { saveSession } from "../../utils/sessionUtils";
 import HealthcareBg from "../shared/HealthcareBg";
 import OTPLoginScreen from "./OTPLoginScreen";
 
 export default function StaffLoginScreen() {
-  const { login, isLoggingIn, isLoginSuccess, loginError, identity } =
-    useInternetIdentity();
   const [authError, setAuthError] = useState("");
 
-  // Only clear stale session when we are actually on the login/root path.
-  // Do NOT clear unconditionally — this was causing the login loop when the
-  // component remounted after a successful login on /admin-app or /staff-app.
+  // Clear stale session only when on the login/root path
   useEffect(() => {
     const path = window.location.pathname;
     if (path === "/" || path === "/login") {
       localStorage.removeItem("xpertlab_session");
     }
   }, []);
-
-  // Handle Internet Identity success
-  useEffect(() => {
-    if (!isLoginSuccess || !identity) return;
-
-    const principal = identity.getPrincipal().toText();
-    console.log("Logged in principal:", principal);
-
-    (window as any).ic = (window as any).ic || {};
-    (window as any).ic.identity = identity;
-
-    (async () => {
-      try {
-        const authActor = await createActorWithConfig({
-          agentOptions: { identity },
-        });
-        setAuthenticatedActor(authActor);
-        console.log("Identity:", identity);
-      } catch (e) {
-        console.warn("Failed to create authenticated actor:", e);
-      }
-
-      try {
-        const result = await claimSuperAdmin();
-        if ("ok" in result) {
-          console.log("Super admin claimed:", result.ok);
-        } else {
-          console.log("claimSuperAdmin info:", result.err);
-        }
-      } catch (e) {
-        console.warn("claimSuperAdmin call failed (non-critical):", e);
-      }
-
-      localStorage.clear();
-      saveSession({
-        userId: principal,
-        role: "superAdmin",
-        loginType: "identity",
-        loginAt: Date.now(),
-      });
-      console.log(
-        "Session after login:",
-        localStorage.getItem("xpertlab_session"),
-      );
-      window.location.href = "/admin-app";
-    })();
-  }, [isLoginSuccess, identity]);
 
   const handleOTPSuccess = async (mobile: string) => {
     setAuthError("");
@@ -82,7 +24,7 @@ export default function StaffLoginScreen() {
         return;
       }
 
-      console.log("User from backend:", user);
+      console.log("USER:", user);
 
       // Map backend role strings to AppRole values
       const roleMap: Record<string, string> = {
@@ -112,15 +54,15 @@ export default function StaffLoginScreen() {
         loginAt: Date.now(),
         assignedHospitalId: user.assignedHospitalId || "",
       };
-      console.log("USER:", user);
+
+      console.log("Session after login:", session);
+      saveSession(session);
       console.log(
         "SESSION:",
         JSON.parse(localStorage.getItem("xpertlab_session") || "{}"),
       );
-      console.log("Session after login:", session);
-      saveSession(session);
 
-      // Role-based navigation — always use window.location for hard nav
+      // Role-based navigation
       if (user.role === "super_admin") {
         window.location.href = "/admin-app";
       } else if (user.role === "lab_admin") {
@@ -172,40 +114,6 @@ export default function StaffLoginScreen() {
           className="bg-white rounded-2xl p-6 space-y-5"
           style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
         >
-          {/* Internet Identity Button */}
-          <button
-            type="button"
-            onClick={login}
-            disabled={isLoggingIn}
-            data-ocid="login.primary_button"
-            className="w-full flex items-center justify-center gap-3 h-12 rounded-xl font-bold text-sm text-white transition-all duration-200 hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
-            style={{
-              background: "linear-gradient(to right, #2563EB, #06B6D4)",
-            }}
-          >
-            {isLoggingIn ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Shield className="h-4 w-4" />
-            )}
-            Continue with Internet Identity
-          </button>
-
-          {loginError && (
-            <p className="text-xs text-red-600 text-center">
-              {loginError.message}
-            </p>
-          )}
-
-          {/* Divider */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              OR
-            </span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
           {/* OTP Login */}
           <OTPLoginScreen onSuccess={handleOTPSuccess} />
 

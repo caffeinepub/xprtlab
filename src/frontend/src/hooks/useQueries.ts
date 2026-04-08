@@ -7,7 +7,7 @@ import type {
   TestOutput,
   UserProfile,
   Variant_Partial_Settled,
-} from "../backend";
+} from "../types/backendTypes";
 import {
   type DeliveryMethod,
   HospitalSampleTestRef,

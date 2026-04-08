@@ -15,8 +15,8 @@ import { Loader2 } from "lucide-react";
 import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import type { Hospital } from "../../backend";
 import { useUpdateHospital } from "../../hooks/useQueries";
+import type { Hospital } from "../../types/backendTypes";
 
 interface EditHospitalFormValues {
   name: string;

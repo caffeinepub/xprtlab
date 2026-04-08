@@ -129,37 +129,7 @@ export interface UserProfile {
   'name' : string,
   'phone' : string,
 }
-export type UserRole = { 'admin' : null } |
-  { 'user' : null } |
-  { 'guest' : null };
-export interface _CaffeineStorageCreateCertificateResult {
-  'method' : string,
-  'blob_hash' : string,
-}
-export interface _CaffeineStorageRefillInformation {
-  'proposed_top_up_amount' : [] | [bigint],
-}
-export interface _CaffeineStorageRefillResult {
-  'success' : [] | [boolean],
-  'topped_up_amount' : [] | [bigint],
-}
 export interface _SERVICE {
-  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
-  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
-  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
-    [Array<Uint8Array>],
-    undefined
-  >,
-  '_caffeineStorageCreateCertificate' : ActorMethod<
-    [string],
-    _CaffeineStorageCreateCertificateResult
-  >,
-  '_caffeineStorageRefillCashier' : ActorMethod<
-    [[] | [_CaffeineStorageRefillInformation]],
-    _CaffeineStorageRefillResult
-  >,
-  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   /**
    * / HOSPITAL MANAGEMENT
    */
@@ -172,12 +142,12 @@ export interface _SERVICE {
     { 'ok' : TestOutput } |
       { 'err' : TestError }
   >,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'assignPhlebotomistToHospital' : ActorMethod<
     [string, Principal],
     HospitalPhlebotomistAssignment
   >,
   'bulkAddTests' : ActorMethod<[Array<TestInput>], Array<TestOutput>>,
+  'claimSuperAdmin' : ActorMethod<[], { 'ok' : string } | { 'err' : string }>,
   'createSample' : ActorMethod<[SampleInput], string>,
   'createTask' : ActorMethod<[string, string, string, string, string], AppTask>,
   'deleteAllData' : ActorMethod<[], undefined>,
@@ -191,7 +161,6 @@ export interface _SERVICE {
   'getAllTasks' : ActorMethod<[], Array<AppTask>>,
   'getAllTests' : ActorMethod<[], Array<TestOutput>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getDashboardMetrics' : ActorMethod<[], DashboardMetrics>,
   'getHospitalById' : ActorMethod<[string], Hospital>,
   'getHospitals' : ActorMethod<[[] | [string]], Array<Hospital>>,
@@ -206,7 +175,6 @@ export interface _SERVICE {
   'getTestByCode' : ActorMethod<[string], [] | [TestOutput]>,
   'getUserByMobile' : ActorMethod<[string], [] | [AppUser]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
   'markSettlement' : ActorMethod<
     [
       string,

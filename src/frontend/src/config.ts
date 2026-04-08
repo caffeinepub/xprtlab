@@ -4,12 +4,8 @@ import {
   type CreateActorOptions,
   ExternalBlob,
 } from "./backend";
-import { StorageClient } from "./utils/StorageClient";
+import type { BackendActor } from "./types/backendTypes";
 import { HttpAgent } from "@icp-sdk/core/agent";
-
-const DEFAULT_STORAGE_GATEWAY_URL = "https://blob.caffeine.ai";
-const DEFAULT_BUCKET_NAME = "default-bucket";
-const DEFAULT_PROJECT_ID = "0000000-0000-0000-0000-00000000000";
 
 interface JsonConfig {
   backend_host: string;
@@ -21,8 +17,6 @@ interface JsonConfig {
 interface Config {
   backend_host?: string;
   backend_canister_id: string;
-  storage_gateway_url: string;
-  bucket_name: string;
   project_id: string;
   ii_derivation_origin?: string;
 }
@@ -39,23 +33,26 @@ export async function loadConfig(): Promise<Config> {
   try {
     const response = await fetch(`${baseUrl}env.json`);
     const config = (await response.json()) as JsonConfig;
+
     if (!backendCanisterId && config.backend_canister_id === "undefined") {
       console.error("CANISTER_ID_BACKEND is not set");
       throw new Error("CANISTER_ID_BACKEND is not set");
     }
 
-    const fullConfig = {
+    const canisterId = (
+      config.backend_canister_id === "undefined"
+        ? backendCanisterId
+        : config.backend_canister_id
+    ) as string;
+
+    console.log("CANISTER ID:", canisterId);
+
+    const fullConfig: Config = {
       backend_host:
         config.backend_host === "undefined" ? undefined : config.backend_host,
-      backend_canister_id: (config.backend_canister_id === "undefined"
-        ? backendCanisterId
-        : config.backend_canister_id) as string,
-      storage_gateway_url: process.env.STORAGE_GATEWAY_URL ?? "nogateway",
-      bucket_name: DEFAULT_BUCKET_NAME,
+      backend_canister_id: canisterId,
       project_id:
-        config.project_id !== "undefined"
-          ? config.project_id
-          : DEFAULT_PROJECT_ID,
+        config.project_id !== "undefined" ? config.project_id : "0000000-0000-0000-0000-00000000000",
       ii_derivation_origin:
         config.ii_derivation_origin === "undefined"
           ? undefined
@@ -63,19 +60,19 @@ export async function loadConfig(): Promise<Config> {
     };
     configCache = fullConfig;
     return fullConfig;
-  } catch {
+  } catch (e) {
     if (!backendCanisterId) {
       console.error("CANISTER_ID_BACKEND is not set");
       throw new Error("CANISTER_ID_BACKEND is not set");
     }
-    const fallbackConfig = {
+    const fallbackConfig: Config = {
       backend_host: undefined,
       backend_canister_id: backendCanisterId,
-      storage_gateway_url: DEFAULT_STORAGE_GATEWAY_URL,
-      bucket_name: DEFAULT_BUCKET_NAME,
-      project_id: DEFAULT_PROJECT_ID,
+      project_id: "0000000-0000-0000-0000-00000000000",
       ii_derivation_origin: undefined,
     };
+    console.log("CANISTER ID (fallback):", backendCanisterId);
+    configCache = fallbackConfig;
     return fallbackConfig;
   }
 }
@@ -88,7 +85,7 @@ function extractAgentErrorMessage(error: string): string {
 
 function processError(e: unknown): never {
   if (e && typeof e === "object" && "message" in e) {
-    throw new Error(extractAgentErrorMessage(`${e.message}`));
+    throw new Error(extractAgentErrorMessage(`${(e as { message: string }).message}`));
   }
   throw e;
 }
@@ -99,30 +96,33 @@ async function maybeLoadMockBackend(): Promise<backendInterface | null> {
   }
 
   try {
-    // If VITE_USE_MOCK is enabled, try to load a mock backend module *if it exists*.
-    // We use import.meta.glob so builds don't fail when the mock file is absent.
     const mockModules = import.meta.glob("./mocks/backend.{ts,tsx,js,jsx}");
-
     const path = Object.keys(mockModules)[0];
     if (!path) return null;
-
     const mod = (await mockModules[path]()) as {
       mockBackend?: backendInterface;
     };
-
     return mod.mockBackend ?? null;
   } catch {
     return null;
   }
 }
 
+// No-op stubs for ExternalBlob upload/download (object-storage not used in this project)
+const _uploadFile = async (_file: ExternalBlob): Promise<Uint8Array> => {
+  throw new Error("File upload not supported in this deployment");
+};
+
+const _downloadFile = async (_bytes: Uint8Array): Promise<ExternalBlob> => {
+  throw new Error("File download not supported in this deployment");
+};
+
 export async function createActorWithConfig(
   options?: CreateActorOptions,
-): Promise<backendInterface> {
-  // Attempt to load mock backend if enabled
+): Promise<BackendActor> {
   const mock = await maybeLoadMockBackend();
   if (mock) {
-    return mock;
+    return mock as unknown as BackendActor;
   }
 
   const config = await loadConfig();
@@ -131,6 +131,7 @@ export async function createActorWithConfig(
     ...resolvedOptions.agentOptions,
     host: config.backend_host,
   });
+
   if (config.backend_host?.includes("localhost")) {
     await agent.fetchRootKey().catch((err) => {
       console.warn(
@@ -139,41 +140,17 @@ export async function createActorWithConfig(
       console.error(err);
     });
   }
-  const actorOptions = {
+
+  const actorOptions: CreateActorOptions = {
     ...resolvedOptions,
-    agent: agent,
-    processError,
-  };
-
-  const storageClient = new StorageClient(
-    config.bucket_name,
-    config.storage_gateway_url,
-    config.backend_canister_id,
-    config.project_id,
     agent,
-  );
-
-  const MOTOKO_DEDUPLICATION_SENTINEL = "!caf!";
-
-  const uploadFile = async (file: ExternalBlob): Promise<Uint8Array> => {
-    const { hash } = await storageClient.putFile(
-      await file.getBytes(),
-      file.onProgress,
-    );
-    return new TextEncoder().encode(MOTOKO_DEDUPLICATION_SENTINEL + hash);
-  };
-
-  const downloadFile = async (bytes: Uint8Array): Promise<ExternalBlob> => {
-    const hashWithPrefix = new TextDecoder().decode(new Uint8Array(bytes));
-    const hash = hashWithPrefix.substring(MOTOKO_DEDUPLICATION_SENTINEL.length);
-    const url = await storageClient.getDirectURL(hash);
-    return ExternalBlob.fromURL(url);
+    processError,
   };
 
   return createActor(
     config.backend_canister_id,
-    uploadFile,
-    downloadFile,
+    _uploadFile,
+    _downloadFile,
     actorOptions,
-  );
+  ) as unknown as BackendActor;
 }

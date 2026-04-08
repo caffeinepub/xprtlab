@@ -12,10 +12,10 @@ import {
 } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import type { TestOutput } from "../../backend";
 import PageHeroHeader from "../../components/shared/PageHeroHeader";
 import { useGetAllTests } from "../../hooks/useQueries";
 import { useCreateHomeCollectionRequest } from "../../hooks/useQueries";
+import type { TestOutput } from "../../types/backendTypes";
 
 interface HomeCollectionPageProps {
   onNavigate?: (page: string) => void;

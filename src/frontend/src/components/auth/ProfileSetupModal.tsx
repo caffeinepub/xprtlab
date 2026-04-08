@@ -8,8 +8,11 @@ import {
 import { Loader2 } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
-import { AppRole as BackendAppRole, type UserProfile } from "../../backend";
 import { useSaveCallerUserProfile } from "../../hooks/useQueries";
+import {
+  AppRole as BackendAppRole,
+  type UserProfile,
+} from "../../types/backendTypes";
 import type { AppRole as LocalAppRole } from "../../types/models";
 
 interface ProfileSetupModalProps {

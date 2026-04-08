@@ -1,7 +1,7 @@
 import { Eye, EyeOff, Lock, LogOut, Save, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { resetActorCache } from "../../services/backendService";
+// resetActorCache removed — anonymous actor needs no cache reset
 
 interface Session {
   userId?: string;
@@ -120,7 +120,6 @@ export default function StaffProfilePage({
   const handleLogout = () => {
     if (!window.confirm("Are you sure you want to log out?")) return;
     try {
-      resetActorCache();
       localStorage.clear();
     } catch (e) {
       console.error(e);

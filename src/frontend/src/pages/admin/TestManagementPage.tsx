@@ -25,7 +25,6 @@ import {
 import type React from "react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { TestError, type TestInput, type TestOutput } from "../../backend";
 import AddTestModal from "../../components/admin/AddTestModal";
 import DisableTestConfirmDialog from "../../components/admin/DisableTestConfirmDialog";
 import EditTestModal from "../../components/admin/EditTestModal";
@@ -35,6 +34,11 @@ import {
   useGetAllTests,
   useSetTestStatus,
 } from "../../hooks/useQueries";
+import {
+  TestError,
+  type TestInput,
+  type TestOutput,
+} from "../../types/backendTypes";
 import {
   computeProfitPerTest,
   getProfitStatusColor,

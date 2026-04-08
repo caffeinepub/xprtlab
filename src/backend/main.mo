@@ -6,10 +6,7 @@ import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
 import Text "mo:core/Text";
 import Order "mo:core/Order";
-import Storage "blob-storage/Storage";
-import MixinStorage "blob-storage/Mixin";
-import AccessControl "authorization/access-control";
-import MixinAuthorization "authorization/MixinAuthorization";
+
 
 
 
@@ -121,7 +118,7 @@ actor {
     id : Text;
     patient : Principal.Principal;
     bookingId : Text;
-    file : Storage.ExternalBlob;
+    file : Blob;
     uploadedBy : Principal.Principal;
     timestamp : Int;
   };
@@ -158,7 +155,7 @@ actor {
     reporter : Principal.Principal;
     description : Text;
     severity : { #low; #medium; #high };
-    photo : ?Storage.ExternalBlob;
+    photo : ?Blob;
     timestamp : Int;
   };
 
@@ -294,15 +291,17 @@ actor {
     #unexpected;
   };
 
-  // BLOB STORAGE (do not remove)
-  include MixinStorage();
-
   // SYSTEM MODE PERSISTENCE
   var currentSystemMode : SystemMode = #production;
 
-  // ROLES & PERMISSION MAP initialization
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
+  // Legacy stable variable retained for upgrade compatibility — no longer used
+  // (accessControlState was managed by the caffeineai-authorization package which is now removed)
+  type LegacyUserRole = { #admin; #guest; #user };
+  type LegacyAccessControlState = { var adminAssigned : Bool; userRoles : Map.Map<Principal.Principal, LegacyUserRole> };
+  let accessControlState : LegacyAccessControlState = {
+    var adminAssigned = false;
+    userRoles = Map.empty<Principal.Principal, LegacyUserRole>();
+  };
 
   // Data
   let userProfiles = Map.empty<Principal.Principal, UserProfile>();
@@ -358,9 +357,6 @@ actor {
   };
 
   func isAdminOrSuperAdmin(caller : Principal.Principal) : Bool {
-    if (AccessControl.isAdmin(accessControlState, caller)) {
-      return true;
-    };
     switch (getCallerAppRole(caller)) {
       case (?(#superAdmin)) { true };
       case (?(#labAdmin)) { true };
@@ -384,7 +380,7 @@ actor {
       case (?(#superAdmin)) { true };
       case (_) { false };
     };
-    if (not (AccessControl.isAdmin(accessControlState, caller) or isSuperAdmin)) {
+    if (not isSuperAdmin) {
       Runtime.trap("Unauthorized: " # errMsg);
     };
   };
@@ -401,7 +397,7 @@ actor {
       case (?(#superAdmin)) { true };
       case (_) { false };
     };
-    if (not (AccessControl.isAdmin(accessControlState, caller) or isLabAdmin or isSuperAdmin)) {
+    if (not (isLabAdmin or isSuperAdmin)) {
       Runtime.trap("Unauthorized: " # errMsg);
     };
   };
@@ -438,7 +434,7 @@ actor {
     patient_name : Text,
     status : Text,
   ) : async AppTask {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can create tasks");
     };
 
@@ -459,7 +455,7 @@ actor {
   };
 
   public query ({ caller }) func getTasksByUser(mobile : Text) : async [AppTask] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view tasks");
     };
 
@@ -578,7 +574,9 @@ actor {
   };
 
   public query ({ caller }) func getAllTests() : async [TestOutput] {
-    assertLabAdminOrSuperAdmin(caller, "Only LAB_ADMIN or SUPER_ADMIN role can get tests");
+    if (caller.isAnonymous()) {
+      Runtime.trap("Unauthorized: Only authenticated users can view tests");
+    };
     let testsList = List.empty<TestOutput>();
     if (tests.size() > 0) {
       tests.forEach(
@@ -723,14 +721,14 @@ actor {
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only users can get their profile");
     };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal.Principal) : async ?UserProfile {
-    if (caller != user and not (AccessControl.isAdmin(accessControlState, caller))) {
+    if (caller != user and not isAdminOrSuperAdmin(caller)) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
     userProfiles.get(user);
@@ -887,7 +885,7 @@ actor {
   };
 
   public query ({ caller }) func getHospitals(search : ?Text) : async [Hospital] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view hospitals");
     };
 
@@ -913,7 +911,7 @@ actor {
   };
 
   public query ({ caller }) func getHospitalById(id : Text) : async Hospital {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view hospitals");
     };
 
@@ -1005,7 +1003,7 @@ actor {
   };
 
   public query ({ caller }) func getPhlebotomistsByHospital(hospitalId : Text) : async [Principal.Principal] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view phlebotomist assignments");
     };
 
@@ -1025,7 +1023,7 @@ actor {
   };
 
   public query ({ caller }) func getHospitalsByPhlebotomist(phlebotomist : Principal.Principal) : async [Text] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view hospital assignments");
     };
 
@@ -1071,7 +1069,7 @@ actor {
   };
 
   public query ({ caller }) func getSettlementHistory(hospitalId : Text) : async [Settlement] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view settlement history");
     };
 
@@ -1090,14 +1088,12 @@ actor {
   // SYSTEM MODE MANAGEMENT
 
   public shared ({ caller }) func setSystemMode(mode : SystemMode) : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can change system mode");
-    };
+    assertSuperAdmin(caller, "Only super admins can change system mode");
     currentSystemMode := mode;
   };
 
   public query ({ caller }) func getSystemMode() : async SystemMode {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view system mode");
     };
     currentSystemMode;
@@ -1159,7 +1155,7 @@ actor {
   var users = Map.empty<Text, AppUser>();
 
   public shared ({ caller }) func createSample(input : SampleInput) : async Text {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only users can create samples");
     };
 
@@ -1251,7 +1247,7 @@ actor {
   };
 
   public query ({ caller }) func getSamplesByMobile(mobile : Text) : async [SampleRecord] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view samples");
     };
     if (not isAdminOrSuperAdmin(caller)) {
@@ -1269,7 +1265,7 @@ actor {
   };
 
   public query ({ caller }) func getSamplesByHospital(hospitalId : Text) : async [SampleRecord] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only authenticated users can view samples");
     };
 
@@ -1289,7 +1285,7 @@ actor {
   };
 
   public shared ({ caller }) func updateSampleStatus(sampleId : Text, status : Text) : async { #ok; #notFound } {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only users can update sample status");
     };
 
@@ -1363,7 +1359,7 @@ actor {
   };
 
   public query ({ caller }) func getDashboardMetrics() : async DashboardMetrics {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+    if (caller.isAnonymous()) {
       Runtime.trap("Unauthorized: Only users can get dashboard metrics");
     };
 

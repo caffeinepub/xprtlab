@@ -20,6 +20,7 @@ export interface SampleTestItem {
     price: bigint;
     testId: string;
 }
+export type Principal = Principal;
 export interface TestOutput {
     id: string;
     mrp: bigint;
@@ -32,7 +33,6 @@ export interface TestOutput {
     profit: bigint;
     price: bigint;
 }
-export type Principal = Principal;
 export interface AppTask {
     status: string;
     patient_name: string;
@@ -98,6 +98,12 @@ export interface DashboardMetrics {
     collectionsToday: bigint;
     activeHospitals: bigint;
 }
+export interface UserProfile {
+    appRole: AppRole;
+    area?: string;
+    name: string;
+    phone: string;
+}
 export interface SampleRecord {
     status: string;
     tests: Array<SampleTestItem>;
@@ -110,12 +116,6 @@ export interface SampleRecord {
     createdByMobile: string;
     phone: string;
     sampleId: string;
-}
-export interface UserProfile {
-    appRole: AppRole;
-    area?: string;
-    name: string;
-    phone: string;
 }
 export enum AppRole {
     patient = "patient",
@@ -130,11 +130,6 @@ export enum SystemMode {
 export enum TestError {
     notFound = "notFound",
     duplicateCode = "duplicateCode"
-}
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
 }
 export enum Variant_Partial_Settled {
     Partial_ = "Partial",
@@ -156,9 +151,15 @@ export interface backendInterface {
         __kind__: "err";
         err: TestError;
     }>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     assignPhlebotomistToHospital(hospitalId: string, phlebotomist: Principal): Promise<HospitalPhlebotomistAssignment>;
     bulkAddTests(testInputs: Array<TestInput>): Promise<Array<TestOutput>>;
+    claimSuperAdmin(): Promise<{
+        __kind__: "ok";
+        ok: string;
+    } | {
+        __kind__: "err";
+        err: string;
+    }>;
     createSample(input: SampleInput): Promise<string>;
     createTask(assigned_to_mobile: string, assigned_by: string, hospital_id: string, patient_name: string, status: string): Promise<AppTask>;
     deleteAllData(): Promise<void>;
@@ -172,7 +173,6 @@ export interface backendInterface {
     getAllTasks(): Promise<Array<AppTask>>;
     getAllTests(): Promise<Array<TestOutput>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
     getDashboardMetrics(): Promise<DashboardMetrics>;
     getHospitalById(id: string): Promise<Hospital>;
     getHospitals(search: string | null): Promise<Array<Hospital>>;
@@ -187,11 +187,9 @@ export interface backendInterface {
     getTestByCode(testCode: string): Promise<TestOutput | null>;
     getUserByMobile(mobile: string): Promise<AppUser | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
-    isCallerAdmin(): Promise<boolean>;
     markSettlement(hospitalId: string, amount: bigint, settlementType: Variant_Partial_Settled, notes: string | null): Promise<Settlement>;
     registerAppUser(mobile: string, name: string, role: string, assignedHospitalId: string | null): Promise<AppUser>;
     removePhlebotomistFromHospital(hospitalId: string, phlebotomist: Principal, removalReason: string): Promise<HospitalPhlebotomistAssignment>;
-    claimSuperAdmin(): Promise<{ __kind__: "ok"; ok: string } | { __kind__: "err"; err: string }>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     seedTestUsers(): Promise<bigint>;
     setSystemMode(mode: SystemMode): Promise<void>;
